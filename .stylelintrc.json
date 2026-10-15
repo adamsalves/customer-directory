@@ -5,6 +5,10 @@
       "^[A-Z][a-zA-Z0-9]*$",
       { "message": "Expected class selector \"%s\" to be PascalCase (ADR-0003)" }
     ],
+    "selector-nested-pattern": [
+      "^(?!&[\\w-])",
+      { "message": "Write the full PascalCase class, no &-suffix (ADR-0003)" }
+    ],
     "color-no-hex": [true, { "message": "Use a token via var(--…) (ADR-0003)" }],
     "color-named": ["never", { "message": "Use a token via var(--…) (ADR-0003)" }],
     "function-disallowed-list": [

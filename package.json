@@ -10,7 +10,7 @@
     "build": "nuxt build",
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
-    "lint": "eslint . && stylelint \"**/*.{css,scss}\" --allow-empty-input && prettier --check .",
+    "lint": "eslint . --max-warnings 0 && stylelint \"**/*.{css,scss}\" --ignore-path .gitignore --allow-empty-input && prettier --check .",
     "format": "prettier --write .",
     "postinstall": "nuxt prepare"
   },
