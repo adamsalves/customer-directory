@@ -5,7 +5,20 @@ import withNuxt from './.nuxt/eslint.config.mjs'
 export default withNuxt(
   prettier,
   // npm hoists node_modules, so a transitive package would import fine (ADR-0018)
-  { rules: { 'import/no-extraneous-dependencies': 'error' } },
+  {
+    rules: {
+      'import/no-extraneous-dependencies': 'error',
+      // A type argument on a fetch is a cast in disguise (ADR-0016)
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression[callee.name=/^(\\$fetch|useFetch|useLazyFetch|useAsyncData|useLazyAsyncData)$/][typeArguments]',
+          message: 'Do not pass a type argument: let Nitro infer it or validate the data.',
+        },
+      ],
+    },
+  },
 )
   // Honest typing (ADR-0016): every escape hatch is an error, tests included
   .override('nuxt/typescript/rules', {

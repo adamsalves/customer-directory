@@ -9,6 +9,7 @@ Formatação e mensagens de commit fora do padrão viram ruído no review. Rodar
 
 ## Decisão
 
+- **Lint:** `@nuxt/eslint` com regras que usam tipos (ADR-0016), Prettier com `eslint-config-prettier` (desliga as regras de formatação do ESLint que brigariam com o Prettier) e Stylelint com `stylelint-config-standard-scss` (classes em PascalCase e cores só por token, ADR-0003). `npm run lint` roda os três.
 - **husky v9** + **lint-staged** no `pre-commit` (eslint/stylelint/prettier só nos arquivos do commit).
 - **commitlint** (`@commitlint/config-conventional`) no `commit-msg`.
 - **GitHub Actions** roda lint, typecheck, test e e2e em cada push e PR. O CI é o check obrigatório para o merge na `main` protegida.
