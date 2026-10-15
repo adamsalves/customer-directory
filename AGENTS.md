@@ -17,7 +17,8 @@ Customer directory for the [JSM frontend challenge](https://github.com/juntossom
 npm ci              # install from package-lock.json
 npm run dev         # dev server
 npm run build       # production build
-npm run lint        # eslint + stylelint
+npm run lint        # eslint + stylelint + prettier --check
+npm run format      # prettier --write
 npm run typecheck   # nuxi typecheck
 npm test            # vitest (unit, component, API integration)
 npm run test:e2e    # playwright
@@ -36,14 +37,14 @@ npm run analyze     # nuxi analyze (bundle size)
 
 - **Language:** code, identifiers, files, CSS classes, `data-testid`, comments and commits in **English**. Everything the user sees (labels, `aria-label`, toasts, meta, **public URL** like `/membros?busca=`) in **pt-BR**. Docs (ADRs, README, issues, PRs, `ai-journey/`) in pt-BR.
 - **Honest typing** (ADR-0016) — forbidden, with the alternative:
-  | Forbidden | Do instead |
-  |---|---|
-  | `any` (explicit or implicit) | `unknown` + type guard |
-  | `as X`, `<X>value` | narrow with a guard, `instanceof`, `satisfies` (`as const` is fine) |
-  | non-null `!` | handle the `undefined` branch |
-  | `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck` | fix the type |
-  | `$fetch<T>()`, `JSON.parse(x) as T`, `useFetch<T>` on unvalidated data | let Nitro infer route types; validate external data |
-  | `event.target as HTMLInputElement` | `v-model` or `instanceof HTMLInputElement` |
+  | Forbidden                                                              | Do instead                                                          |
+  | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
+  | `any` (explicit or implicit)                                           | `unknown` + type guard                                              |
+  | `as X`, `<X>value`                                                     | narrow with a guard, `instanceof`, `satisfies` (`as const` is fine) |
+  | non-null `!`                                                           | handle the `undefined` branch                                       |
+  | `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`                        | fix the type                                                        |
+  | `$fetch<T>()`, `JSON.parse(x) as T`, `useFetch<T>` on unvalidated data | let Nitro infer route types; validate external data                 |
+  | `event.target as HTMLInputElement`                                     | `v-model` or `instanceof HTMLInputElement`                          |
 - **External data enters as `unknown`** (S3 payload, `getQuery`, `route.query`) and is validated before use.
 - **JSM guideline:** `ComponentName/ComponentName.vue` + `.module.scss` imported as `S`; multi-word component names; typed props; `computed` over methods; stable `:key`; `type TFoo` for local types, `export interface IFoo` for exported ones; `data-testid="page__element--type"`.
 - **Styling:** tokens only, always via `var(--…)` from `app/assets/styles/tokens.scss`. No loose colors. Logical properties, container queries, `@layer`. Layout is CSS-only (no width checks in JS, ADR-0014).
