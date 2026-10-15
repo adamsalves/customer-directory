@@ -13,3 +13,4 @@ logs
 !.env.example
 .code-review-graph
 .claude/settings.local.json
+.vercel
