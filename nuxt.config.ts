@@ -1,6 +1,11 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-15',
   devtools: { enabled: true },
+  modules: ['@nuxt/eslint'],
+  // tsconfigPath turns on the type-aware rules (ADR-0016)
+  eslint: {
+    config: { typescript: { strict: true, tsconfigPath: './tsconfig.json' } },
+  },
   app: {
     head: {
       htmlAttrs: { lang: 'pt-BR' },

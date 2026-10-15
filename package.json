@@ -10,6 +10,8 @@
     "build": "nuxt build",
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
+    "lint": "eslint . --max-warnings 0 && stylelint \"**/*.{css,scss}\" --ignore-path .gitignore --allow-empty-input && prettier --check .",
+    "format": "prettier --write .",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
@@ -18,10 +20,17 @@
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
+    "@nuxt/eslint": "^1.17.0",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.10",
+    "stylelint": "^17.16.0",
+    "stylelint-config-standard-scss": "^17.0.0",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.13"
   },
   "allowScripts": {
-    "esbuild": false
+    "esbuild": false,
+    "unrs-resolver": false
   }
 }
