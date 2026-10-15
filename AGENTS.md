@@ -6,7 +6,7 @@ Instructions for any coding agent (Claude Code, Copilot, Cursor, Codex…) worki
 
 Customer directory for the [JSM frontend challenge](https://github.com/juntossomosmais/frontend-challenge): list with search, filters, sort and pagination, plus a member detail page.
 
-- **Stack:** Nuxt 4 (Vue 3 + TypeScript, SSR), Nitro as BFF, CSS Modules + SCSS, Vitest, Playwright, pnpm. Deployed on Vercel.
+- **Stack:** Nuxt 4 (Vue 3 + TypeScript, SSR), Nitro as BFF, CSS Modules + SCSS, Vitest, Playwright, npm (ADR-0018). Deployed on Vercel.
 - **Data source:** `https://jsm-challenges.s3.amazonaws.com/frontend-challenge.json` (200 records, no `id`).
 - **UI source of truth:** the v2 prototype in `docs/design/` (`diretorio-de-membros.html` for the full app, `diretorio-de-membros-responsivo.html` for 375/768 frames). Deviations are recorded in ADR-0013.
 - **Decisions:** `docs/adr/` (index in `docs/adr/README.md`). Read the related ADRs before changing anything they cover.
@@ -14,13 +14,14 @@ Customer directory for the [JSM frontend challenge](https://github.com/juntossom
 ## 2. Commands
 
 ```sh
-pnpm dev         # dev server
-pnpm build       # production build
-pnpm lint        # eslint + stylelint
-pnpm typecheck   # nuxi typecheck
-pnpm test        # vitest (unit, component, API integration)
-pnpm test:e2e    # playwright
-pnpm analyze     # nuxi analyze (bundle size)
+npm ci              # install from package-lock.json
+npm run dev         # dev server
+npm run build       # production build
+npm run lint        # eslint + stylelint
+npm run typecheck   # nuxi typecheck
+npm test            # vitest (unit, component, API integration)
+npm run test:e2e    # playwright
+npm run analyze     # nuxi analyze (bundle size)
 ```
 
 ## 3. Architecture map
