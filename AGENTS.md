@@ -19,10 +19,9 @@ npm run dev         # dev server
 npm run build       # production build
 npm run lint        # eslint + stylelint + prettier --check
 npm run format      # prettier --write
-npm run typecheck   # nuxi typecheck
+npm run typecheck   # nuxt typecheck
 npm test            # vitest (unit, component, API integration)
 npm run test:e2e    # playwright
-npm run analyze     # nuxi analyze (bundle size)
 ```
 
 ## 3. Architecture map
