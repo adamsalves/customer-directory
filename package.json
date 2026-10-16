@@ -24,6 +24,7 @@
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@nuxt/eslint": "^1.17.0",
+    "@types/node": "^24.15.0",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
@@ -39,14 +40,14 @@
     "unrs-resolver": false
   },
   "lint-staged": {
-    "*.{ts,mjs,js,vue}": [
+    "*.{ts,tsx,mts,cts,js,mjs,cjs,vue}": [
       "eslint --fix --max-warnings 0 --no-warn-ignored",
       "prettier --write"
     ],
-    "*.scss": [
+    "*.{css,scss}": [
       "stylelint --fix",
       "prettier --write"
     ],
-    "*.{json,md,yml}": "prettier --write"
+    "*.{json,md,yml,yaml}": "prettier --write"
   }
 }
