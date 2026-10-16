@@ -7,18 +7,9 @@
 
 O protótipo v2 (`docs/design/diretorio-de-membros.html` e `docs/design/diretorio-de-membros-responsivo.html`) define layout, tokens, textos, comportamento e os dois temas. Os dois arquivos foram gerados no Claude Design.
 
-As molduras de `diretorio-de-membros-responsivo.html` vêm de uma exportação anterior do app e divergem de `diretorio-de-membros.html` no tema claro:
-
-| Item               | `diretorio-de-membros.html` | molduras (`-responsivo`) |
-| ------------------ | --------------------------- | ------------------------ |
-| `--input-border`   | `#8a8f96`                   | `#9e9e9e` (2,46:1)       |
-| `--placeholder`    | `#6b7480`                   | `#8a8f96` (3,26:1)       |
-| `--social-bg`      | `#1877c9`                   | `#1da1f2` (2,83:1)       |
-| opção de ordenação | "Cadastro mais recente"     | "Cadastro recente"       |
-
 ## Decisão
 
-Tokens e textos vêm de `diretorio-de-membros.html`; as molduras de 375 e 768px valem só para layout. A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das custom properties dele. Os desvios são estes:
+A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das custom properties dele. Os desvios são estes:
 
 | Protótipo                                           | Implementação                          | Por quê                           |
 | --------------------------------------------------- | -------------------------------------- | --------------------------------- |

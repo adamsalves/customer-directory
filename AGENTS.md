@@ -8,7 +8,7 @@ Customer directory for the [JSM frontend challenge](https://github.com/juntossom
 
 - **Stack:** Nuxt 4 (Vue 3 + TypeScript, SSR), Nitro as BFF, CSS Modules + SCSS, Vitest, Playwright, npm (ADR-0018). Deployed on Vercel.
 - **Data source:** `https://jsm-challenges.s3.amazonaws.com/frontend-challenge.json` (200 records, no `id`).
-- **UI source of truth:** the v2 prototype in `docs/design/` (`diretorio-de-membros.html` for the full app, `diretorio-de-membros-responsivo.html` for 375/768 frames, layout only: its tokens and copy are an older export). Deviations are recorded in ADR-0013.
+- **UI source of truth:** the v2 prototype in `docs/design/` (`diretorio-de-membros.html` for the full app, `diretorio-de-membros-responsivo.html` for 375/768 frames). Deviations are recorded in ADR-0013.
 - **Decisions:** `docs/adr/` (index in `docs/adr/README.md`). Read the related ADRs before changing anything they cover.
 
 ## 2. Commands

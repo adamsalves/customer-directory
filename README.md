@@ -36,6 +36,6 @@ npm run dev
 ## Documentação
 
 - **Decisões de arquitetura:** [`docs/adr/`](docs/adr/README.md)
-- **Design (fonte da verdade de UI):** [`docs/design/`](docs/design/), protótipo v2 feito no Claude Design. `diretorio-de-membros.html` é o app completo e a referência de tokens e textos; `diretorio-de-membros-responsivo.html` traz as molduras de 375 e 768px nos dois temas e vale só para layout. Para navegar, clone o repositório e abra o HTML no navegador (o GitHub mostra só o código-fonte). Os desvios estão na [ADR-0013](docs/adr/0013-prototipo-como-fonte-da-verdade.md).
+- **Design (fonte da verdade de UI):** [`docs/design/`](docs/design/), protótipo v2 feito no Claude Design. `diretorio-de-membros.html` é o app completo; `diretorio-de-membros-responsivo.html` traz as molduras de 375 e 768px nos dois temas. Para navegar, clone o repositório e abra o HTML no navegador (o GitHub mostra só o código-fonte). Os desvios estão na [ADR-0013](docs/adr/0013-prototipo-como-fonte-da-verdade.md).
 - **Uso de IA:** [`ai-journey/`](ai-journey/README.md)
 - **Instruções para agentes de código:** [`AGENTS.md`](AGENTS.md)
