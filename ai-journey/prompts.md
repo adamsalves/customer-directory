@@ -26,7 +26,7 @@ Nuxt 4 com SSR, Nitro como BFF fazendo busca, filtro e paginação em funções 
 **Ferramenta:** Claude Code
 
 **O que perguntei:**
-"Só para confirmar, todas as operações feitas com a api são feitas em tempo real né? consultando a api mesmo. Exemplo nas buscas e filtros!" e, depois da resposta, "Qual é o modo mais sensato para esse caso, deixar como planejado ou fazer a busca direto no s3 toda vez?"
+Com o plano já escrito, quis entender de onde a busca tiraria os dados: "Só para confirmar, todas as operações feitas com a api são feitas em tempo real né? consultando a api mesmo. Exemplo nas buscas e filtros!" e, depois da resposta, "Qual é o modo mais sensato para esse caso, deixar como planejado ou fazer a busca direto no s3 toda vez?"
 
 **O que aconteceu:**
 A primeira resposta procurou código no repositório, que ainda estava vazio, e não achou nada. Precisei apontar o plano. Depois veio a explicação: o navegador consulta o nosso servidor a cada mudança, e o servidor guarda o JSON do S3 em cache por 1h. O S3 é um arquivo estático que não aceita filtro, então ir até ele a cada tecla só baixaria os mesmos ~177KB de novo, deixaria a resposta mais lenta e exporia o usuário a falhas do S3.
@@ -82,7 +82,7 @@ As lacunas viraram itens do backlog e a ADR-0007 (estado). O `AGENTS.md` concent
 **Ferramenta:** Claude Code
 
 **O que perguntei:**
-"Pensar nos milestones como pontos atômicos, que fechem uma feature ou algo do tipo. Para o código ficar rastreável e PRs com um limite ok" e "Acha nencessário criar estruturas de deploy e release?"
+Depois de ver o primeiro corte dos milestones, que era por camada: "Pensar nos milestones como pontos atômicos, que fechem uma feature ou algo do tipo. Para o código ficar rastreável e PRs com um limite ok" e "Acha nencessário criar estruturas de deploy e release?"
 
 **O que aconteceu:**
 Os milestones estavam cortados por camada (BFF, depois layout, depois lista), e o PR da lista teria oito ou mais componentes juntos. A IA os recortou em fatias verticais, cada uma terminando com o E2E da feature. Sobre deploy e release, ela recomendou não criar estrutura própria: a integração Git da Vercel já dá preview por PR, e uma tag com GitHub Release por milestone basta. semantic-release, changesets e `CHANGELOG.md` ficaram de fora.
