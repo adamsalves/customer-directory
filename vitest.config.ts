@@ -1,6 +1,8 @@
 import { defineVitestConfig } from '@nuxt/test-utils/config'
 
-// Specs live next to the code (ADR-0009); E2E belongs to Playwright
+// Specs live next to the code (ADR-0009); E2E belongs to Playwright.
+// The nuxt environment swaps global fetch/Request for happy-dom's, so server specs
+// start with `// @vitest-environment node`.
 export default defineVitestConfig({
   test: {
     environment: 'nuxt',

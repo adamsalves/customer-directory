@@ -23,12 +23,12 @@ export default defineConfig({
       },
     },
   ],
-  // Runs against the production build, as deployed
+  // Runs against a fresh production build (node-server preset). Never reuse a running
+  // server: the only one it could find is a build from another moment.
   webServer: {
     command: 'npm run build && node .output/server/index.mjs',
     url: baseURL,
     env: { PORT: String(port) },
-    reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },
 })
