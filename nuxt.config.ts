@@ -12,6 +12,10 @@ export default defineNuxtConfig({
       title: 'Diretório de membros',
     },
   },
+  // Root tool configs (commitlint…) need a tsconfig for the type-aware rules
+  typescript: {
+    nodeTsConfig: { include: ['../*.config.ts'] },
+  },
   // strict and noUncheckedIndexedAccess are Nuxt 4 defaults; noImplicitOverride is missing on the server side (ADR-0016)
   nitro: {
     typescript: {

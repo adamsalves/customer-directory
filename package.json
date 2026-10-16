@@ -12,7 +12,8 @@
     "typecheck": "nuxt typecheck",
     "lint": "eslint . --max-warnings 0 && stylelint \"**/*.{css,scss}\" --ignore-path .gitignore --allow-empty-input && prettier --check .",
     "format": "prettier --write .",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "prepare": "husky"
   },
   "dependencies": {
     "nuxt": "~4.6.1",
@@ -20,9 +21,13 @@
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@nuxt/eslint": "^1.17.0",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "stylelint": "^17.16.0",
     "stylelint-config-standard-scss": "^17.0.0",
@@ -32,5 +37,16 @@
   "allowScripts": {
     "esbuild": false,
     "unrs-resolver": false
+  },
+  "lint-staged": {
+    "*.{ts,mjs,js,vue}": [
+      "eslint --fix --max-warnings 0 --no-warn-ignored",
+      "prettier --write"
+    ],
+    "*.scss": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml}": "prettier --write"
   }
 }
