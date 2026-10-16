@@ -1,4 +1,4 @@
-# Learnings
+# Aprendizados
 
 ## ✅ O que funcionou bem
 

@@ -1,6 +1,6 @@
 changelog:
   categories:
-    - title: Features
+    - title: Funcionalidades
       labels: [feat]
     - title: Correções
       labels: [fix]

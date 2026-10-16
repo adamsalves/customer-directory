@@ -36,20 +36,20 @@ Cache de 1h com stale-while-revalidate no BFF (ADR-0005). Quando o cache vence, 
 
 ### 🔧 Prompt: Revisar o protótipo
 
-**Ferramenta:** Claude Code + a ferramenta de protótipo
+**Ferramenta:** Claude Code + Claude Design
 
 **O que perguntei:**
 "Registre no plano esse design que foi feito! Analise-o e se precisar adeque o plano. Se precisar, me diga que eu ajusto o protótipo" e, em seguida, "Me passe um prompt (ou quantos precisar) para eu ajustar o layout"
 
 **O que aconteceu:**
-A IA leu o protótipo e trouxe para o plano o que ele acrescentava (filtro por gênero, chips, itens por página, bottom sheet, anterior/próximo no detalhe). Faltava o dark mode, então ela escreveu dois prompts para eu levar à ferramenta de protótipo: um com a paleta escura já conferida para contraste AA, outro com ajustes de contraste no tema claro. Na v2, recalculou o contraste de todos os tokens e achou três problemas:
+A IA leu o protótipo e trouxe para o plano o que ele acrescentava (filtro por gênero, chips, itens por página, bottom sheet, anterior/próximo no detalhe). Faltava o dark mode, então ela escreveu dois prompts para eu levar ao Claude Design: um com a paleta escura já conferida para contraste AA, outro com ajustes de contraste no tema claro. Na v2, recalculou o contraste de todos os tokens e achou três problemas:
 
 - **bug:** `--overlay: var(--overlay)` aponta para si mesma, e o fundo escurecido do sheet some no tema claro;
 - a borda do input dá 2,99:1 sobre o header (o mínimo é 3);
 - o "/" do atalho de teclado dá 4,34:1 (o mínimo é 4,5).
 
 **Abordagem final:**
-O protótipo v2 é a fonte da verdade de UI (ADR-0013). Os três problemas são corrigidos nos tokens do código, e os desvios do protótipo ficam registrados com o motivo: slug em vez de posição na lista, responsividade só com CSS e `<dialog>` nativo (ADR-0014 e 0015).
+O protótipo v2 é a fonte da verdade de UI (ADR-0013). Os três problemas são corrigidos nos tokens do código, e os desvios do protótipo ficam registrados com o motivo: slug em vez de posição na lista (ADR-0006), responsividade só com CSS (ADR-0014) e `<dialog>` nativo (ADR-0015).
 
 ### 🔧 Prompt: Idioma e tipagem honesta
 
@@ -88,4 +88,4 @@ Depois de ver o primeiro corte dos milestones, que era por camada: "Pensar nos m
 Os milestones estavam cortados por camada (BFF, depois layout, depois lista), e o PR da lista teria oito ou mais componentes juntos. A IA os recortou em fatias verticais, cada uma terminando com o E2E da feature. Sobre deploy e release, ela recomendou não criar estrutura própria: a integração Git da Vercel já dá preview por PR, e uma tag com GitHub Release por milestone basta. semantic-release, changesets e `CHANGELOG.md` ficaram de fora.
 
 **Abordagem final:**
-9 milestones (M1 Fundação a M9 Entrega), uma issue por PR com ~400 linhas no máximo, GitHub Flow com squash, e release `v0.N.0` ao fechar cada milestone (ADR-0012).
+9 milestones (M1 Fundação a M9 Auditoria e entrega), uma issue por PR com ~400 linhas no máximo, GitHub Flow com squash, e uma release ao fechar cada milestone: `v0.1.0` a `v0.8.0` de M1 a M8, e `v1.0.0` na entrega (ADR-0012).

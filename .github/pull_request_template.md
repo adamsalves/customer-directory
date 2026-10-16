@@ -18,11 +18,12 @@ Closes #
 
 ## Screenshots
 
-<!-- Só para UI. Apague a seção se não for UI. Comparar com o protótipo em 375 e 1280. -->
+<!-- Só para UI. Apague a seção se não for UI. Comparar com o protótipo em 375, 768 e 1280. -->
 
 |      | Claro | Escuro |
 | ---- | ----- | ------ |
 | 375  |       |        |
+| 768  |       |        |
 | 1280 |       |        |
 
 ## Decisões e desvios
@@ -33,8 +34,9 @@ Closes #
 
 - [ ] Título em Conventional Commits, ~400 linhas no máximo (sem lockfile, fixture, snapshot e SVG)
 - [ ] Labels da issue aplicados ao PR (o `release.yml` agrupa as notas por eles)
+- [ ] Dependência nova tem ADR
 - [ ] Testes do que foi adicionado (se for bug: teste de regressão)
 - [ ] CI verde (lint, typecheck, test, e2e)
 - [ ] a11y: teclado, nomes acessíveis, contraste
-- [ ] Conferido no preview nos dois temas
+- [ ] Conferido no preview contra `docs/design/`, nos dois temas
 - [ ] `ai-journey/` atualizado (se o PR fecha o milestone)

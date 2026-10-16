@@ -1,16 +1,17 @@
-# AI Journey
+# Jornada com IA
 
 Como usei IA neste projeto. A pasta é atualizada ao fim de cada milestone.
 
 ## Ferramenta
 
-**Claude Code** (CLI), do planejamento ao código, aos reviews e à abertura de PRs.
+- **Claude Code** (CLI), do planejamento ao código, aos reviews e à abertura de PRs.
+- **Claude Design**, para o protótipo de UI em `docs/design/`, a partir de prompts que o Claude Code ajudou a escrever.
 
 ## Método
 
 - **Planejar antes de codar.** O projeto começou com uma conversa só de planejamento (Fase 0), sem nenhum arquivo no repositório. Cada decisão discutida ali virou uma ADR em [`docs/adr/`](../docs/adr/README.md).
 - **Regras escritas para o agente.** O [`AGENTS.md`](../AGENTS.md) fixa stack, arquitetura, regras de tipagem, idioma e fluxo de trabalho. O `CLAUDE.md` só importa o `AGENTS.md` e acrescenta o que é específico do Claude Code. Assim qualquer agente (Copilot, Cursor, Codex) segue as mesmas regras.
-- **Protótipo como fonte da verdade.** O layout foi prototipado antes e está em [`docs/design/`](../docs/design/). A IA revisou o protótipo, e os ajustes viraram desvios registrados na ADR-0013.
+- **Protótipo como fonte da verdade.** O layout foi prototipado antes no Claude Design e está em [`docs/design/`](../docs/design/). A IA revisou o protótipo, e os ajustes viraram desvios registrados na ADR-0013.
 - **Uma issue, uma branch, um PR**, com no máximo ~400 linhas. PRs pequenos são revisáveis de verdade, por mim e pela IA.
 - **Review independente em todo PR.** Um sub-agente sem o contexto da implementação revisa o diff contra as regras do repositório. Os achados viram correção no próprio PR e, quando são lições gerais, entram na memória do agente para não se repetirem.
 - **Nada é publicado sem comando meu.** Push, issues, releases, configurações do GitHub e deploy só acontecem quando eu peço.
