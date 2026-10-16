@@ -1,0 +1,14 @@
+changelog:
+  categories:
+    - title: Features
+      labels: [feat]
+    - title: Correções
+      labels: [fix]
+    - title: Testes
+      labels: [test]
+    - title: Documentação
+      labels: [docs]
+    - title: Manutenção
+      labels: [chore]
+    - title: Outros
+      labels: ['*']
