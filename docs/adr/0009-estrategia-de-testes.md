@@ -10,7 +10,7 @@ O desafio avalia testes unitários, de integração de fluxos e testes que pegam
 ## Decisão
 
 - **Unit (Vitest):** funções puras do BFF e de `shared/`.
-- **Componentes (`@nuxt/test-utils` + `@vue/test-utils`, ambiente `nuxt`):** seleção por `data-testid`.
+- **Componentes (`@nuxt/test-utils` + `@vue/test-utils`, ambiente `nuxt`):** seleção por `data-testid`. O DOM é o `happy-dom`, padrão do ambiente `nuxt`.
 - **Integração da API:** `@nuxt/test-utils` sobe o servidor com a fixture e chama `/api/customers` e `/api/customers/<slug>`.
 - **E2E (Playwright):** desktop e mobile 375px. Cada milestone de feature termina com o E2E dela.
 - **Fixture:** ~20 registros reais da API, validados pelo mesmo type guard. Nenhum teste usa a rede.

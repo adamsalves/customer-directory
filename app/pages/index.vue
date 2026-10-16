@@ -1,5 +1,5 @@
 <template>
   <main>
-    <h1>Diretório de membros</h1>
+    <h1 data-testid="home__title--heading">Diretório de membros</h1>
   </main>
 </template>

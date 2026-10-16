@@ -14,3 +14,5 @@ logs
 .code-review-graph
 .claude/settings.local.json
 .vercel
+test-results
+playwright-report
