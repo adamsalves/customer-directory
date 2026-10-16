@@ -8,7 +8,8 @@ export default defineConfig({
   testDir: 'tests/e2e',
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  // CI also writes the HTML report, uploaded as an artifact when the job fails
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL, trace: 'on-first-retry' },
   // Desktop and mobile 375px (ADR-0009)
   projects: [
