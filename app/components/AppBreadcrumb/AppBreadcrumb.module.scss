@@ -1,0 +1,40 @@
+.Breadcrumb {
+  margin-block-end: 28px;
+}
+
+.List {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  color: var(--text-strong);
+  font-size: 12px;
+  line-height: 18px;
+  list-style: none;
+}
+
+.Item {
+  display: flex;
+  gap: 4px;
+}
+
+// Unlayered, so this wins over the `a` and `a:hover` colors of the base layer.
+.Link {
+  color: var(--text-strong);
+  text-decoration: none;
+}
+
+.Link:hover {
+  text-decoration: underline;
+}
+
+@media (width < 640px) {
+  .Breadcrumb {
+    margin-block-end: 16px;
+  }
+
+  .HideOnMobile {
+    display: none;
+  }
+}

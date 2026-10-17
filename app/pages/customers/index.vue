@@ -6,5 +6,8 @@ definePageMeta({ path: '/clientes' })
 </script>
 
 <template>
-  <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
+  <div>
+    <AppBreadcrumb :items="[{ label: 'Home', to: '/clientes' }, { label: 'Usuários' }]" />
+    <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
+  </div>
 </template>

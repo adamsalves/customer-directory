@@ -10,4 +10,11 @@ describe('customers page', () => {
       'Lista de clientes',
     )
   })
+
+  it('opens with the Home > Usuários trail', async () => {
+    const wrapper = await mountSuspended(CustomersPage)
+
+    expect(wrapper.get('[data-testid="breadcrumb__item--link"]').text()).toBe('Home')
+    expect(wrapper.get('[data-testid="breadcrumb__item--current"]').text()).toBe('Usuários')
+  })
 })
