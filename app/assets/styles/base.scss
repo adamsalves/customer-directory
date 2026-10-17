@@ -1,4 +1,4 @@
-// Layer order is fixed here: reset, then base. Layers declared later (components) win over both.
+// Layer order is fixed here: reset, then base. CSS Modules stay unlayered, so they win over both.
 @layer reset, base;
 
 // Roboto is a variable font, so one file per subset covers every weight from 400 to 700.
@@ -39,9 +39,8 @@
   }
 
   html {
-    // Safari on iOS only understands the prefixed name; `stylelint --fix` would remove it.
-    // stylelint-disable-next-line property-no-vendor-prefix
-    -webkit-text-size-adjust: 100%;
+    // Autoprefixer (on by default in Nuxt) adds the -webkit- and -moz- forms for mobile browsers.
+    text-size-adjust: 100%;
   }
 }
 
@@ -71,6 +70,7 @@
     color: var(--link-hover);
   }
 
+  // ADR-0013: on --footer-bg the ring uses --footer-text instead; set it in the footer module.
   :focus-visible {
     outline: 2px solid var(--link);
     outline-offset: 2px;
@@ -81,12 +81,16 @@
   }
 
   // ADR-0013: --text-count is 4.34:1 on --surface-alt; --text-muted is 5.35:1 (minimum 4.5:1).
+  // Component modules are unlayered and win over this, so they must not set a color on kbd.
   kbd {
     color: var(--text-muted);
     font-family: inherit;
   }
 }
 
+// CSS Modules rename keyframe names they don't own: inside a .module.scss write
+// `animation: global(jsm-in) 0.18s`, or the name is hashed and nothing animates.
+// Stylelint enforces this in .stylelintrc.json.
 @keyframes jsm-pulse {
   0%,
   100% {

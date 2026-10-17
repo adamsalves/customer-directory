@@ -13,6 +13,7 @@ export default defineNuxtConfig({
       title: 'Diretório de membros',
       // Preload only the latin subset (covers pt-BR); one variable file serves every weight.
       // Font preloads need crossorigin even for same-origin files, or the font is fetched twice.
+      // head links don't get app.baseURL: prefix the href if the app ever moves off "/".
       link: [
         {
           rel: 'preload',
@@ -23,6 +24,10 @@ export default defineNuxtConfig({
         },
       ],
     },
+  },
+  // Font files never change in place: a new font ships under a new file name
+  routeRules: {
+    '/fonts/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
   },
   // Root tool configs and E2E specs need a tsconfig for the type-aware rules
   typescript: {

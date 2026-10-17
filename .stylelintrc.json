@@ -20,6 +20,15 @@
     {
       "files": ["app/assets/styles/tokens.scss"],
       "rules": { "color-no-hex": null, "color-named": null, "function-disallowed-list": null }
+    },
+    {
+      "files": ["**/*.module.scss"],
+      "rules": {
+        "declaration-property-value-disallowed-list": [
+          { "animation": ["/(^|[\\s,])jsm-/"], "animation-name": ["/(^|[\\s,])jsm-/"] },
+          { "message": "Global keyframes need global(): animation: global(jsm-in) (base.scss)" }
+        ]
+      }
     }
   ]
 }

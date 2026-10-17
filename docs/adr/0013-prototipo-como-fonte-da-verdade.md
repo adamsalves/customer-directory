@@ -24,6 +24,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `--overlay` claro referencia a si mesmo             | `rgba(20,26,33,.5)`                    | bug: o fundo do sheet sumia       |
 | `--input-border` claro `#8a8f96` (2,99:1 no header) | `#858a91` (3,19:1)                     | contraste mínimo de 3:1           |
 | texto do `kbd` em `--text-count` (4,34:1)           | `--text-muted` (5,35:1)                | contraste mínimo de 4,5:1         |
+| anel de foco `--link` no rodapé claro (1,77:1)      | `--footer-text` no rodapé (11,37:1)    | contraste mínimo de 3:1           |
 
 ## Consequências
 

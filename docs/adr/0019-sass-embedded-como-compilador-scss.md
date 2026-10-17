@@ -16,6 +16,7 @@ A ADR-0003 escolheu CSS Modules com SCSS, mas não registrou qual compilador rod
 ## Consequências
 
 - O executável vem por pacotes de plataforma em `optionalDependencies` (`sass-embedded-linux-x64` etc.). O lockfile lista todos, e o npm instala só o do ambiente.
-- O npm também instala `sass` e `@parcel/watcher`, dependências das variantes `sass-embedded-*-unknown`, que ele pula nesta plataforma mas cujas dependências traz. O Vite continua usando o `sass-embedded`.
+- O lockfile também lista `sass` e `@parcel/watcher`, dependências das variantes genéricas `sass-embedded-all-unknown` e `sass-embedded-unknown-all`. O npm pula as duas nesta plataforma. Depois de um `npm ci` limpo, o `sass` não fica no disco, mas o `@parcel/watcher` fica, com o binário da plataforma. O Vite continua usando o `sass-embedded`.
 - O script de install do `@parcel/watcher` só compila com `npm_config_build_from_source=true`, e o binário chega por `optionalDependencies`. Por isso ele entra negado em `allowScripts`, como `esbuild` e `unrs-resolver` (ADR-0018).
 - Voltar ao `sass` é trocar o pacote no `package.json`; os `.scss` não mudam.
+- A versão fica fixada em `1.105.1`, sem `^`, porque a `1.105.2` saiu no dia da instalação. A faixa `^` volta quando a próxima versão tiver duas semanas de publicada e `npm run build` passar com ela.
