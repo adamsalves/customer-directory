@@ -8,6 +8,7 @@ import S from './AppHeader.module.scss'
       <NuxtLink
         to="/clientes"
         aria-label="Juntos Somos Mais — início"
+        aria-current-value="false"
         :class="S.Logo"
         data-testid="header__logo--link"
       >

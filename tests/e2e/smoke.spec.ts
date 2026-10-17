@@ -21,6 +21,13 @@ test('the layout exposes the header, main and footer landmarks', async ({ page }
   await expect(page.getByRole('contentinfo')).toBeVisible()
 })
 
+// The logo points at /clientes, so RouterLink sees it as exact-active there
+test('the logo link is not announced as the current page', async ({ page }) => {
+  await page.goto('/clientes')
+
+  await expect(page.getByTestId('header__logo--link')).not.toHaveAttribute('aria-current', 'page')
+})
+
 test('the skip link is the first tab stop and moves focus to the main content', async ({
   page,
 }) => {
