@@ -26,7 +26,7 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
-    // The root has no page of its own: the list is the home (ADR-0020)
+    // The root has no page of its own: the list is the home, as in the prototype (#9)
     '/': { redirect: '/clientes' },
     // Font files never change in place: a new font ships under a new file name
     '/fonts/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },

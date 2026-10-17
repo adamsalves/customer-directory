@@ -3,7 +3,8 @@
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  padding: 56px 24px 64px;
+  padding-block: 56px 64px;
+  padding-inline: 24px;
   background: var(--footer-bg);
   color: var(--footer-text);
 }
@@ -44,6 +45,7 @@
 
 @media (width < 640px) {
   .Footer {
-    padding: 40px 16px 48px;
+    padding-block: 40px 48px;
+    padding-inline: 16px;
   }
 }

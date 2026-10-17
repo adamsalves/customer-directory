@@ -1,7 +1,7 @@
 .Layout {
   display: flex;
   flex-direction: column;
-  min-block-size: 100dvh;
+  min-block-size: 100vh;
   background: var(--bg);
 }
 
@@ -29,7 +29,8 @@
   inline-size: 100%;
   max-inline-size: 1184px;
   margin-inline: auto;
-  padding: 24px 24px 96px;
+  padding-block: 24px 96px;
+  padding-inline: 24px;
 }
 
 // <main> only takes focus from the skip link (tabindex="-1"), it is never a tab stop.
@@ -39,6 +40,7 @@
 
 @media (width < 640px) {
   .Main {
-    padding: 16px 16px 64px;
+    padding-block: 16px 64px;
+    padding-inline: 16px;
   }
 }

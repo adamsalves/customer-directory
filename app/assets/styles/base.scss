@@ -45,6 +45,17 @@
 }
 
 @layer base {
+  // Fragment and focus scrolling stop below the sticky AppHeader (prototype headerH, ADR-0013)
+  html {
+    scroll-padding-block-start: 97px;
+  }
+
+  @media (width < 640px) {
+    html {
+      scroll-padding-block-start: 69px;
+    }
+  }
+
   html,
   body {
     background: var(--bg);
