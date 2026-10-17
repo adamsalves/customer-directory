@@ -1,0 +1,44 @@
+.Layout {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  background: var(--bg);
+}
+
+// Parked off-screen until it receives focus. Following it is a plain fragment navigation:
+// the browser scrolls to <main id="conteudo"> and, because of its tabindex="-1", focuses it.
+.SkipLink {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-start: -9999px;
+  z-index: 50;
+  padding: 10px 16px;
+  border-radius: 4px;
+  background: var(--inverse-bg);
+  color: var(--inverse-text);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.SkipLink:focus {
+  inset-inline-start: 16px;
+}
+
+.Main {
+  flex: 1 0 auto;
+  inline-size: 100%;
+  max-inline-size: 1184px;
+  margin-inline: auto;
+  padding: 24px 24px 96px;
+}
+
+// <main> only takes focus from the skip link (tabindex="-1"), it is never a tab stop.
+.Main:focus {
+  outline: none;
+}
+
+@media (width < 640px) {
+  .Main {
+    padding: 16px 16px 64px;
+  }
+}

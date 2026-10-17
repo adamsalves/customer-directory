@@ -1,0 +1,21 @@
+.Title {
+  margin: 0 0 40px;
+  color: var(--text-strong);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+@media (width < 960px) {
+  .Title {
+    margin-block-end: 20px;
+  }
+}
+
+@media (width < 640px) {
+  .Title {
+    margin-block-end: 12px;
+    font-size: 24px;
+  }
+}

@@ -1,0 +1,49 @@
+.Footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 56px 24px 64px;
+  background: var(--footer-bg);
+  color: var(--footer-text);
+}
+
+.Text {
+  margin: 0;
+  font-size: 14px;
+}
+
+.List {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.Link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 50%;
+  background: var(--social-bg);
+  color: var(--footer-text);
+  transition: transform 0.15s;
+}
+
+.Link:hover {
+  transform: scale(1.08);
+}
+
+// ADR-0013: the base ring (--link) is 1.77:1 on the light footer; --footer-text is 11.37:1.
+.Link:focus-visible {
+  outline-color: var(--footer-text);
+}
+
+@media (width < 640px) {
+  .Footer {
+    padding: 40px 16px 48px;
+  }
+}

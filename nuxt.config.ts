@@ -25,8 +25,10 @@ export default defineNuxtConfig({
       ],
     },
   },
-  // Font files never change in place: a new font ships under a new file name
   routeRules: {
+    // The root has no page of its own: the list is the home (ADR-0020)
+    '/': { redirect: '/clientes' },
+    // Font files never change in place: a new font ships under a new file name
     '/fonts/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
   },
   // Root tool configs and E2E specs need a tsconfig for the type-aware rules
