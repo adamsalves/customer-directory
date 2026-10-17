@@ -1,0 +1,44 @@
+.Header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 20;
+  border-block-end: 1px solid var(--border-subtle);
+  background: var(--header-bg);
+}
+
+.Inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-inline-size: 1184px;
+  margin-inline: auto;
+  padding: 20px 24px;
+}
+
+// In dark mode the logo sits on a light pill; the negative margin keeps the pill from growing the row.
+.Logo {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin: calc(-1 * var(--logo-pill-pad));
+  padding: var(--logo-pill-pad);
+  border-radius: 8px;
+  background: var(--logo-pill-bg);
+}
+
+.LogoImage {
+  display: block;
+  block-size: 56px;
+  inline-size: auto;
+}
+
+@media (width < 640px) {
+  .Inner {
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .LogoImage {
+    block-size: 40px;
+  }
+}
