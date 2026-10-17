@@ -6,6 +6,8 @@ describe('index page', () => {
   it('renders the directory title', async () => {
     const wrapper = await mountSuspended(IndexPage)
 
-    expect(wrapper.find('[data-testid="home__title--heading"]').text()).toBe('Diretório de membros')
+    expect(wrapper.find('[data-testid="home__title--heading"]').text()).toBe(
+      'Diretório de clientes',
+    )
   })
 })

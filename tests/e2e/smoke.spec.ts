@@ -4,5 +4,5 @@ test('home responds 200', async ({ page }) => {
   const response = await page.goto('/')
 
   expect(response?.status()).toBe(200)
-  await expect(page.getByTestId('home__title--heading')).toHaveText('Diretório de membros')
+  await expect(page.getByTestId('home__title--heading')).toHaveText('Diretório de clientes')
 })

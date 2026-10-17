@@ -10,7 +10,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'pt-BR' },
-      title: 'Diretório de membros',
+      title: 'Diretório de clientes',
       // Preload only the latin subset (covers pt-BR); one variable file serves every weight.
       // Font preloads need crossorigin even for same-origin files, or the font is fetched twice.
       // head links don't get app.baseURL: prefix the href if the app ever moves off "/".
