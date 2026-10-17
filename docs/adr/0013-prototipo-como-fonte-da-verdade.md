@@ -25,6 +25,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `--input-border` claro `#8a8f96` (2,99:1 no header) | `#858a91` (3,19:1)                     | contraste mínimo de 3:1           |
 | texto do `kbd` em `--text-count` (4,34:1)           | `--text-muted` (5,35:1)                | contraste mínimo de 4,5:1         |
 | anel de foco `--link` no rodapé claro (1,77:1)      | `--footer-text` no rodapé (11,37:1)    | contraste mínimo de 3:1           |
+| "membros" na URL e nos textos                       | "clientes"                             | ADR-0020                          |
 
 ## Consequências
 

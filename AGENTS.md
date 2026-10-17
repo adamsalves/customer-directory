@@ -4,7 +4,7 @@ Instructions for any coding agent (Claude Code, Copilot, Cursor, Codex…) worki
 
 ## 1. Project
 
-Customer directory for the [JSM frontend challenge](https://github.com/juntossomosmais/frontend-challenge): list with search, filters, sort and pagination, plus a member detail page.
+Customer directory for the [JSM frontend challenge](https://github.com/juntossomosmais/frontend-challenge): list with search, filters, sort and pagination, plus a customer detail page.
 
 - **Stack:** Nuxt 4 (Vue 3 + TypeScript, SSR), Nitro as BFF, CSS Modules + SCSS, Vitest, Playwright, npm (ADR-0018). Deployed on Vercel.
 - **Data source:** `https://jsm-challenges.s3.amazonaws.com/frontend-challenge.json` (200 records, no `id`).
@@ -34,7 +34,7 @@ npm run test:e2e    # playwright
 
 ## 4. Hard rules
 
-- **Language:** code, identifiers, files, CSS classes, `data-testid`, comments and commits in **English**. Everything the user sees (labels, `aria-label`, toasts, meta, **public URL** like `/membros?busca=`) in **pt-BR**. Docs (ADRs, README, issues, PRs, `ai-journey/`) in pt-BR.
+- **Language:** code, identifiers, files, CSS classes, `data-testid`, comments and commits in **English**. Everything the user sees (labels, `aria-label`, toasts, meta, **public URL** like `/clientes?busca=`) in **pt-BR**. Docs (ADRs, README, issues, PRs, `ai-journey/`) in pt-BR.
 - **Honest typing** (ADR-0016) — forbidden, with the alternative:
   | Forbidden                                                              | Do instead                                                          |
   | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |

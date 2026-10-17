@@ -1,6 +1,6 @@
 # customer-directory
 
-Diretório de membros feito para o [desafio de frontend da Juntos Somos Mais](https://github.com/juntossomosmais/frontend-challenge): lista com busca, filtros, ordenação e paginação, e uma página de detalhe por membro.
+Diretório de clientes feito para o [desafio de frontend da Juntos Somos Mais](https://github.com/juntossomosmais/frontend-challenge): lista com busca, filtros, ordenação e paginação, e uma página de detalhe por cliente.
 
 **Produção:** https://customer-directory-nu.vercel.app
 
