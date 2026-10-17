@@ -20,7 +20,13 @@ defineProps<{
     data-testid="breadcrumb__trail--nav"
   >
     <ol :class="S.List">
-      <li v-for="(item, index) in items" :key="item.label" :class="S.Item">
+      <!-- The position is the step's identity: labels may repeat, the trail never reorders -->
+      <li
+        v-for="(item, index) in items"
+        :key="index"
+        :class="S.Item"
+        data-testid="breadcrumb__step--item"
+      >
         <span v-if="index > 0" aria-hidden="true" data-testid="breadcrumb__separator--text">
           &gt;
         </span>
@@ -31,15 +37,18 @@ defineProps<{
         >
           {{ item.label }}
         </span>
+        <!-- RouterLink marks an exact-active link as the current page (Home on /clientes);
+             in a trail only the last step is current -->
         <NuxtLink
           v-else-if="item.to"
           :to="item.to"
+          aria-current-value="false"
           :class="S.Link"
           data-testid="breadcrumb__item--link"
         >
           {{ item.label }}
         </NuxtLink>
-        <span v-else>{{ item.label }}</span>
+        <span v-else data-testid="breadcrumb__item--text">{{ item.label }}</span>
       </li>
     </ol>
   </nav>

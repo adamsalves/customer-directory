@@ -27,6 +27,7 @@ describe('AppBreadcrumb', () => {
     ])
   })
 
+  // mountSuspended stubs RouterLink, so the active-link aria-current is covered in tests/e2e
   it('marks only the last item as the current page', async () => {
     const wrapper = await mountSuspended(AppBreadcrumb, { props: { items } })
     const current = wrapper.findAll('[aria-current]')
@@ -38,9 +39,12 @@ describe('AppBreadcrumb', () => {
 
   it('renders a separator before every item but the first, hidden from assistive technology', async () => {
     const wrapper = await mountSuspended(AppBreadcrumb, { props: { items } })
+    const steps = wrapper.findAll('[data-testid="breadcrumb__step--item"]')
     const separators = wrapper.findAll('[data-testid="breadcrumb__separator--text"]')
 
-    expect(separators).toHaveLength(2)
+    expect(
+      steps.map((step) => step.find('[data-testid="breadcrumb__separator--text"]').exists()),
+    ).toEqual([false, true, true])
     for (const separator of separators) {
       expect(separator.text()).toBe('>')
       expect(separator.attributes('aria-hidden')).toBe('true')
@@ -54,10 +58,24 @@ describe('AppBreadcrumb', () => {
       },
     })
 
-    const middle = wrapper.findAll('li')[1]
+    const middle = wrapper.findAll('[data-testid="breadcrumb__step--item"]')[1]
 
-    expect(middle?.find('a').exists()).toBe(false)
-    expect(middle?.text()).toContain('Sem link')
+    expect(middle?.find('[data-testid="breadcrumb__item--link"]').exists()).toBe(false)
+    expect(middle?.get('[data-testid="breadcrumb__item--text"]').text()).toBe('Sem link')
+  })
+
+  it('renders the last step as the current page even when it has a target', async () => {
+    const wrapper = await mountSuspended(AppBreadcrumb, {
+      props: {
+        items: [
+          { label: 'Home', to: '/clientes' },
+          { label: 'Fim', to: '/clientes?pagina=2' },
+        ],
+      },
+    })
+
+    expect(wrapper.findAll('[data-testid="breadcrumb__item--link"]')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="breadcrumb__item--current"]').text()).toBe('Fim')
   })
 
   it('hides the trail on mobile only when asked to', async () => {
