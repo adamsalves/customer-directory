@@ -106,7 +106,7 @@ Os sub-agentes já existiam como presets globais do Claude Code, que servem para
 - `implementer`: codifica um plano já fechado, sem decidir escopo;
 - `reviewer`: faz o review independente de cada PR.
 
-O planejamento ficou de propósito no agente principal, porque é ele que tem a conversa. Um sub-agente de plano começaria sem o contexto. O plano passa pela minha aprovação antes de ir para o `implementer`.
+O planejamento ficou de propósito no agente principal, porque é ele que tem a conversa. Um sub-agente de plano começaria sem o contexto. O plano passa pela minha aprovação antes de ir para o `implementer`. Na própria #11 essa etapa foi pulada, e eu reforcei o fluxo.
 
 **Abordagem final:**
 Ninguém escreve o prompt do agente do zero. Ele é montado em três camadas:
@@ -115,4 +115,4 @@ Ninguém escreve o prompt do agente do zero. Ele é montado em três camadas:
 - **regras:** as ADRs citadas no topo da issue e o `AGENTS.md`;
 - **fatos e como:** o relatório do `measurer` e o plano feito a partir dele, depois de aprovado por mim.
 
-Na [#11](https://github.com/adamsalves/customer-directory/issues/11), os critérios viraram os quatro testes do E2E do tema, e o ADR-0011 trouxe o tema forçado pelo cookie. A medição mostrou que o CSS não tem media query de `prefers-color-scheme`: sem cookie, só o script inline aplica o escuro. Daí vieram o sistema escuro emulado em todos os testes e o rótulo do toggle como sinal de que a página hidratou. O plano listou também os defeitos plantados que provam cada teste.
+Na [#11](https://github.com/adamsalves/customer-directory/issues/11), os critérios viraram os quatro testes do E2E do tema, e o ADR-0011 trouxe o tema forçado pelo cookie. A medição mostrou que o CSS não tem media query de `prefers-color-scheme`: sem cookie, antes da primeira pintura, só o script inline aplica o escuro. Daí vieram o sistema escuro emulado em todos os testes e o rótulo do toggle como sinal de que a página hidratou. O plano listou também os defeitos plantados que provam cada teste.
