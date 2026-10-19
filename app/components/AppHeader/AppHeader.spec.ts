@@ -20,4 +20,12 @@ describe('AppHeader', () => {
     expect(image.attributes('width')).toBe('49')
     expect(image.attributes('height')).toBe('56')
   })
+
+  it('renders the theme toggle as the last item of the header row', async () => {
+    const wrapper = await mountSuspended(AppHeader)
+    const toggle = wrapper.get('[data-testid="header__theme--toggle"]').element
+
+    expect(toggle.nextElementSibling).toBeNull()
+    expect(toggle.parentElement?.parentElement).toBe(wrapper.element)
+  })
 })

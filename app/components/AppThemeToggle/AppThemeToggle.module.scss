@@ -1,0 +1,45 @@
+// 48px on desktop, 44px below 960px (the prototype's sheet mode)
+.Toggle {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: auto;
+  inline-size: 48px;
+  block-size: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-strong);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.Toggle:hover {
+  background: var(--header-hover);
+}
+
+// The moon shows in the light theme, the sun in the dark one. The attribute is on <html> before the
+// first paint, so no icon ever flashes. CSS Modules only rename classes and ids, so the attribute
+// selector needs no :global().
+.Sun {
+  display: none;
+}
+
+[data-theme='dark'] {
+  .Sun {
+    display: block;
+  }
+
+  .Moon {
+    display: none;
+  }
+}
+
+@media (width < 960px) {
+  .Toggle {
+    inline-size: 44px;
+    block-size: 44px;
+  }
+}

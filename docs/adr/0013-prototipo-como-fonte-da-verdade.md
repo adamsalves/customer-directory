@@ -27,6 +27,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | anel de foco `--link` no rodapé claro (1,77:1)      | `--footer-text` no rodapé (11,37:1)    | contraste mínimo de 3:1           |
 | "membros" na URL e nos textos                       | "clientes"                             | ADR-0020                          |
 | foco após o skip link fica sob o header sticky      | `scroll-padding-block-start` no `html` | WCAG 2.4.11 (foco não encoberto)  |
+| botão de tema: `aria-pressed` + rótulo que alterna  | rótulo de ação, sem `aria-pressed`     | APG: rótulo não muda com o estado |
 
 ## Consequências
 

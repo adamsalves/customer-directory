@@ -1,3 +1,5 @@
+import { THEME_SCRIPT } from './app/utils/themeScript'
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-15',
   devtools: { enabled: true },
@@ -11,6 +13,9 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'pt-BR' },
       title: 'Diretório de clientes',
+      // Sets the system theme before the first paint when there is no cookie yet (ADR-0011).
+      // `critical` sorts it right after charset/viewport, ahead of every stylesheet and bundle.
+      script: [{ innerHTML: THEME_SCRIPT, tagPriority: 'critical' }],
       // Preload only the latin subset (covers pt-BR); one variable file serves every weight.
       // Font preloads need crossorigin even for same-origin files, or the font is fetched twice.
       // head links don't get app.baseURL: prefix the href if the app ever moves off "/".
