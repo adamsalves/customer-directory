@@ -89,3 +89,30 @@ Os milestones estavam cortados por camada (BFF, depois layout, depois lista), e 
 
 **Abordagem final:**
 9 milestones (M1 Fundação a M9 Auditoria e entrega), uma issue por PR com ~400 linhas no máximo, GitHub Flow com squash, e uma release ao fechar cada milestone: `v0.1.0` a `v0.8.0` de M1 a M8, e `v1.0.0` na entrega (ADR-0012).
+
+## M2 · Shell + tema
+
+### 🔧 Prompt: Medir antes de planejar
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que perguntei:**
+"A partir de agora, M2, vamos usar o seguinte fluxo. Measurer antes do planejamento com o agente principal, para coletar evidências antes do planejamento, depois implementer para codificar a issue."
+
+**O que aconteceu:**
+Os sub-agentes já existiam como presets globais do Claude Code, que servem para qualquer repositório. Cada um tem modelo e esforço próprios para uma atividade:
+
+- `measurer`: localiza e mede no código e devolve números com evidência, sem despejar arquivos;
+- `implementer`: codifica um plano já fechado, sem decidir escopo;
+- `reviewer`: faz o review independente de cada PR.
+
+O planejamento ficou de propósito no agente principal, porque é ele que tem a conversa. Um sub-agente de plano começaria sem o contexto. O plano passa pela minha aprovação antes de ir para o `implementer`.
+
+**Abordagem final:**
+Ninguém escreve o prompt do agente do zero. Ele é montado em três camadas:
+
+- **o quê:** os critérios de aceite da issue;
+- **regras:** as ADRs citadas no topo da issue e o `AGENTS.md`;
+- **fatos e como:** o relatório do `measurer` e o plano feito a partir dele, depois de aprovado por mim.
+
+Na [#11](https://github.com/adamsalves/customer-directory/issues/11), os critérios viraram os quatro testes do E2E do tema, e o ADR-0011 trouxe o tema forçado pelo cookie. A medição mostrou que o CSS não tem media query de `prefers-color-scheme`: sem cookie, só o script inline aplica o escuro. Daí vieram o sistema escuro emulado em todos os testes e o rótulo do toggle como sinal de que a página hidratou. O plano listou também os defeitos plantados que provam cada teste.
