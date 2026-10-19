@@ -9,9 +9,9 @@ A API não tem `id`. O protótipo usa a posição no array (`/membros/7`), que m
 
 ## Decisão
 
-O identificador público é o slug da parte local do email: `ione.dacosta@example.com` → `ione-dacosta`. Ele é gerado no `normalizeCustomer` e usado na rota `/membros/[id]` e como `:key`.
+O identificador público é o slug da parte local do email: `ione.dacosta@example.com` → `ione-dacosta`. Ele é gerado no `normalizeCustomer` e usado na rota `/membros/[id]` e como `:key`. Os acentos saem (NFD) para a URL continuar em ASCII: `eleutério.almeida` → `eleuterio-almeida`.
 
 ## Consequências
 
 - Links estáveis e legíveis.
-- Se a fonte passar a ter emails repetidos, o slug colide. Hoje não acontece, e um teste sobre a fixture garante a unicidade.
+- Se a fonte passar a ter emails repetidos, ou que só diferem pelo acento, o slug colide. Hoje não acontece (200 slugs distintos nos 200 registros do payload real), e um teste sobre a fixture garante a unicidade.
