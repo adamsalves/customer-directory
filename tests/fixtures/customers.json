@@ -460,190 +460,76 @@
       "gender": "male",
       "name": {
         "title": "mr",
-        "first": "everaldo",
-        "last": "da conceição"
+        "first": "alcindo",
+        "last": "das neves"
       },
       "location": {
-        "street": "2927 rua doze ",
-        "city": "guarapari",
-        "state": "tocantins",
-        "postcode": 22710,
+        "street": "8097 rua dezenove de outubro",
+        "city": "imperatriz",
+        "state": "distrito federal",
+        "postcode": 53341,
         "coordinates": {
-          "latitude": "-18.3068",
-          "longitude": "-87.6745"
+          "latitude": "-57.5210",
+          "longitude": "41.1609"
         },
         "timezone": {
-          "offset": "-9:00",
-          "description": "Alaska"
+          "offset": "-3:00",
+          "description": "Brazil, Buenos Aires, Georgetown"
         }
       },
-      "email": "everaldo.daconceição@example.com",
+      "email": "alcindo.dasneves@example.com",
       "dob": {
-        "date": "1966-05-02T01:31:51Z",
-        "age": 52
-      },
-      "registered": {
-        "date": "2005-03-19T20:01:34Z",
-        "age": 13
-      },
-      "phone": "(66) 7121-6464",
-      "cell": "(84) 0447-3748",
-      "picture": {
-        "large": "https://randomuser.me/api/portraits/men/98.jpg",
-        "medium": "https://randomuser.me/api/portraits/med/men/98.jpg",
-        "thumbnail": "https://randomuser.me/api/portraits/thumb/men/98.jpg"
-      }
-    },
-    {
-      "gender": "female",
-      "name": {
-        "title": "mrs",
-        "first": "urea",
-        "last": "costa"
-      },
-      "location": {
-        "street": "9533 rua dezesseis de maio",
-        "city": "muriaé",
-        "state": "santa catarina",
-        "postcode": 11894,
-        "coordinates": {
-          "latitude": "47.5636",
-          "longitude": "93.5951"
-        },
-        "timezone": {
-          "offset": "-2:00",
-          "description": "Mid-Atlantic"
-        }
-      },
-      "email": "urea.costa@example.com",
-      "dob": {
-        "date": "1996-02-20T09:04:48Z",
+        "date": "1997-01-03T11:08:52Z",
         "age": 22
       },
       "registered": {
-        "date": "2005-10-07T05:25:33Z",
-        "age": 13
+        "date": "2002-05-30T08:37:50Z",
+        "age": 16
       },
-      "phone": "(75) 5094-1614",
-      "cell": "(68) 7136-8241",
+      "phone": "(30) 4415-0380",
+      "cell": "(65) 0975-8553",
       "picture": {
-        "large": "https://randomuser.me/api/portraits/women/48.jpg",
-        "medium": "https://randomuser.me/api/portraits/med/women/48.jpg",
-        "thumbnail": "https://randomuser.me/api/portraits/thumb/women/48.jpg"
+        "large": "https://randomuser.me/api/portraits/men/68.jpg",
+        "medium": "https://randomuser.me/api/portraits/med/men/68.jpg",
+        "thumbnail": "https://randomuser.me/api/portraits/thumb/men/68.jpg"
       }
     },
     {
-      "gender": "female",
+      "gender": "male",
       "name": {
-        "title": "mrs",
-        "first": "otília",
-        "last": "nogueira"
+        "title": "mr",
+        "first": "bartolomeu",
+        "last": "martins"
       },
       "location": {
-        "street": "7249 rua santa luzia ",
-        "city": "aracaju",
+        "street": "2505 rua vinte e quatro de outubro",
+        "city": "bento gonçalves",
         "state": "mato grosso",
-        "postcode": 25734,
+        "postcode": 10806,
         "coordinates": {
-          "latitude": "-43.4140",
-          "longitude": "-148.3656"
+          "latitude": "-23.6656",
+          "longitude": "152.4042"
         },
         "timezone": {
-          "offset": "+11:00",
-          "description": "Magadan, Solomon Islands, New Caledonia"
+          "offset": "+5:45",
+          "description": "Kathmandu"
         }
       },
-      "email": "otília.nogueira@example.com",
+      "email": "bartolomeu.martins@example.com",
       "dob": {
-        "date": "1954-09-26T12:39:22Z",
-        "age": 64
+        "date": "1965-03-21T00:08:29Z",
+        "age": 53
       },
       "registered": {
-        "date": "2014-02-12T02:19:29Z",
-        "age": 4
+        "date": "2011-01-10T14:15:13Z",
+        "age": 7
       },
-      "phone": "(48) 5613-7108",
-      "cell": "(69) 9122-7275",
+      "phone": "(18) 4250-0859",
+      "cell": "(27) 5828-2350",
       "picture": {
-        "large": "https://randomuser.me/api/portraits/women/61.jpg",
-        "medium": "https://randomuser.me/api/portraits/med/women/61.jpg",
-        "thumbnail": "https://randomuser.me/api/portraits/thumb/women/61.jpg"
-      }
-    },
-    {
-      "gender": "female",
-      "name": {
-        "title": "miss",
-        "first": "josini",
-        "last": "nascimento"
-      },
-      "location": {
-        "street": "8824 rua santa catarina ",
-        "city": "caxias",
-        "state": "acre",
-        "postcode": 43167,
-        "coordinates": {
-          "latitude": "-72.6668",
-          "longitude": "106.0443"
-        },
-        "timezone": {
-          "offset": "+11:00",
-          "description": "Magadan, Solomon Islands, New Caledonia"
-        }
-      },
-      "email": "josini.nascimento@example.com",
-      "dob": {
-        "date": "1967-12-24T16:44:19Z",
-        "age": 51
-      },
-      "registered": {
-        "date": "2008-10-11T09:01:38Z",
-        "age": 10
-      },
-      "phone": "(13) 9691-9363",
-      "cell": "(70) 8502-6323",
-      "picture": {
-        "large": "https://randomuser.me/api/portraits/women/50.jpg",
-        "medium": "https://randomuser.me/api/portraits/med/women/50.jpg",
-        "thumbnail": "https://randomuser.me/api/portraits/thumb/women/50.jpg"
-      }
-    },
-    {
-      "gender": "female",
-      "name": {
-        "title": "miss",
-        "first": "dora",
-        "last": "da rocha"
-      },
-      "location": {
-        "street": "4726 avenida da democracia",
-        "city": "mogi guaçu",
-        "state": "pará",
-        "postcode": 81224,
-        "coordinates": {
-          "latitude": "19.4860",
-          "longitude": "-159.1809"
-        },
-        "timezone": {
-          "offset": "+11:00",
-          "description": "Magadan, Solomon Islands, New Caledonia"
-        }
-      },
-      "email": "dora.darocha@example.com",
-      "dob": {
-        "date": "1950-01-20T20:37:05Z",
-        "age": 68
-      },
-      "registered": {
-        "date": "2006-09-06T07:43:20Z",
-        "age": 12
-      },
-      "phone": "(92) 6844-4426",
-      "cell": "(88) 6303-5366",
-      "picture": {
-        "large": "https://randomuser.me/api/portraits/women/30.jpg",
-        "medium": "https://randomuser.me/api/portraits/med/women/30.jpg",
-        "thumbnail": "https://randomuser.me/api/portraits/thumb/women/30.jpg"
+        "large": "https://randomuser.me/api/portraits/men/53.jpg",
+        "medium": "https://randomuser.me/api/portraits/med/men/53.jpg",
+        "thumbnail": "https://randomuser.me/api/portraits/thumb/men/53.jpg"
       }
     },
     {
@@ -726,6 +612,44 @@
       "gender": "male",
       "name": {
         "title": "mr",
+        "first": "nêuton",
+        "last": "novaes"
+      },
+      "location": {
+        "street": "9513 rua dom pedro ii ",
+        "city": "hortolândia",
+        "state": "maranhão",
+        "postcode": 64651,
+        "coordinates": {
+          "latitude": "84.5998",
+          "longitude": "157.2923"
+        },
+        "timezone": {
+          "offset": "-5:00",
+          "description": "Eastern Time (US & Canada), Bogota, Lima"
+        }
+      },
+      "email": "nêuton.novaes@example.com",
+      "dob": {
+        "date": "1947-05-25T20:40:15Z",
+        "age": 71
+      },
+      "registered": {
+        "date": "2006-12-02T02:12:40Z",
+        "age": 12
+      },
+      "phone": "(80) 2269-3118",
+      "cell": "(07) 7900-7173",
+      "picture": {
+        "large": "https://randomuser.me/api/portraits/men/27.jpg",
+        "medium": "https://randomuser.me/api/portraits/med/men/27.jpg",
+        "thumbnail": "https://randomuser.me/api/portraits/thumb/men/27.jpg"
+      }
+    },
+    {
+      "gender": "male",
+      "name": {
+        "title": "mr",
         "first": "abraim",
         "last": "da costa"
       },
@@ -758,6 +682,82 @@
         "large": "https://randomuser.me/api/portraits/men/87.jpg",
         "medium": "https://randomuser.me/api/portraits/med/men/87.jpg",
         "thumbnail": "https://randomuser.me/api/portraits/thumb/men/87.jpg"
+      }
+    },
+    {
+      "gender": "male",
+      "name": {
+        "title": "mr",
+        "first": "deolindo",
+        "last": "da cunha"
+      },
+      "location": {
+        "street": "2510 rua dezenove de outubro",
+        "city": "caxias do sul",
+        "state": "acre",
+        "postcode": 63115,
+        "coordinates": {
+          "latitude": "80.9827",
+          "longitude": "-117.0958"
+        },
+        "timezone": {
+          "offset": "+9:00",
+          "description": "Tokyo, Seoul, Osaka, Sapporo, Yakutsk"
+        }
+      },
+      "email": "deolindo.dacunha@example.com",
+      "dob": {
+        "date": "1985-01-26T10:41:57Z",
+        "age": 33
+      },
+      "registered": {
+        "date": "2010-03-17T15:29:58Z",
+        "age": 8
+      },
+      "phone": "(19) 9600-9953",
+      "cell": "(06) 4028-0700",
+      "picture": {
+        "large": "https://randomuser.me/api/portraits/men/6.jpg",
+        "medium": "https://randomuser.me/api/portraits/med/men/6.jpg",
+        "thumbnail": "https://randomuser.me/api/portraits/thumb/men/6.jpg"
+      }
+    },
+    {
+      "gender": "male",
+      "name": {
+        "title": "mr",
+        "first": "melchior",
+        "last": "da cunha"
+      },
+      "location": {
+        "street": "6165 rua paraná ",
+        "city": "angra dos reis",
+        "state": "sergipe",
+        "postcode": 43065,
+        "coordinates": {
+          "latitude": "-76.3521",
+          "longitude": "134.3055"
+        },
+        "timezone": {
+          "offset": "-5:00",
+          "description": "Eastern Time (US & Canada), Bogota, Lima"
+        }
+      },
+      "email": "melchior.dacunha@example.com",
+      "dob": {
+        "date": "1976-08-13T14:34:05Z",
+        "age": 42
+      },
+      "registered": {
+        "date": "2008-12-06T16:18:02Z",
+        "age": 10
+      },
+      "phone": "(49) 1032-2721",
+      "cell": "(54) 1300-7706",
+      "picture": {
+        "large": "https://randomuser.me/api/portraits/men/98.jpg",
+        "medium": "https://randomuser.me/api/portraits/med/men/98.jpg",
+        "thumbnail": "https://randomuser.me/api/portraits/thumb/men/98.jpg"
       }
     }
   ]
