@@ -10,9 +10,11 @@ import customers from '../../tests/fixtures/customers.json'
 // points the runtime config at it. Every other path answers 404, so a URL that never reaches
 // the server (it would fall back to S3) or a handler that ignores the runtime config fails here.
 const SOURCE_PATH = '/frontend-challenge.json'
+let sourceHits = 0
 
 const source = createServer((request, response) => {
   if (request.url === SOURCE_PATH) {
+    sourceHits += 1
     response.writeHead(200, { 'content-type': 'application/json' })
     response.end(JSON.stringify(customers))
     return
@@ -53,5 +55,13 @@ describe('GET /api/customers', () => {
 
     expect(body).toMatchObject({ total: 20, page: 2, perPage: 18, totalPages: 2 })
     expect(body).toHaveProperty('items.length', 2)
+  })
+
+  // One cached list for every query: a key per URL would refetch, and with swr never expire
+  it('reads the source once for different queries', async () => {
+    await $fetch('/api/customers?page=3')
+    await $fetch('/api/customers?perPage=27')
+
+    expect(sourceHits).toBe(1)
   })
 })

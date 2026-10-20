@@ -1,6 +1,6 @@
 # 0007. Estratégia de estado
 
-- **Status:** Aceita (chaves da URL em inglês pela [ADR-0021](0021-url-publica-em-ingles.md))
+- **Status:** Aceita (as chaves da URL passam a ser em inglês, `?search=&states=&gender=&sort=&page=&perPage=`, pela [ADR-0021](0021-url-publica-em-ingles.md))
 - **Data:** 2026-10-15
 
 ## Contexto
@@ -9,7 +9,7 @@ A lista tem busca, filtros, ordenação, paginação e itens por página, e o de
 
 ## Decisão
 
-- **A URL é a fonte da verdade da lista** (`?search=&states=&gender=&sort=&page=&perPage=`). `useListQuery` converte `route.query` para `IListQuery` com `parseListQuery`. Mudar um filtro volta para a página 1. Os links para o detalhe carregam a mesma query.
+- **A URL é a fonte da verdade da lista** (`?busca=&estados=&genero=&ordem=&pagina=&por=`). `useListQuery` converte `route.query` para `IListQuery` com `parseListQuery`. Mudar um filtro volta para a página 1. Os links para o detalhe carregam a mesma query.
 - **Estado do servidor:** `useFetch`, com cache por chave.
 - **`useState`:** só para tema e toast.
 - **Estado de UI** (sheet aberto, "Ver todos"): local no componente.

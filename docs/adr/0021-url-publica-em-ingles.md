@@ -18,4 +18,5 @@ A ADR-0017 tratava a URL pública como interface e a deixava em pt-BR (`/cliente
 
 - Um idioma só do arquivo da página até o objeto da query; a ida e volta do `listQuery` fica mais simples.
 - A URL compartilhada deixa de estar em português, o que é aceito.
-- Substitui a parte de URL das ADRs 0017 e 0020; o resto delas segue valendo.
+- Substitui a parte de URL das ADRs 0017 e 0020; o resto delas segue valendo. As ADRs 0006, 0007 e 0017 ganham uma nota no status, e a 0013 uma linha na tabela de desvios.
+- `/clientes`, a página inicial publicada até a v0.2.0, redireciona para `/customers`, então links antigos continuam funcionando.

@@ -1,3 +1,5 @@
+import { isRecord } from './isRecord'
+
 export interface IListQuery {
   page: number
   perPage: number
@@ -9,10 +11,6 @@ const DEFAULT_PAGE = 1
 
 // Canonical positive integer: "02", "2.5", "-1" and "" are not one
 const POSITIVE_INTEGER = /^[1-9]\d*$/
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 function parsePositiveInteger(value: unknown): number | undefined {
   return typeof value === 'string' && POSITIVE_INTEGER.test(value) ? Number(value) : undefined

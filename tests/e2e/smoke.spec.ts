@@ -13,6 +13,13 @@ test('the root redirects to the customer list', async ({ page }) => {
   await expect(page.getByTestId('customers__title--heading')).toHaveText('Lista de clientes')
 })
 
+test('the old /clientes path redirects to the customer list', async ({ page }) => {
+  const redirect = await page.request.get('/clientes', { maxRedirects: 0 })
+
+  expect(redirect.status()).toBe(307)
+  expect(redirect.headers().location).toBe('/customers')
+})
+
 test('the layout exposes the header, main and footer landmarks', async ({ page }) => {
   await page.goto('/customers')
 
