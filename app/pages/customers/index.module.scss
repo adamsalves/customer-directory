@@ -8,9 +8,27 @@
   line-height: 1.2;
 }
 
+.List {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// A flex item per cell, so the card inside stretches to the height of its row
+.Item {
+  display: flex;
+}
+
 @media (width < 960px) {
   .Title {
     margin-block-end: 20px;
+  }
+
+  .List {
+    grid-template-columns: repeat(auto-fill, minmax(208px, 1fr));
   }
 }
 
@@ -18,5 +36,11 @@
   .Title {
     margin-block-end: 12px;
     font-size: 24px;
+  }
+
+  .List {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 }
