@@ -1,0 +1,132 @@
+// Same markup in every width (ADR-0014): a centered card from 640px, a row below it.
+.Card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-block-size: 310px;
+  padding-block: 39px 40px;
+  padding-inline: 20px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--text-strong);
+  text-align: center;
+
+  // No fill mode: `both` would hold `transform: none` and override the hover lift below
+  animation: global(jsm-in) 0.22s ease-out;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.Avatar {
+  display: block;
+  flex: 0 0 auto;
+  inline-size: 80px;
+  block-size: 80px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--muted-bg);
+}
+
+.Image {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.Text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.Name {
+  margin-block: 24px 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.Street {
+  margin-block: 16px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.LocationGrid {
+  display: flex;
+  flex-direction: column;
+  margin-block: 14px 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.LocationRow,
+.Chevron {
+  display: none;
+}
+
+@media (hover: hover) and (width >= 640px) {
+  .Card:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+  }
+}
+
+@media (width < 640px) {
+  .Card {
+    flex-direction: row;
+    gap: 16px;
+    min-block-size: 96px;
+    padding-block: 16px;
+    padding-inline: 16px 12px;
+    text-align: start;
+  }
+
+  .Avatar {
+    inline-size: 64px;
+    block-size: 64px;
+  }
+
+  .Text {
+    flex: 1;
+    gap: 4px;
+    align-items: stretch;
+    min-inline-size: 0;
+  }
+
+  .Name {
+    margin-block: 0;
+    font-size: 17px;
+    text-wrap: wrap;
+  }
+
+  .Street {
+    margin-block: 0;
+    line-height: 1.35;
+  }
+
+  .LocationGrid {
+    display: none;
+  }
+
+  .LocationRow {
+    display: block;
+    margin-block: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .Chevron {
+    display: block;
+    flex: 0 0 auto;
+    color: var(--icon-muted);
+  }
+}
