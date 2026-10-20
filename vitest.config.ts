@@ -10,5 +10,8 @@ export default defineVitestConfig({
     // A cached module makes the Nuxt entry stub resolve outside the project, so every
     // run after the first fails. Remove once nuxt/test-utils#1856 ships.
     fsModuleCache: false,
+    // CI runs in UTC, where getUTCDate() and getDate() agree. A zone off UTC makes the
+    // date specs catch a local getter that slips in.
+    env: { TZ: 'America/Sao_Paulo' },
   },
 })

@@ -136,6 +136,8 @@ describe('normalizeCustomer', () => {
     { state: 'paraná', name: 'Paraná', uf: 'PR' },
     { state: 'mato grosso do sul', name: 'Mato Grosso do Sul', uf: 'MS' },
     { state: ' SÃO Paulo ', name: 'São Paulo', uf: 'SP' },
+    { state: 'sao  paulo', name: 'São Paulo', uf: 'SP' },
+    { state: 'espirito santo', name: 'Espírito Santo', uf: 'ES' },
     { state: 'atlantis', name: 'Atlantis', uf: '' },
   ])('resolves the state "$state" to $name with UF "$uf"', ({ state, name, uf }) => {
     const customer = normalizeEdited((raw) => {
@@ -159,6 +161,8 @@ describe('normalizeCustomer', () => {
     { email: 'luísa.aragão@example.com', slug: 'luisa-aragao' },
     { email: 'abraim.dacosta@example.com', slug: 'abraim-dacosta' },
     { email: 'ana.maria.souza@example.com', slug: 'ana-maria-souza' },
+    { email: 'Ana..Silva.@example.com', slug: 'ana-silva' },
+    { email: 'a/b?c#d@example.com', slug: 'a-b-c-d' },
   ])('turns $email into the slug $slug', ({ email, slug }) => {
     const customer = normalizeEdited((raw) => {
       raw.email = email

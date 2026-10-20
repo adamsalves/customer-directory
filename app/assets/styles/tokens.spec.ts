@@ -1,20 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-
-// The prototype bundle keeps the page as a JSON string in <script type="__bundler/template">.
-// Reading it here, instead of a copied list, makes any drift in names or values fail the test.
-function prototypePage(): string {
-  const html = readFileSync(
-    new URL('../../../docs/design/diretorio-de-membros.html', import.meta.url),
-    'utf8',
-  )
-  const raw = /<script type="__bundler\/template">([\s\S]*?)<\/script>/.exec(html)?.[1]
-  if (raw === undefined) throw new Error('template not found in the prototype bundle')
-  const page: unknown = JSON.parse(raw)
-  if (typeof page !== 'string') throw new Error('prototype template is not a string')
-  return page
-}
+import { prototypePage } from '../../../tests/prototypePage'
 
 const prototype = prototypePage()
 const tokens = readFileSync(new URL('./tokens.scss', import.meta.url), 'utf8').replace(

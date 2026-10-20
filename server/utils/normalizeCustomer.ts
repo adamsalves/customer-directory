@@ -42,9 +42,15 @@ function formatStreet(street: string): string {
     : `${titleCase(streetName)}, ${streetNumber}`
 }
 
-// "eleutério.almeida@example.com" -> "eleuterio-almeida": no accents, ASCII-only URL (ADR-0006)
-function slugFromEmail(email: string): string {
-  return email.replace(/@.*$/, '').normalize('NFD').replace(/\p{M}/gu, '').replaceAll('.', '-')
+// The prototype's slug(): "Eleutério.Almeida" -> "eleuterio-almeida", "são  paulo" -> "sao-paulo".
+// Only [a-z0-9-] survives, so the URL stays ASCII (ADR-0006).
+function slugify(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 // Full years on UTC dates: the source dates are UTC
@@ -65,10 +71,10 @@ function formatTimezone({ offset, description }: IRawCustomer['location']['timez
 // Raw record (lowercase, no id) -> what the UI renders (ADR-0004); slug from the email (ADR-0006).
 export function normalizeCustomer(raw: IRawCustomer, now = new Date()): ICustomer {
   const { name, location } = raw
-  const stateKey = location.state.trim().toLowerCase()
-  const state = BRAZILIAN_STATES.find(({ name: stateName }) => stateName.toLowerCase() === stateKey)
+  const stateSlug = slugify(location.state)
+  const state = BRAZILIAN_STATES.find(({ slug }) => slug === stateSlug)
   return {
-    slug: slugFromEmail(raw.email),
+    slug: slugify(raw.email.replace(/@.*$/, '')),
     name: titleCase(`${name.first} ${name.last}`),
     street: formatStreet(location.street),
     city: titleCase(location.city),

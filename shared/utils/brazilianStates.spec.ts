@@ -1,8 +1,22 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { prototypePage } from '../../tests/prototypePage'
 import { BRAZILIAN_STATES } from './brazilianStates'
 
 describe('BRAZILIAN_STATES', () => {
+  it('has the UF of every state in the prototype map', () => {
+    const map = /const UF = \{([^}]*)\}/.exec(prototypePage())?.[1] ?? ''
+    const prototypeUfs = [...map.matchAll(/'([a-z-]+)': '([A-Z]{2})'/g)].map(([, slug, uf]) => [
+      slug,
+      uf,
+    ])
+
+    expect(prototypeUfs).toHaveLength(27)
+    expect(Object.fromEntries(BRAZILIAN_STATES.map(({ slug, uf }) => [slug, uf]))).toEqual(
+      Object.fromEntries(prototypeUfs),
+    )
+  })
+
   it('lists the 27 states', () => {
     expect(BRAZILIAN_STATES).toHaveLength(27)
   })
