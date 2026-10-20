@@ -2,6 +2,7 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ICustomerCard, ICustomerListResponse } from '#shared/types/customer'
+import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
 import CustomersPage from './index.vue'
 
 const items: ICustomerCard[] = Array.from({ length: 6 }, (_, index) => ({
@@ -24,10 +25,13 @@ const response: ICustomerListResponse = {
 
 // What the page asked the BFF for, one entry per request
 let requests: URLSearchParams[] = []
+let release: (() => void) | undefined
+let gate: Promise<void> | undefined
 let failing = false
 
-registerEndpoint('/api/customers', (event) => {
+registerEndpoint('/api/customers', async (event) => {
   requests.push(new URL(event.path, 'http://localhost').searchParams)
+  await gate
   if (failing) throw createError({ statusCode: 502, statusMessage: 'Bad Gateway' })
   return response
 })
@@ -40,6 +44,8 @@ enableAutoUnmount(afterEach)
 
 beforeEach(() => {
   requests = []
+  release = undefined
+  gate = undefined
   failing = false
 })
 
@@ -103,13 +109,40 @@ describe('customers page', () => {
     ])
   })
 
-  // The error state belongs to #17. Until then a failed request renders no list.
-  it('shows no cards when the request fails', async () => {
+  it('shows busy skeletons instead of the cards while the next page loads', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers' })
+    expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
+    gate = new Promise((resolve) => {
+      release = resolve
+    })
+
+    await navigateTo('/customers?page=2')
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(true)
+    })
+    const skeletons = wrapper.get('[data-testid="customers__skeleton--list"]')
+
+    expect(skeletons.attributes('aria-busy')).toBe('true')
+    expect(skeletons.attributes('aria-label')).toBe('Carregando clientes')
+    expect(skeletons.findAll('li')).toHaveLength(DEFAULT_PER_PAGE)
+    expect(wrapper.find(CARD).exists()).toBe(false)
+
+    release?.()
+    await vi.waitFor(() => {
+      expect(wrapper.findAll(CARD)).toHaveLength(items.length)
+    })
+    expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
+  })
+
+  // The error state belongs to #17. Until then a failed request renders no list and, above all,
+  // no skeleton: its aria-busy would announce a load that never ends.
+  it('shows neither cards nor skeletons when the request fails', async () => {
     failing = true
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
 
     expect(wrapper.find('[data-testid="customers__list--list"]').exists()).toBe(false)
     expect(wrapper.find(CARD).exists()).toBe(false)
+    expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
   })
 
   it('refetches when the page in the URL changes', async () => {

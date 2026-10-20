@@ -1,0 +1,104 @@
+// Same boxes as CustomerCard, so the page does not jump when the data arrives.
+.Skeleton {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-block-size: 310px;
+  padding-block: 39px 40px;
+  padding-inline: 20px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+  animation: global(jsm-pulse) 1.4s ease-in-out infinite;
+}
+
+.Avatar {
+  display: block;
+  flex: 0 0 auto;
+  inline-size: 80px;
+  block-size: 80px;
+  border-radius: 50%;
+  background: var(--muted-bg);
+}
+
+.Bars {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: stretch;
+}
+
+.Name,
+.Street,
+.Location {
+  display: block;
+  background: var(--skeleton);
+}
+
+.Name {
+  inline-size: 176px;
+  max-inline-size: 80%;
+  block-size: 16px;
+  margin-block-start: 24px;
+  border-radius: 8px;
+}
+
+.Street,
+.Location {
+  inline-size: 113px;
+  block-size: 12px;
+  border-radius: 6px;
+}
+
+.Street {
+  margin-block-start: 32px;
+}
+
+.Location {
+  margin-block-start: 16px;
+}
+
+@media (width < 640px) {
+  .Skeleton {
+    flex-direction: row;
+    gap: 16px;
+    min-block-size: 96px;
+    padding: 16px;
+  }
+
+  .Avatar {
+    inline-size: 64px;
+    block-size: 64px;
+  }
+
+  .Bars {
+    flex: 1;
+    gap: 10px;
+    align-items: stretch;
+    align-self: auto;
+  }
+
+  .Name {
+    inline-size: 60%;
+    max-inline-size: none;
+    block-size: 14px;
+    margin-block-start: 0;
+    border-radius: 7px;
+  }
+
+  .Street,
+  .Location {
+    block-size: 10px;
+    margin-block-start: 0;
+    border-radius: 5px;
+  }
+
+  .Street {
+    inline-size: 80%;
+  }
+
+  .Location {
+    inline-size: 50%;
+  }
+}

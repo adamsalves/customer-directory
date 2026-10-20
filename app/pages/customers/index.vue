@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
 import S from './index.module.scss'
 
 // The first row of the grid is on screen at load: its images skip lazy loading and the first one,
@@ -6,14 +7,25 @@ import S from './index.module.scss'
 const EAGER_IMAGES = 4
 
 const { query } = useListQuery()
-const { data } = await useFetch('/api/customers', { query })
+const { data, status } = await useFetch('/api/customers', { query })
 </script>
 
 <template>
   <div>
     <AppBreadcrumb :items="[{ label: 'Home', to: '/customers' }, { label: 'Usuários' }]" />
     <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
-    <ul v-if="data" :class="S.List" data-testid="customers__list--list">
+    <ul
+      v-if="status === 'pending'"
+      aria-busy="true"
+      aria-label="Carregando clientes"
+      :class="S.List"
+      data-testid="customers__skeleton--list"
+    >
+      <li v-for="index in DEFAULT_PER_PAGE" :key="index" :class="S.Item">
+        <CustomerCardSkeleton />
+      </li>
+    </ul>
+    <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
       <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
         <CustomerCard
           :customer="customer"
