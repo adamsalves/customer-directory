@@ -8,7 +8,7 @@ const html = document.documentElement
 const mounted: { unmount: () => void }[] = []
 
 async function mountApp() {
-  const wrapper = await mountSuspended(App, { route: '/clientes' })
+  const wrapper = await mountSuspended(App, { route: '/customers' })
   mounted.push(wrapper)
   return wrapper
 }

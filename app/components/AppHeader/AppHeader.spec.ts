@@ -7,7 +7,7 @@ describe('AppHeader', () => {
     const wrapper = await mountSuspended(AppHeader)
     const link = wrapper.get('[data-testid="header__logo--link"]')
 
-    expect(link.attributes('href')).toBe('/clientes')
+    expect(link.attributes('href')).toBe('/customers')
     expect(link.attributes('aria-label')).toBe('Juntos Somos Mais — início')
   })
 

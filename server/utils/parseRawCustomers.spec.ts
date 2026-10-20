@@ -152,8 +152,9 @@ describe('parseRawCustomers', () => {
     expect(() => parseRawCustomers(payload)).toThrow('no valid record')
   })
 
-  it('returns an empty list for an empty source', () => {
-    expect(parseRawCustomers({ results: [] })).toEqual([])
+  // An empty list would replace the cached one and show no customers for an hour (PR #65 review)
+  it('throws when the source is empty', () => {
+    expect(() => parseRawCustomers({ results: [] })).toThrow('no valid record')
   })
 
   it.each([

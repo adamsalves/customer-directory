@@ -1,6 +1,6 @@
 # 0017. Código em inglês, interface em pt-BR
 
-- **Status:** Aceita (`/membros` e `pages/members/` passam a ser `/clientes` e `pages/customers/` pela [ADR-0020](0020-clientes-em-vez-de-membros.md))
+- **Status:** Aceita (`/membros` e `pages/members/` passam a ser `/clientes` e `pages/customers/` pela [ADR-0020](0020-clientes-em-vez-de-membros.md); a URL pública passa a ser em inglês, `/customers?page=`, pela [ADR-0021](0021-url-publica-em-ingles.md))
 - **Data:** 2026-10-15
 
 ## Contexto

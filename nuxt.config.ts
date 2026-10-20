@@ -32,9 +32,16 @@ export default defineNuxtConfig({
   },
   routeRules: {
     // The root has no page of its own: the list is the home, as in the prototype (#9)
-    '/': { redirect: '/clientes' },
+    '/': { redirect: '/customers' },
+    // The list lived at /clientes up to v0.2.0 (ADR-0021)
+    '/clientes': { redirect: '/customers' },
     // Font files never change in place: a new font ships under a new file name
     '/fonts/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
+  },
+  // Server-only. NUXT_CUSTOMERS_URL overrides it at runtime, which is how the API integration
+  // spec points the server at a local copy of the fixture instead of S3 (ADR-0009).
+  runtimeConfig: {
+    customersUrl: 'https://jsm-challenges.s3.amazonaws.com/frontend-challenge.json',
   },
   // Root tool configs, E2E specs and spec helpers in tests/ need a tsconfig for the type-aware rules
   typescript: {

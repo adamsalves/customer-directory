@@ -6,7 +6,7 @@ import S from './AppHeader.module.scss'
   <header :class="S.Header">
     <div :class="S.Inner">
       <NuxtLink
-        to="/clientes"
+        to="/customers"
         aria-label="Juntos Somos Mais — início"
         aria-current-value="false"
         :class="S.Logo"

@@ -1,8 +1,5 @@
 import type { IRawCustomer } from '#shared/types/customer'
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
+import { isRecord } from '#shared/utils/isRecord'
 
 function isDateString(value: unknown): value is string {
   return typeof value === 'string' && !Number.isNaN(Date.parse(value))
@@ -44,7 +41,8 @@ export function isRawCustomer(value: unknown): value is IRawCustomer {
 }
 
 // A payload that is not { results: [] } throws; a single invalid record is dropped and logged.
-// If every record is invalid it throws too: returning [] would overwrite the cached list (ADR-0005).
+// If no record survives (an empty source included) it throws too: returning [] would overwrite
+// the cached list for an hour (ADR-0005).
 export function parseRawCustomers(payload: unknown): IRawCustomer[] {
   if (!isRecord(payload) || !Array.isArray(payload.results)) {
     throw new Error('Invalid customers payload: expected { results: [] }')
@@ -54,7 +52,7 @@ export function parseRawCustomers(payload: unknown): IRawCustomer[] {
     console.warn(`[parseRawCustomers] dropped invalid record at index ${String(index)}`)
     return []
   })
-  if (customers.length === 0 && payload.results.length > 0) {
+  if (customers.length === 0) {
     throw new Error('Invalid customers payload: no valid record')
   }
   return customers

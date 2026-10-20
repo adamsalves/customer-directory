@@ -24,3 +24,4 @@ Formato de Michael Nygard, em pt-BR: **Status · Contexto · Decisão · Consequ
 | [0018](0018-npm-como-gerenciador-de-pacotes.md)    | npm como gerenciador de pacotes                              | Aceita |
 | [0019](0019-sass-embedded-como-compilador-scss.md) | sass-embedded como compilador do SCSS                        | Aceita |
 | [0020](0020-clientes-em-vez-de-membros.md)         | "Clientes" em vez de "membros"                               | Aceita |
+| [0021](0021-url-publica-em-ingles.md)              | URL pública em inglês                                        | Aceita |

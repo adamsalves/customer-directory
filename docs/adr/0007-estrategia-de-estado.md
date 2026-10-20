@@ -1,6 +1,6 @@
 # 0007. Estratégia de estado
 
-- **Status:** Aceita
+- **Status:** Aceita (as chaves da URL passam a ser em inglês, `?search=&states=&gender=&sort=&page=&perPage=`, pela [ADR-0021](0021-url-publica-em-ingles.md))
 - **Data:** 2026-10-15
 
 ## Contexto

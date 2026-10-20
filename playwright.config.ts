@@ -29,7 +29,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run build && node .output/server/index.mjs',
     // A real page, not `/`: a broken root redirect must fail its test, not time out the server
-    url: `${baseURL}/clientes`,
+    url: `${baseURL}/customers`,
     env: { PORT: String(port) },
     timeout: 180_000,
   },
