@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import AppBreadcrumb, { type IBreadcrumbItem } from './AppBreadcrumb.vue'
 
 const items: IBreadcrumbItem[] = [
-  { label: 'Home', to: '/clientes' },
-  { label: 'Usuários', to: '/clientes?pagina=2' },
+  { label: 'Home', to: '/customers' },
+  { label: 'Usuários', to: '/customers?page=2' },
   { label: 'Detalhes' },
 ]
 
@@ -22,8 +22,8 @@ describe('AppBreadcrumb', () => {
     const links = wrapper.findAll('[data-testid="breadcrumb__item--link"]')
 
     expect(links.map((link) => [link.text(), link.attributes('href')])).toEqual([
-      ['Home', '/clientes'],
-      ['Usuários', '/clientes?pagina=2'],
+      ['Home', '/customers'],
+      ['Usuários', '/customers?page=2'],
     ])
   })
 
@@ -54,7 +54,7 @@ describe('AppBreadcrumb', () => {
   it('keeps a step without target as plain text', async () => {
     const wrapper = await mountSuspended(AppBreadcrumb, {
       props: {
-        items: [{ label: 'Home', to: '/clientes' }, { label: 'Sem link' }, { label: 'Fim' }],
+        items: [{ label: 'Home', to: '/customers' }, { label: 'Sem link' }, { label: 'Fim' }],
       },
     })
 
@@ -68,8 +68,8 @@ describe('AppBreadcrumb', () => {
     const wrapper = await mountSuspended(AppBreadcrumb, {
       props: {
         items: [
-          { label: 'Home', to: '/clientes' },
-          { label: 'Fim', to: '/clientes?pagina=2' },
+          { label: 'Home', to: '/customers' },
+          { label: 'Fim', to: '/customers?page=2' },
         ],
       },
     })

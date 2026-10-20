@@ -30,11 +30,11 @@ npm run test:e2e    # playwright
 - `shared/` — types and utils used by both sides (`listQuery`, `brazilianStates`, `pageList`).
 - `app/` — pages, layouts, components (`app/components/Name/Name.vue` + `Name.module.scss`), composables.
 - **State:** the URL is the source of truth for the list (search, filters, sort, page). Server state lives in `useFetch`. `useState` is only for theme and toast. No global store (ADR-0007).
-- `parseListQuery` in `shared/utils/listQuery.ts` is the **only** place that maps the pt-BR public URL to the English `IListQuery`.
+- `parseListQuery` in `shared/utils/listQuery.ts` is the **only** place that validates the URL query into `IListQuery` (same keys, ADR-0021).
 
 ## 4. Hard rules
 
-- **Language:** code, identifiers, files, CSS classes, `data-testid`, comments and commits in **English**. Everything the user sees (labels, `aria-label`, toasts, meta, **public URL** like `/clientes?busca=`) in **pt-BR**. Docs (ADRs, README, issues, PRs, `ai-journey/`) in pt-BR.
+- **Language:** code, identifiers, files, CSS classes, `data-testid`, comments, commits and **URLs** (`/customers?page=2`, ADR-0021) in **English**. Everything the user reads on screen (labels, `aria-label`, toasts, meta) in **pt-BR**. Docs (ADRs, README, issues, PRs, `ai-journey/`) in pt-BR.
 - **Honest typing** (ADR-0016) — forbidden, with the alternative:
   | Forbidden                                                              | Do instead                                                          |
   | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |

@@ -1,6 +1,6 @@
 # 0006. Slug do cliente a partir do email
 
-- **Status:** Aceita (rota `/membros` passa a ser `/clientes` pela [ADR-0020](0020-clientes-em-vez-de-membros.md))
+- **Status:** Aceita (rota `/membros` passa a ser `/clientes` pela [ADR-0020](0020-clientes-em-vez-de-membros.md) e `/customers` pela [ADR-0021](0021-url-publica-em-ingles.md))
 - **Data:** 2026-10-15
 
 ## Contexto

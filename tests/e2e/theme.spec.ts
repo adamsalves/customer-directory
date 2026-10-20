@@ -32,7 +32,7 @@ test('with no cookie and a dark system, the page opens dark without a flash', as
     window.__themeChanges = changes
   })
 
-  await page.goto('/clientes')
+  await page.goto('/customers')
   await waitForHydration(page)
 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
@@ -49,7 +49,7 @@ test('clicking the toggle saves the cookie and a reload keeps the theme', async 
   page,
   context,
 }) => {
-  await page.goto('/clientes')
+  await page.goto('/customers')
   await waitForHydration(page)
 
   await page.getByTestId('header__theme--toggle').click()
@@ -74,14 +74,14 @@ test('clicking the toggle saves the cookie and a reload keeps the theme', async 
 })
 
 test('a request with the cookie gets the theme in the server HTML', async ({ page }) => {
-  const response = await page.request.get('/clientes', { headers: { cookie: 'jsm-theme=dark' } })
+  const response = await page.request.get('/customers', { headers: { cookie: 'jsm-theme=dark' } })
 
   expect(response.status()).toBe(200)
   expect(await response.text()).toMatch(/<html[^>]*data-theme="dark"/)
 })
 
 test('the keyboard reaches the toggle after the skip link and the logo', async ({ page }) => {
-  await page.goto('/clientes')
+  await page.goto('/customers')
   await waitForHydration(page)
 
   await page.keyboard.press('Tab')

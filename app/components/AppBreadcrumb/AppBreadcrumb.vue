@@ -37,7 +37,7 @@ defineProps<{
         >
           {{ item.label }}
         </span>
-        <!-- RouterLink marks an exact-active link as the current page (Home on /clientes);
+        <!-- RouterLink marks an exact-active link as the current page (Home on /customers);
              in a trail only the last step is current -->
         <NuxtLink
           v-else-if="item.to"

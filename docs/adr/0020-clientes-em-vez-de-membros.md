@@ -1,6 +1,6 @@
 # 0020. "Clientes" em vez de "membros"
 
-- **Status:** Aceita
+- **Status:** Aceita (a URL `/clientes` passa a ser `/customers` pela [ADR-0021](0021-url-publica-em-ingles.md))
 - **Data:** 2026-10-17
 
 ## Contexto
