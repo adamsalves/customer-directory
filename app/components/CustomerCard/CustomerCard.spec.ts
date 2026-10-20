@@ -18,10 +18,13 @@ const IMAGE = '[data-testid="customer-card__avatar--image"]'
 const ROW = '[data-testid="customer-card__location--row"]'
 
 describe('CustomerCard', () => {
-  it('names the customer in a heading and shows the street', async () => {
+  it('names the customer in a heading inside an article and shows the street', async () => {
     const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
     const name = wrapper.get('[data-testid="customer-card__name--heading"]')
 
+    expect(wrapper.get('[data-testid="customer-card__root--article"]').element.tagName).toBe(
+      'ARTICLE',
+    )
     expect(name.element.tagName).toBe('H2')
     expect(name.text()).toBe('Alejandra Rodrigues')
     expect(wrapper.get('[data-testid="customer-card__street--text"]').text()).toBe(
@@ -29,8 +32,9 @@ describe('CustomerCard', () => {
     )
   })
 
-  // CSS shows one of the two locations per width (ADR-0014)
-  it('renders the location on two lines for the grid and on one for the row', async () => {
+  // CSS shows one of the two locations per width (ADR-0014); happy-dom applies no media query,
+  // so which one is visible is covered by the E2E (#18)
+  it('renders the grid and row versions of the location', async () => {
     const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
     const grid = wrapper.get('[data-testid="customer-card__location--grid"]')
 
