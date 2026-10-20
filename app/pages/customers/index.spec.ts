@@ -1,6 +1,6 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ICustomerCard, ICustomerListResponse } from '#shared/types/customer'
 import CustomersPage from './index.vue'
 
@@ -28,7 +28,7 @@ let failing = false
 
 registerEndpoint('/api/customers', (event) => {
   requests.push(new URL(event.path, 'http://localhost').searchParams)
-  if (failing) throw new Error('the source is down')
+  if (failing) throw createError({ statusCode: 502, statusMessage: 'Bad Gateway' })
   return response
 })
 
@@ -108,6 +108,16 @@ describe('customers page', () => {
     failing = true
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
 
+    expect(wrapper.find('[data-testid="customers__list--list"]').exists()).toBe(false)
     expect(wrapper.find(CARD).exists()).toBe(false)
+  })
+
+  it('refetches when the page in the URL changes', async () => {
+    await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+    await useListQuery().setQuery({ page: 3, perPage: 9 })
+
+    await vi.waitFor(() => {
+      expect(requests.map(String)).toEqual(['page=2&perPage=9', 'page=3&perPage=9'])
+    })
   })
 })

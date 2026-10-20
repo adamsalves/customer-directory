@@ -6,8 +6,14 @@ export function useListQuery() {
   const route = useRoute()
   const router = useRouter()
 
-  const query = computed(() => parseListQuery(route.query))
+  // Every navigation brings a new route.query, a hash-only one too (the skip link). Keeping the
+  // previous object while the parsed value is the same stops useFetch from refetching it.
+  const query = computed<IListQuery>((previous) => {
+    const next = parseListQuery(route.query)
+    return previous && JSON.stringify(previous) === JSON.stringify(next) ? previous : next
+  })
 
+  // Takes the whole list state and writes its canonical URL: keys outside IListQuery are dropped
   function setQuery(next: IListQuery) {
     return router.push({ query: serializeListQuery(next) })
   }

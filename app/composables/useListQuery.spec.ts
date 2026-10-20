@@ -31,6 +31,19 @@ describe('useListQuery', () => {
     expect(query.value).toStrictEqual({ page: 3, perPage: 18 })
   })
 
+  // A new object would make useFetch refetch the same page
+  it('keeps the same query when only the hash or an unknown key changes', async () => {
+    await navigateTo('/customers?page=2')
+    const { query } = useListQuery()
+    const before = query.value
+
+    await navigateTo('/customers?page=2#conteudo')
+    expect(query.value).toBe(before)
+
+    await navigateTo('/customers?page=2&foo=1')
+    expect(query.value).toBe(before)
+  })
+
   // ADR-0007: the back button returns to the previous list state, so setQuery pushes
   it('pushes a history entry', async () => {
     await navigateTo('/customers?page=2')
