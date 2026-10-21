@@ -34,5 +34,8 @@ const { data, status } = await useFetch('/api/customers', { query })
         />
       </li>
     </ul>
+    <!-- Outside the skeleton/list branches, so it stays mounted (and keeps the focus on the link or
+         the select just used) while the next page loads; `data` holds the previous answer until then -->
+    <PaginationNav v-if="data" :page="data.page" :total-pages="data.totalPages" />
   </div>
 </template>

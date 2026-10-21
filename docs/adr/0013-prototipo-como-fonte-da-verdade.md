@@ -31,6 +31,8 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `UTC0:00` para offset da fonte sem sinal            | `UTC+0:00`                                 | todo offset com sinal explícito                 |
 | nome do card em `<span>`                            | `<h2>`                                     | navegação por títulos no leitor de tela         |
 | hover do card (`style-hover`) em qualquer ponteiro  | só com `(hover: hover)`, a partir de 640px | toque não deixa o card preso no estado de hover |
+| páginas e setas da paginação em `<button>`          | links `NuxtLink` com a query na URL        | cada página tem seu endereço (ADR-0007)         |
+| reticência no lugar de uma página só                | o número da página: `1 2 3 4 5 … 8`        | a reticência só vale para duas páginas ou mais  |
 
 ## Consequências
 

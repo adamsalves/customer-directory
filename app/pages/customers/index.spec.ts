@@ -38,6 +38,7 @@ registerEndpoint('/api/customers', async (event) => {
 
 const CARD = '[data-testid="customer-card__root--article"]'
 const IMAGE = '[data-testid="customer-card__avatar--image"]'
+const NAV = '[data-testid="pagination__root--nav"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
 enableAutoUnmount(afterEach)
@@ -133,6 +134,38 @@ describe('customers page', () => {
       expect(wrapper.findAll(CARD)).toHaveLength(items.length)
     })
     expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
+  })
+
+  // The BFF answers a page past the end with the last one (page 2 of 4 in this mock), so the
+  // nav marks what it answered with, not the 999 of the URL
+  it('marks the page the BFF answered with, not the one in the URL', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=999' })
+
+    expect(wrapper.get('[data-testid="pagination__current--number"]').text()).toBe('2')
+    expect(wrapper.get('[data-testid="pagination__full--list"]').findAll('li')).toHaveLength(
+      response.totalPages,
+    )
+  })
+
+  // The link or the select just used keeps the focus only if it is not unmounted
+  it('keeps the pagination mounted while the next page loads', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers' })
+    const nav = wrapper.get(NAV).element
+    gate = new Promise((resolve) => {
+      release = resolve
+    })
+
+    await navigateTo('/customers?page=2')
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(true)
+    })
+
+    expect(wrapper.get(NAV).element).toBe(nav)
+    release?.()
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
+    })
+    expect(wrapper.get(NAV).element).toBe(nav)
   })
 
   // The error state belongs to #17. Until then a failed request renders no list and, above all,

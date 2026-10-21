@@ -1,0 +1,163 @@
+// Targets are 32px wide and 40px tall from 960px and 44px below it, as in the prototype.
+// Both page lists are in the HTML; CSS shows the compact one below 640px (ADR-0014).
+.Root {
+  --pg-size: 32px;
+  --pg-height: 40px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  margin-block-start: 24px;
+  container-type: inline-size;
+}
+
+.Nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.List {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.Compact {
+  display: none;
+}
+
+.Arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--pg-size);
+  block-size: var(--pg-size);
+  border-radius: 50%;
+}
+
+.Active {
+  background: var(--primary-bg);
+  color: var(--primary-text);
+}
+
+.Active:hover {
+  background: var(--primary-bg-hover);
+}
+
+.Inactive {
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
+}
+
+.Chevron {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.Item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--pg-size);
+  block-size: var(--pg-height);
+  padding-inline: 4px;
+  font-size: 14px;
+}
+
+// Unlayered, so these win over the `a` and `a:hover` colors of the base layer.
+.Link {
+  border-radius: 4px;
+  color: var(--text-count);
+  text-decoration: none;
+}
+
+.Link:hover {
+  background: var(--surface-alt);
+  color: var(--text-strong);
+}
+
+.Current {
+  color: var(--page-current);
+  font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--page-underline);
+}
+
+.Gap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 24px;
+  block-size: var(--pg-height);
+  color: var(--placeholder);
+  font-size: 14px;
+}
+
+// Read by screen readers, invisible to everyone else
+.VisuallyHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.PerPage {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.Select {
+  padding-block: 4px;
+  padding-inline: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+// The widest compact list ("1 2 3 … 23") is 328px wide. Below that its gaps go and the ellipsis
+// narrows, so it fits in 288px (a 320px screen) with every target still at 44px.
+@container (width < 328px) {
+  .Nav,
+  .List {
+    gap: 0;
+  }
+
+  .Gap {
+    inline-size: 16px;
+  }
+}
+
+@media (width < 960px) {
+  .Root {
+    --pg-size: 44px;
+    --pg-height: 44px;
+  }
+}
+
+@media (width < 640px) {
+  .Full {
+    display: none;
+  }
+
+  .Compact {
+    display: flex;
+  }
+}

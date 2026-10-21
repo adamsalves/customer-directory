@@ -1,0 +1,143 @@
+<script setup lang="ts">
+import { PER_PAGE_OPTIONS, parseListQuery, serializeListQuery } from '#shared/utils/listQuery'
+import { pageList } from '#shared/utils/pageList'
+import S from './PaginationNav.module.scss'
+
+// Both props come from the BFF answer, never from the URL: a page past the end is clamped there
+const props = defineProps<{
+  page: number
+  totalPages: number
+}>()
+
+const { query, setQuery } = useListQuery()
+const perPageId = useId()
+
+// Both lists are in the HTML and CSS shows one per width (ADR-0014)
+const lists = computed(() =>
+  [false, true].map((compact) => ({
+    compact,
+    items: pageList(props.page, props.totalPages, compact),
+  })),
+)
+
+// The list state with another page: the page size stays, the defaults stay out of the URL.
+// RouterLink treats every link to this route as exact-active (it ignores the query), so each link
+// sets aria-current-value="false", and the current page is a span with a fixed aria-current. ARIA
+// 1.2 bars a name on a span, so what a screen reader says ("Página 4, atual") is hidden text.
+function pageLink(page: number) {
+  return { query: serializeListQuery({ ...query.value, page }) }
+}
+
+// Another page size starts over from page 1. The value goes back through the URL validator.
+async function changePerPage(event: Event) {
+  const { target } = event
+  if (!(target instanceof HTMLSelectElement)) return
+  const { perPage } = parseListQuery({ perPage: target.value })
+  await setQuery({ ...query.value, page: 1, perPage })
+}
+</script>
+
+<template>
+  <div :class="S.Root">
+    <nav aria-label="Paginação" :class="S.Nav" data-testid="pagination__root--nav">
+      <NuxtLink
+        v-if="page > 1"
+        :to="pageLink(page - 1)"
+        aria-label="Página anterior"
+        aria-current-value="false"
+        :class="[S.Arrow, S.Active]"
+        data-testid="pagination__prev--link"
+      >
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" :class="S.Chevron">
+          <path d="M15 6l-6 6 6 6"></path>
+        </svg>
+      </NuxtLink>
+      <span
+        v-else
+        aria-hidden="true"
+        :class="[S.Arrow, S.Inactive]"
+        data-testid="pagination__prev--text"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" :class="S.Chevron">
+          <path d="M15 6l-6 6 6 6"></path>
+        </svg>
+      </span>
+      <ol
+        v-for="list in lists"
+        :key="String(list.compact)"
+        :class="[S.List, list.compact ? S.Compact : S.Full]"
+        :data-testid="list.compact ? 'pagination__compact--list' : 'pagination__full--list'"
+      >
+        <li
+          v-for="(item, index) in list.items"
+          :key="item === '…' ? `gap-${index}` : item"
+          :aria-hidden="item === '…' ? 'true' : undefined"
+          data-testid="pagination__page--item"
+        >
+          <span v-if="item === '…'" :class="S.Gap">…</span>
+          <span
+            v-else-if="item === page"
+            aria-current="page"
+            :class="[S.Item, S.Current]"
+            data-testid="pagination__current--text"
+          >
+            <span :class="S.VisuallyHidden" data-testid="pagination__current--label">
+              Página {{ item }}, atual
+            </span>
+            <span aria-hidden="true" data-testid="pagination__current--number">{{ item }}</span>
+          </span>
+          <NuxtLink
+            v-else
+            :to="pageLink(item)"
+            :aria-label="`Página ${item}`"
+            aria-current-value="false"
+            :class="[S.Item, S.Link]"
+            data-testid="pagination__page--link"
+          >
+            {{ item }}
+          </NuxtLink>
+        </li>
+      </ol>
+      <NuxtLink
+        v-if="page < totalPages"
+        :to="pageLink(page + 1)"
+        aria-label="Próxima página"
+        aria-current-value="false"
+        :class="[S.Arrow, S.Active]"
+        data-testid="pagination__next--link"
+      >
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" :class="S.Chevron">
+          <path d="M9 6l6 6-6 6"></path>
+        </svg>
+      </NuxtLink>
+      <span
+        v-else
+        aria-hidden="true"
+        :class="[S.Arrow, S.Inactive]"
+        data-testid="pagination__next--text"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" :class="S.Chevron">
+          <path d="M9 6l6 6-6 6"></path>
+        </svg>
+      </span>
+    </nav>
+    <div :class="S.PerPage">
+      <label :for="perPageId" data-testid="pagination__per-page--label">Itens por página</label>
+      <select
+        :id="perPageId"
+        :class="S.Select"
+        data-testid="pagination__per-page--select"
+        @change="changePerPage"
+      >
+        <option
+          v-for="option in PER_PAGE_OPTIONS"
+          :key="option"
+          :value="option"
+          :selected="option === query.perPage"
+        >
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </div>
+</template>
