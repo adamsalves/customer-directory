@@ -1,7 +1,9 @@
-// Page numbers of the pagination nav, with '…' where pages are left out. Compact keeps the first,
-// the current and the last page; the normal list also keeps the neighbours, and the first or last
-// four pages while the current one is near an end. Same selection as the prototype's pageList, but
-// a gap of a single page shows that page: '…' never stands for just one (the prototype shows it).
+// Page numbers of the pagination nav, with '…' where pages are left out. The compact list keeps
+// only the first, the current and the last page, and only with more than 5 pages: up to 5 it shows
+// them all. The normal list shows them all up to 7; beyond that it keeps the first and the last
+// page, the neighbours of the current one, and the first or last four pages while the current one
+// is near an end. Same selection as the prototype's pageList, but a gap of a single page shows
+// that page: '…' never stands for just one (the prototype shows it).
 export function pageList(current: number, total: number, compact: boolean): Array<number | '…'> {
   let pages: number[]
   if (compact && total > 5) {

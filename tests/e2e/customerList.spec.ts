@@ -29,8 +29,9 @@ const pageTwoLink = (page: Page) =>
   page.getByRole('navigation', { name: 'Paginação' }).getByRole('link', { name: 'Página 2' })
 
 // The fixture has 3 pages, too few for an ellipsis, so the next answer claims 23: the widest
-// compact list ("1 2 3 … 23") has to fit a 320px screen
-test('the widest compact list fits a 320px screen', async ({ page }) => {
+// compact list with an ellipsis ("1 2 3 … 23") has to fit a 320px screen. Up to 5 pages the compact
+// list shows every number and does not fit one yet (#20).
+test('the widest compact list with an ellipsis fits a 320px screen', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 })
   await page.goto('/customers')
   await page.route(/\/api\/customers\?/, (route) =>

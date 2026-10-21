@@ -1,5 +1,5 @@
-// Targets are 32px wide and 40px tall from 960px and 44px below it, as in the prototype.
-// Both page lists are in the HTML; CSS shows the compact one below 640px (ADR-0014).
+// Targets are 44px below 960px. From 960px the arrows are 32×32 and the page links 32×40, as in the
+// prototype. Both page lists are in the HTML; CSS shows the compact one below 640px (ADR-0014).
 .Root {
   --pg-size: 32px;
   --pg-height: 40px;
@@ -45,10 +45,6 @@
   color: var(--primary-text);
 }
 
-.Active:hover {
-  background: var(--primary-bg-hover);
-}
-
 .Inactive {
   background: var(--disabled-bg);
   color: var(--disabled-fg);
@@ -77,11 +73,6 @@
   border-radius: 4px;
   color: var(--text-count);
   text-decoration: none;
-}
-
-.Link:hover {
-  background: var(--surface-alt);
-  color: var(--text-strong);
 }
 
 .Current {
@@ -132,16 +123,26 @@
   cursor: pointer;
 }
 
-// The widest compact list ("1 2 3 … 23") is 328px wide. Below that its gaps go and the ellipsis
-// narrows, so it fits in 288px (a 320px screen) with every target still at 44px.
+// Hover only where a pointer can hover, so a tap does not leave a button in that state (ADR-0013)
+@media (hover: hover) {
+  .Active:hover {
+    background: var(--primary-bg-hover);
+  }
+
+  .Link:hover {
+    background: var(--surface-alt);
+    color: var(--text-strong);
+  }
+}
+
+// The widest compact list with an ellipsis ("1 2 3 … 23") is 328px wide. Below that container
+// width its gaps go, so it fits in 288px (a 320px screen) with every target still at 44px. Up to
+// 5 pages the compact list shows every number ("1 2 3 4 5" is 308px even with no gaps) and does
+// not fit a 320px screen: #20.
 @container (width < 328px) {
   .Nav,
   .List {
     gap: 0;
-  }
-
-  .Gap {
-    inline-size: 16px;
   }
 }
 

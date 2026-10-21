@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import PaginationNav from './PaginationNav.vue'
 
 const FULL = '[data-testid="pagination__full--list"]'
@@ -19,7 +19,7 @@ const mountNav = (page: number, totalPages: number, route = '/customers') =>
   mountSuspended(PaginationNav, { props: { page, totalPages }, route })
 
 // CSS shows one of the two lists per width (ADR-0014); happy-dom applies no media query, so which
-// one is visible is covered by the E2E (#18)
+// one is visible is covered by the E2E in tests/e2e/customerList.spec.ts
 describe('PaginationNav', () => {
   it('labels the navigation landmark', async () => {
     const nav = (await mountNav(3, 8)).get('[data-testid="pagination__root--nav"]')
@@ -159,12 +159,14 @@ describe('PaginationNav', () => {
   it('ignores a change that does not come from the select itself', async () => {
     const wrapper = await mountNav(3, 8, '/customers?page=3')
     const push = vi.spyOn(useRouter(), 'push')
+    onTestFinished(() => {
+      push.mockRestore()
+    })
 
     await wrapper.get(`${SELECT} option[value="54"]`).trigger('change')
     expect(push).not.toHaveBeenCalled()
 
     await wrapper.get(SELECT).trigger('change')
     expect(push).toHaveBeenCalledOnce()
-    push.mockRestore()
   })
 })
