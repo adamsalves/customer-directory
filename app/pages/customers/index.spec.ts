@@ -116,7 +116,8 @@ describe('customers page', () => {
       release = resolve
     })
 
-    await navigateTo('/customers?page=2')
+    // Not the default page size: the skeleton count stays at 9 whatever perPage asks for
+    await navigateTo('/customers?page=2&perPage=18')
     await vi.waitFor(() => {
       expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(true)
     })

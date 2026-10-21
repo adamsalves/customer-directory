@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import CustomerCardSkeleton from './CustomerCardSkeleton.vue'
 
 describe('CustomerCardSkeleton', () => {
-  it('is hidden from assistive technology, the list around it says it is busy', async () => {
+  it('is hidden from assistive technology', async () => {
     const wrapper = await mountSuspended(CustomerCardSkeleton)
 
     expect(
