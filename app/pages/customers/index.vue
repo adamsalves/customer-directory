@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
+import { RESULTS_ID } from '~/utils/resultsScroll'
 import S from './index.module.scss'
 
 // The first row of the grid is on screen at load: its images skip lazy loading and the first one,
@@ -16,6 +17,7 @@ const { data, status } = await useFetch('/api/customers', { query })
     <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
     <ul
       v-if="status === 'pending'"
+      :id="RESULTS_ID"
       aria-busy="true"
       aria-label="Carregando clientes"
       :class="S.List"
@@ -25,7 +27,7 @@ const { data, status } = await useFetch('/api/customers', { query })
         <CustomerCardSkeleton />
       </li>
     </ul>
-    <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
+    <ul v-else-if="data" :id="RESULTS_ID" :class="S.List" data-testid="customers__list--list">
       <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
         <CustomerCard
           :customer="customer"

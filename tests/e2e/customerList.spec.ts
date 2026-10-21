@@ -28,6 +28,23 @@ test('the pagination marks only the current page', async ({ page }) => {
 const pageTwoLink = (page: Page) =>
   page.getByRole('navigation', { name: 'Paginação' }).getByRole('link', { name: 'Página 2' })
 
+// toBeInViewport would also pass for a card under the sticky header, so the top of the list is
+// measured against the header: it settles 24px below it (the scroll is smooth)
+test('changing page brings the top of the list back under the header', async ({ page }) => {
+  await page.goto('/customers')
+  await pageTwoLink(page).click()
+  await expect(page).toHaveURL(/page=2/)
+
+  const header = await page.getByRole('banner').boundingBox()
+  const list = page.getByTestId('customers__list--list')
+  await expect
+    .poll(async () => {
+      const box = await list.boundingBox()
+      return box && header ? Math.round(box.y - (header.y + header.height)) : undefined
+    })
+    .toBe(24)
+})
+
 // The fixture has 3 pages, too few for an ellipsis, so the next answer claims 23: the widest
 // compact list with an ellipsis ("1 2 3 … 23") has to fit a 320px screen. Up to 5 pages the compact
 // list shows every number and does not fit one yet (#20).

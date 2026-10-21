@@ -3,6 +3,7 @@ import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ICustomerCard, ICustomerListResponse } from '#shared/types/customer'
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
+import { RESULTS_ID } from '~/utils/resultsScroll'
 import CustomersPage from './index.vue'
 
 const items: ICustomerCard[] = Array.from({ length: 6 }, (_, index) => ({
@@ -88,6 +89,13 @@ describe('customers page', () => {
     expect(names).toEqual(items.map((item) => item.name))
   })
 
+  // A page change scrolls back to the element with this id, whether it is the list or its skeleton
+  it('marks the list as the results the page change scrolls to', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+
+    expect(wrapper.get('[data-testid="customers__list--list"]').attributes('id')).toBe(RESULTS_ID)
+  })
+
   it('loads the first row of images eagerly and only the first with high priority', async () => {
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
     const images = wrapper.findAll(IMAGE)
@@ -124,6 +132,7 @@ describe('customers page', () => {
     })
     const skeletons = wrapper.get('[data-testid="customers__skeleton--list"]')
 
+    expect(skeletons.attributes('id')).toBe(RESULTS_ID)
     expect(skeletons.attributes('aria-busy')).toBe('true')
     expect(skeletons.attributes('aria-label')).toBe('Carregando clientes')
     expect(skeletons.findAll('li')).toHaveLength(DEFAULT_PER_PAGE)

@@ -15,6 +15,9 @@
   margin: 0;
   padding: 0;
   list-style: none;
+
+  // A page change scrolls here; with the header's scroll-padding on <html> this leaves 24px of air
+  scroll-margin-block-start: 24px;
 }
 
 // A flex item per cell, so the card inside stretches to the height of its row
