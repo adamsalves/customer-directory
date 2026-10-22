@@ -65,7 +65,9 @@ npm run test:e2e    # playwright
 - PR body follows `.github/pull_request_template.md`. Issue body follows `.github/ISSUE_TEMPLATE/`.
 - Conventional Commits in English. Never use `--no-verify`.
 - Every new decision becomes an ADR in `docs/adr/`.
-- Update `ai-journey/` when a milestone closes.
+- Post the approved plan as a comment on the issue before implementing (measurer facts, approach, planned tests, estimated lines, out of scope).
+- Before merging, add the issue's entry to `ai-journey/registro.md` in the same PR (decided, plan, how, result with what the review changed, pending).
+- Update the rest of `ai-journey/` when a milestone closes.
 - **Never push, publish issues/releases, change repo settings or deploy without an explicit request.**
 
 ## 7. Definition of done
