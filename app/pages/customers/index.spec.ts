@@ -44,9 +44,16 @@ const LIST = '[data-testid="customers__list--list"]'
 const CARD = '[data-testid="customer-card__root--article"]'
 const IMAGE = '[data-testid="customer-card__avatar--image"]'
 const NAV = '[data-testid="pagination__root--nav"]'
+const ERROR = '[data-testid="customers__error--alert"]'
+const RETRY = '[data-testid="customers__retry--button"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
 enableAutoUnmount(afterEach)
+
+function htmlElement(element: Element): HTMLElement {
+  if (!(element instanceof HTMLElement)) throw new Error('the element is not an HTML element')
+  return element
+}
 
 beforeEach(() => {
   requests = []
@@ -197,16 +204,86 @@ describe('customers page', () => {
     expect(wrapper.get(NAV).element).toBe(nav)
   })
 
-  // The error state belongs to #17. Until then a failed request renders no list and, above all,
-  // no skeleton: its aria-busy would announce a load that never ends. Nor an empty results region.
-  it('shows neither cards nor skeletons when the request fails', async () => {
+  // A failed request ends in the error, inside the results, and above all not in a skeleton: its
+  // aria-busy would announce a load that never ends. No list and no pagination either.
+  it('shows only the error state when the request fails', async () => {
     failing = true
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+    const error = wrapper.get(ERROR)
 
+    expect(error.attributes('role')).toBe('alert')
+    expect(wrapper.get(RESULTS).element.contains(error.element)).toBe(true)
+    expect(error.get('h2').text()).toBe('Não foi possível carregar os clientes')
+    expect(error.get('p').text()).toBe(
+      'Verifique sua conexão e tente novamente. Seus filtros serão mantidos.',
+    )
+    expect(error.get(RETRY).text()).toBe('Tentar novamente')
     expect(wrapper.find(LIST).exists()).toBe(false)
     expect(wrapper.find(CARD).exists()).toBe(false)
     expect(wrapper.find(SKELETON).exists()).toBe(false)
-    expect(wrapper.find(RESULTS).exists()).toBe(false)
+    expect(wrapper.find(NAV).exists()).toBe(false)
+  })
+
+  // The client retries a GET on a 502, so a failure takes more than one request. Their number is
+  // not asserted, only that every one of them, the retry included, asks for the same page
+  it('retries the same query and shows the cards when the retry succeeds', async () => {
+    failing = true
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+    const failed = requests.length
+    failing = false
+
+    await wrapper.get(RETRY).trigger('click')
+    await vi.waitFor(() => {
+      expect(wrapper.findAll(CARD)).toHaveLength(items.length)
+    })
+
+    expect(requests.length).toBeGreaterThan(failed)
+    expect(new Set(requests.map(String))).toEqual(new Set(['page=2&perPage=9']))
+    expect(wrapper.find(ERROR).exists()).toBe(false)
+    expect(wrapper.find(NAV).exists()).toBe(true)
+  })
+
+  it('shows the skeletons, not the error, while the retry loads', async () => {
+    failing = true
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+    failing = false
+    gate = new Promise((resolve) => {
+      release = resolve
+    })
+
+    await wrapper.get(RETRY).trigger('click')
+    await vi.waitFor(() => {
+      expect(wrapper.find(SKELETON).exists()).toBe(true)
+    })
+
+    expect(wrapper.find(ERROR).exists()).toBe(false)
+    release?.()
+    await vi.waitFor(() => {
+      expect(wrapper.findAll(CARD)).toHaveLength(items.length)
+    })
+    expect(wrapper.find(SKELETON).exists()).toBe(false)
+    expect(wrapper.find(ERROR).exists()).toBe(false)
+  })
+
+  // The button goes when the skeleton comes in: the focus it holds has to be somewhere that stays,
+  // and moving it there must not scroll the page
+  it('moves the focus to the results when retrying', async () => {
+    failing = true
+    const wrapper = await mountSuspended(CustomersPage, {
+      route: '/customers?page=2',
+      attachTo: document.body,
+    })
+    failing = false
+    const button = htmlElement(wrapper.get(RETRY).element)
+    const results = htmlElement(wrapper.get(RESULTS).element)
+    const focus = vi.spyOn(results, 'focus')
+    button.focus()
+    expect(document.activeElement).toBe(button)
+
+    await wrapper.get(RETRY).trigger('click')
+
+    expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
+    expect(document.activeElement).toBe(results)
   })
 
   it('refetches when the page in the URL changes', async () => {

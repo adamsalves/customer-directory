@@ -32,6 +32,55 @@
   display: flex;
 }
 
+// Measures of the prototype's error state
+.Error {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding-block: 64px;
+  padding-inline: 24px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.ErrorTitle {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.ErrorText {
+  max-inline-size: 44ch;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.RetryButton {
+  block-size: 44px;
+  margin-block-start: 8px;
+  padding-block: 0;
+  padding-inline: 24px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.RetryButton:hover {
+  background: var(--primary-bg-hover);
+}
+
 @media (width < 960px) {
   .Title {
     margin-block-end: 20px;

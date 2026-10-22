@@ -8,18 +8,26 @@ import S from './index.module.scss'
 const EAGER_IMAGES = 4
 
 const { query } = useListQuery()
-const { data, status } = await useFetch('/api/customers', { query })
+const { data, status, refresh } = await useFetch('/api/customers', { query })
+const results = useTemplateRef<HTMLElement>('results')
+
+// The button goes away when the skeleton comes in, and the focus it holds would fall to the page.
+// The results stay through the reload, so the focus goes there first (ADR-0022).
+function retry() {
+  results.value?.focus({ preventScroll: true })
+  void refresh()
+}
 </script>
 
 <template>
   <div>
     <AppBreadcrumb :items="[{ label: 'Home', to: '/customers' }, { label: 'Usuários' }]" />
     <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
-    <!-- One element for the skeleton and the list, so the focus a page change leaves here is not lost
-         when the skeleton goes. Not rendered when the request failed: it would be an empty region -->
+    <!-- One element for the skeleton, the error and the list, so the focus a page change or a retry
+         leaves here is not lost when the skeleton goes -->
     <section
-      v-if="status === 'pending' || data"
       :id="RESULTS_ID"
+      ref="results"
       tabindex="-1"
       aria-label="Resultados"
       :class="S.Results"
@@ -36,6 +44,26 @@ const { data, status } = await useFetch('/api/customers', { query })
           <CustomerCardSkeleton />
         </li>
       </ul>
+      <!-- Keyed on `status`: on a retry `error` keeps the last failure until the answer comes -->
+      <div
+        v-else-if="status === 'error'"
+        role="alert"
+        :class="S.Error"
+        data-testid="customers__error--alert"
+      >
+        <h2 :class="S.ErrorTitle">Não foi possível carregar os clientes</h2>
+        <p :class="S.ErrorText">
+          Verifique sua conexão e tente novamente. Seus filtros serão mantidos.
+        </p>
+        <button
+          type="button"
+          :class="S.RetryButton"
+          data-testid="customers__retry--button"
+          @click="retry"
+        >
+          Tentar novamente
+        </button>
+      </div>
       <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
         <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
           <CustomerCard
