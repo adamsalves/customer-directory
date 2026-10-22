@@ -3,7 +3,7 @@ import { parseListQuery } from '#shared/utils/listQuery'
 
 type TRoute = Pick<RouteLocationNormalized, 'path' | 'hash' | 'query'>
 
-// The id of the list of customers, the element a page change scrolls back to
+// The id of the results, the element a page change scrolls back to and moves the focus to
 export const RESULTS_ID = 'results'
 
 const px = (value: string) => Number.parseFloat(value) || 0
@@ -21,10 +21,14 @@ function pageChanged(to: TRoute, from: TRoute) {
 
 // Nuxt leaves the page where it is when only the query changes, so a click on another page would
 // leave the reader at the end of the new list. This brings the top of the results back, under the
-// sticky header. Any other navigation is left to Nuxt, a change of page size included.
+// sticky header, and moves the focus there: the page link that was used turned into the current-page
+// span and the focus would be lost. Any other navigation is left to Nuxt, a change of page size
+// included.
 export function scrollToResults(to: TRoute, from: TRoute) {
   const results = document.getElementById(RESULTS_ID)
   if (!results || !pageChanged(to, from)) return
+  // Even when the results are already in sight, and without a scroll of its own: that is below
+  results.focus({ preventScroll: true })
   // What Nuxt adds to a hash: the sticky header (scroll-padding on <html>) and the element's margin
   const offset =
     px(getComputedStyle(results).getPropertyValue('scroll-margin-top')) +

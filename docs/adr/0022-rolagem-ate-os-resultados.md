@@ -17,10 +17,22 @@ A troca de itens por página não rola, mesmo que ela volte para a página 1: qu
 
 Voltar e avançar ficam com o Nuxt e não rolam.
 
+### Foco e ancoragem do seletor (#72)
+
+- Os resultados são uma `<section id="results" tabindex="-1" aria-label="Resultados">` que envolve o skeleton e a lista. O `<ul>` do skeleton é desmontado quando a lista chega; com o `id` num dos dois `<ul>`, o foco cairia no `<body>` nesse momento.
+- A troca de página, e só ela, chama `focus({ preventScroll: true })` nos resultados, mesmo quando eles já estão à vista e nada rola. O link da página usado vira o `<span>` da página atual e o foco se perderia. O foco não rola a página: quem rola é a rolagem descrita acima.
+- Voltar e avançar não mexem no foco: o plugin sai antes de chamar `scrollToResults`. A troca de itens por página também não, e o foco fica no `<select>`.
+- Na troca de itens por página, o `PaginationNav` devolve o `<select>` ao lugar onde ele estava. A lista acima dele muda de altura duas vezes (lista, skeleton de 9 cards, lista nova) e nada o segura na tela. Com a página no topo (`scrollY` 0, o caso da última página com poucos cards) nenhum navegador ancora, porque a especificação não escolhe âncora na origem da rolagem. O Safari até a versão 26 não tem `overflow-anchor` e não ancora nunca. Com o wrapper dos resultados, que fica de pé na troca, o Chromium também deixou de segurar o select nas páginas do meio (na `main`, sem o wrapper, segurava), então a correção vale para qualquer página.
+- O `PaginationNav` guarda o `top` do `<select>` ao trocar, recebe `loading` (o `status` da busca) e, a cada mudança de `loading`, mede de novo num `requestAnimationFrame` e rola a diferença com `window.scrollBy(0, d)`. Medir no quadro seguinte, e não na hora, é uma precaução para o navegador que aplicar a ancoragem nativa depois da leitura (o Chromium dá o mesmo resultado dos dois jeitos). A conta parte sempre do `top` original e é idempotente: se o navegador já segurou o select, `d` é cerca de zero. A âncora some quando o carregamento termina ou quando a navegação não acontece.
+- O Playwright continua só com Chromium. O caso com `html { overflow-anchor: none }` no E2E simula o Safari anterior ao 27. Um Safari real fica para a conferência manual no preview.
+
+Fontes: [caniuse.com/css-overflow-anchor](https://caniuse.com/css-overflow-anchor) e [drafts.csswg.org/css-scroll-anchoring](https://drafts.csswg.org/css-scroll-anchoring/).
+
 ## Consequências
 
 - Hash, skip link e troca de rota continuam sendo do Nuxt.
 - A altura do header continua definida num lugar só (`base.scss`).
 - Voltar e avançar não restauram a posição salva. Restaurar a posição deixava a página fora do lugar, porque o skeleton e a lista trocam logo depois e deslocam o conteúdo.
 - Quando a toolbar sticky do mobile entrar (no protótipo, `top: headerH`, cerca de 61px), o `scroll-padding-block-start` do `<html>` precisa somar a altura dela. Senão os resultados e o destino do skip link ficam embaixo dela.
-- O foco do teclado depois da troca de página (#72) entra neste mesmo plugin.
+- O foco do teclado depois da troca de página (#72) segue a regra da rolagem: só na troca de página, nunca ao voltar e avançar. Quem o move é o `scrollToResults`, que ganhou essa segunda tarefa e manteve o nome.
+- A página não rola além do próprio fim. Na última página, numa tela mais alta que ela, o rodapé é empurrado para baixo e o `<select>` termina mais abaixo do que estava, ainda na tela.

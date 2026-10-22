@@ -3,6 +3,7 @@ import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ICustomerCard, ICustomerListResponse } from '#shared/types/customer'
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
+import PaginationNav from '~/components/PaginationNav/PaginationNav.vue'
 import { RESULTS_ID } from '~/utils/resultsScroll'
 import CustomersPage from './index.vue'
 
@@ -37,6 +38,9 @@ registerEndpoint('/api/customers', async (event) => {
   return response
 })
 
+const RESULTS = '[data-testid="customers__results--section"]'
+const SKELETON = '[data-testid="customers__skeleton--list"]'
+const LIST = '[data-testid="customers__list--list"]'
 const CARD = '[data-testid="customer-card__root--article"]'
 const IMAGE = '[data-testid="customer-card__avatar--image"]'
 const NAV = '[data-testid="pagination__root--nav"]'
@@ -89,11 +93,19 @@ describe('customers page', () => {
     expect(names).toEqual(items.map((item) => item.name))
   })
 
-  // A page change scrolls back to the element with this id, whether it is the list or its skeleton
-  it('marks the list as the results the page change scrolls to', async () => {
+  // A page change scrolls back to the element with this id and moves the focus to it. The skeleton
+  // and the list come and go inside it, so the focus does not fall to the page when the skeleton goes.
+  it('wraps the list in the results the page change scrolls to and focuses', async () => {
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+    const results = wrapper.get(RESULTS)
 
-    expect(wrapper.get('[data-testid="customers__list--list"]').attributes('id')).toBe(RESULTS_ID)
+    expect(results.element.tagName).toBe('SECTION')
+    expect(results.attributes()).toMatchObject({
+      id: RESULTS_ID,
+      tabindex: '-1',
+      'aria-label': 'Resultados',
+    })
+    expect(results.find(LIST).exists()).toBe(true)
   })
 
   it('loads the first row of images eagerly and only the first with high priority', async () => {
@@ -120,7 +132,9 @@ describe('customers page', () => {
 
   it('shows busy skeletons instead of the cards while the next page loads', async () => {
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers' })
-    expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
+    const results = wrapper.get(RESULTS).element
+    expect(wrapper.find(SKELETON).exists()).toBe(false)
+    expect(wrapper.getComponent(PaginationNav).props('loading')).toBe(false)
     gate = new Promise((resolve) => {
       release = resolve
     })
@@ -128,21 +142,27 @@ describe('customers page', () => {
     // Not the default page size: the skeleton count stays at 9 whatever perPage asks for
     await navigateTo('/customers?page=2&perPage=18')
     await vi.waitFor(() => {
-      expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(true)
+      expect(wrapper.find(SKELETON).exists()).toBe(true)
     })
-    const skeletons = wrapper.get('[data-testid="customers__skeleton--list"]')
+    const skeletons = wrapper.get(SKELETON)
 
-    expect(skeletons.attributes('id')).toBe(RESULTS_ID)
+    // The same element holds the list, the skeleton and the list again: that is what keeps the focus
+    expect(wrapper.get(RESULTS).element).toBe(results)
+    expect(wrapper.get(RESULTS).element.contains(skeletons.element)).toBe(true)
     expect(skeletons.attributes('aria-busy')).toBe('true')
     expect(skeletons.attributes('aria-label')).toBe('Carregando clientes')
     expect(skeletons.findAll('li')).toHaveLength(DEFAULT_PER_PAGE)
     expect(wrapper.find(CARD).exists()).toBe(false)
+    expect(wrapper.getComponent(PaginationNav).props('loading')).toBe(true)
 
     release?.()
     await vi.waitFor(() => {
       expect(wrapper.findAll(CARD)).toHaveLength(items.length)
     })
-    expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
+    expect(wrapper.find(SKELETON).exists()).toBe(false)
+    expect(wrapper.get(RESULTS).element).toBe(results)
+    expect(wrapper.get(RESULTS).element.contains(wrapper.get(LIST).element)).toBe(true)
+    expect(wrapper.getComponent(PaginationNav).props('loading')).toBe(false)
   })
 
   // The BFF answers a page past the end with the last one (page 2 of 4 in this mock), so the
@@ -166,26 +186,27 @@ describe('customers page', () => {
 
     await navigateTo('/customers?page=2')
     await vi.waitFor(() => {
-      expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(true)
+      expect(wrapper.find(SKELETON).exists()).toBe(true)
     })
 
     expect(wrapper.get(NAV).element).toBe(nav)
     release?.()
     await vi.waitFor(() => {
-      expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
+      expect(wrapper.find(SKELETON).exists()).toBe(false)
     })
     expect(wrapper.get(NAV).element).toBe(nav)
   })
 
   // The error state belongs to #17. Until then a failed request renders no list and, above all,
-  // no skeleton: its aria-busy would announce a load that never ends.
+  // no skeleton: its aria-busy would announce a load that never ends. Nor an empty results region.
   it('shows neither cards nor skeletons when the request fails', async () => {
     failing = true
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
 
-    expect(wrapper.find('[data-testid="customers__list--list"]').exists()).toBe(false)
+    expect(wrapper.find(LIST).exists()).toBe(false)
     expect(wrapper.find(CARD).exists()).toBe(false)
-    expect(wrapper.find('[data-testid="customers__skeleton--list"]').exists()).toBe(false)
+    expect(wrapper.find(SKELETON).exists()).toBe(false)
+    expect(wrapper.find(RESULTS).exists()).toBe(false)
   })
 
   it('refetches when the page in the URL changes', async () => {

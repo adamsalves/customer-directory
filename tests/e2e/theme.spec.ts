@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { waitForHydration } from './hydration'
 
 // A dark system means every light theme below can only come from the cookie (ADR-0011)
 test.use({ colorScheme: 'dark' })
@@ -7,12 +8,6 @@ declare global {
   interface Window {
     __themeChanges?: string[]
   }
-}
-
-// With no cookie the server renders the toggle as "Ativar tema escuro". Once Vue has mounted it
-// adopts the system theme and the label flips, so the flip proves the page is interactive.
-async function waitForHydration(page: Page) {
-  await expect(page.getByTestId('header__theme--toggle')).toHaveAccessibleName('Ativar tema claro')
 }
 
 test('with no cookie and a dark system, the page opens dark without a flash', async ({ page }) => {
