@@ -2,7 +2,7 @@
 import { once } from 'node:events'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { $fetch, setup } from '@nuxt/test-utils/e2e'
+import { $fetch, fetch, setup } from '@nuxt/test-utils/e2e'
 import { afterAll, describe, expect, it } from 'vitest'
 import customers from '../../tests/fixtures/customers.json'
 
@@ -11,12 +11,21 @@ import customers from '../../tests/fixtures/customers.json'
 // the server (it would fall back to S3) or a handler that ignores the runtime config fails here.
 const SOURCE_PATH = '/frontend-challenge.json'
 let sourceHits = 0
+// What the source answers in place of the fixture: a 403 (what S3 gives for a file that does not
+// exist) or a 200 whose body is not the list. It starts down: setup() waits for the server with a
+// GET / that renders /customers, which would read the source and fill the cache before any test.
+let sourceFailure: 'forbidden' | 'malformed' | undefined = 'forbidden'
 
 const source = createServer((request, response) => {
   if (request.url === SOURCE_PATH) {
     sourceHits += 1
+    if (sourceFailure === 'forbidden') {
+      response.writeHead(403)
+      response.end()
+      return
+    }
     response.writeHead(200, { 'content-type': 'application/json' })
-    response.end(JSON.stringify(customers))
+    response.end(sourceFailure === 'malformed' ? '{"foo":1}' : JSON.stringify(customers))
     return
   }
   response.writeHead(404)
@@ -41,6 +50,27 @@ afterAll(async () => {
 })
 
 describe('GET /api/customers', () => {
+  // First on purpose, with the source still down from the start: "no cache" only lasts until the
+  // first success fills the single cache entry. From then on the cache serves that copy, so a
+  // failing source would still answer 200.
+  // fetch and not $fetch: $fetch retries a GET on 5xx. The server may retry the source too, so
+  // sourceHits is not asserted here.
+  it.each([
+    { name: 'the source answers 403', failure: 'forbidden' },
+    { name: 'the payload is not a list of customers', failure: 'malformed' },
+  ] as const)('answers 502 when $name and there is no cached copy', async ({ failure }) => {
+    sourceFailure = failure
+    try {
+      const response = await fetch('/api/customers')
+
+      expect(response.status).toBe(502)
+    } finally {
+      sourceFailure = undefined
+      // The next tests count the reads of the source from zero
+      sourceHits = 0
+    }
+  })
+
   it('serves the requested page of the normalized fixture', async () => {
     const body: unknown = await $fetch('/api/customers?page=2')
 
