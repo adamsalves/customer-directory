@@ -168,7 +168,7 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Como:** arquivo separado do `prompts.md`, que é curado; entradas tiradas dos PRs e das issues, sem reconstruir os planos antigos; a entrada vai no próprio PR, antes do merge.
 - **Resultado:** +175 −1. Mergeado sem review.
 
-### #18 · E2E da lista paginada
+### #18 · E2E da lista paginada · [PR #79](https://github.com/adamsalves/customer-directory/pull/79)
 
 - **Decidido:** [#18](https://github.com/adamsalves/customer-directory/issues/18) · ADR-0009, sem ADR nova: a segunda instância do app é só infraestrutura de teste
 - **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/18#issuecomment-6348796907) · estimativa ~280 linhas
