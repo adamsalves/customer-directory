@@ -35,6 +35,13 @@ function pageLink(page: number) {
 // select: none anchors with the page at the top (css-scroll-anchoring), Safari before 27 never
 // does, and Chromium stopped once the results got a wrapper that stays through the swap (#72).
 let anchor: { el: HTMLSelectElement; top: number } | undefined
+// Any scroll the reader starts while the list loads wins: going back to the original top would undo
+// it (a wheel, a touch, or a page link that scrolls to the results). Not a scrollY check: the page
+// gets shorter when the skeleton comes in and the browser moves scrollY back by itself. The keydown
+// that changed the select has already gone by when the change event runs.
+const forget = () => {
+  anchor = undefined
+}
 
 // Another page size starts over from page 1. The value goes back through the URL validator.
 async function changePerPage(event: Event) {
@@ -42,6 +49,8 @@ async function changePerPage(event: Event) {
   if (!(target instanceof HTMLSelectElement)) return
   const { perPage } = parseListQuery({ perPage: target.value })
   anchor = { el: target, top: target.getBoundingClientRect().top }
+  for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const)
+    window.addEventListener(type, forget, { once: true, passive: true })
   const failure = await setQuery({ ...query.value, page: 1, perPage })
   // A navigation that did not happen has no loading to wait for
   if (failure) anchor = undefined
@@ -57,10 +66,11 @@ watch(
     const { el, top } = anchor
     if (!loading) anchor = undefined
     requestAnimationFrame(() => {
+      // The nav is gone when the answer failed before the frame
+      if (!el.isConnected) return
       window.scrollBy(0, el.getBoundingClientRect().top - top)
     })
   },
-  { flush: 'post' },
 )
 </script>
 

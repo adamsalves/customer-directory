@@ -65,7 +65,8 @@ test.describe('with the keyboard', () => {
   // the top of the list would take it off the screen, so nothing scrolls but the correction.
   // Reduced motion makes any scroll instant.
   for (const { name, path, noAnchoring = false, shortScreen = false } of [
-    // A middle page, with the browser's own scroll anchoring on
+    // A middle page. Chromium does not anchor the select here since the results got their wrapper
+    // (it did before), so this guards the correction should it start anchoring again
     { name: 'page 2', path: '/customers?page=2' },
     // The last page has 2 cards and the page is at the top, where no browser anchors to anything
     { name: 'page 3, with 2 cards', path: '/customers?page=3', shortScreen: true },

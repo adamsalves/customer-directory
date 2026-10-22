@@ -47,9 +47,9 @@ const { data, status } = await useFetch('/api/customers', { query })
       </ul>
     </section>
     <!-- Outside the skeleton/list branches, so it stays mounted while the next page loads. The
-         select and the arrows that stay links keep the focus; a page link loses it when it turns
-         into the current-page span, and the page change moves the focus to the results. `data`
-         holds the previous answer until then -->
+         select keeps the focus; any page change, by number or by arrow, moves it to the results,
+         since a page link turns into the current-page span. `data` holds the previous answer until
+         then -->
     <PaginationNav
       v-if="data"
       :page="data.page"

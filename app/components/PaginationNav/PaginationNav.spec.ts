@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { flushPromises } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import PaginationNav from './PaginationNav.vue'
 
@@ -16,8 +16,10 @@ const CURRENT_LABEL = '[data-testid="pagination__current--label"]'
 const CURRENT_NUMBER = '[data-testid="pagination__current--number"]'
 
 // The route sets the page size the links keep and the base the query-only links resolve against
-const mountNav = (page: number, totalPages: number, route = '/customers') =>
-  mountSuspended(PaginationNav, { props: { page, totalPages, loading: false }, route })
+const mountNav = (page: number, totalPages: number, route = '/customers', attachTo?: HTMLElement) =>
+  mountSuspended(PaginationNav, { props: { page, totalPages, loading: false }, route, attachTo })
+
+enableAutoUnmount(afterEach)
 
 // CSS shows one of the two lists per width (ADR-0014); happy-dom applies no media query, so which
 // one is visible is covered by the E2E in tests/e2e/customerList.spec.ts
@@ -193,8 +195,9 @@ describe('PaginationNav select anchoring', () => {
     vi.unstubAllGlobals()
   })
 
+  // In the document: the correction skips a select that is no longer there
   async function mountWithSelectAtTop() {
-    const wrapper = await mountNav(3, 8, '/customers?page=3')
+    const wrapper = await mountNav(3, 8, '/customers?page=3', document.body)
     vi.spyOn(wrapper.get(SELECT).element, 'getBoundingClientRect').mockImplementation(
       () => new DOMRect(0, top, 100, 30),
     )
@@ -234,6 +237,46 @@ describe('PaginationNav select anchoring', () => {
     // The next load, which no page size change started, leaves the page alone
     await loadAfterGrowing(wrapper)
     expect(scrollBy).toHaveBeenCalledTimes(2)
+  })
+
+  // Chromium anchors in the frame cycle, after the watcher has run: measuring then adds nothing
+  it('adds nothing to what the browser anchored by itself before the frame', async () => {
+    const wrapper = await mountWithSelectAtTop()
+    await wrapper.get(SELECT).setValue('27')
+
+    top += 200
+    await wrapper.setProps({ loading: true })
+    top -= 200
+    await frame()
+
+    expect(scrollBy.mock.calls).toEqual([[0, 0]])
+  })
+
+  // Going back to the original top would undo the reader's own scroll
+  it.each(['wheel', 'touchmove', 'pointerdown', 'keydown'])(
+    'lets a %s from the reader during the load win',
+    async (type) => {
+      const wrapper = await mountWithSelectAtTop()
+      await wrapper.get(SELECT).setValue('27')
+
+      window.dispatchEvent(new Event(type))
+      await loadAfterGrowing(wrapper)
+
+      expect(scrollBy).not.toHaveBeenCalled()
+    },
+  )
+
+  // The answer failed and the page took the nav away before the frame
+  it('leaves the page alone when the nav is gone before the frame', async () => {
+    const wrapper = await mountWithSelectAtTop()
+    await wrapper.get(SELECT).setValue('27')
+
+    top += 200
+    await wrapper.setProps({ loading: true })
+    wrapper.unmount()
+    await frame()
+
+    expect(scrollBy).not.toHaveBeenCalled()
   })
 
   it('leaves the page alone when the page size did not change', async () => {
