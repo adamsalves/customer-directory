@@ -166,4 +166,4 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Decidido:** [#77](https://github.com/adamsalves/customer-directory/issues/77) · sem ADR
 - **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/77#issuecomment-6348474688) · estimativa ~170 linhas
 - **Como:** arquivo separado do `prompts.md`, que é curado; entradas tiradas dos PRs e das issues, sem reconstruir os planos antigos; a entrada vai no próprio PR, antes do merge.
-- **Resultado:** +175 −1. Review: ainda não feito.
+- **Resultado:** +175 −1. Mergeado sem review.
