@@ -1,0 +1,58 @@
+// Measures of the prototype's error state
+.ErrorState {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding-block: 64px;
+  padding-inline: 24px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.Message {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.Title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.Text {
+  max-inline-size: 44ch;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.Retry {
+  block-size: 44px;
+  margin-block-start: 8px;
+  padding-block: 0;
+  padding-inline: 24px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave the button in that state (ADR-0013)
+@media (hover: hover) {
+  .Retry:hover {
+    background: var(--primary-bg-hover);
+  }
+}

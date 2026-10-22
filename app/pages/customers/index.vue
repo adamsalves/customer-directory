@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
-import { RESULTS_ID } from '~/utils/resultsScroll'
+import { RESULTS_ID, focusResults } from '~/utils/resultsScroll'
 import S from './index.module.scss'
 
 // The first row of the grid is on screen at load: its images skip lazy loading and the first one,
@@ -8,13 +8,14 @@ import S from './index.module.scss'
 const EAGER_IMAGES = 4
 
 const { query } = useListQuery()
-const { data, status, refresh } = await useFetch('/api/customers', { query })
-const results = useTemplateRef<HTMLElement>('results')
+// No retry of its own on a 502: the error state has a button for that, and a retry here would read
+// the source twice and keep the error off the screen twice as long (ADR-0005)
+const { data, status, refresh } = await useFetch('/api/customers', { query, retry: false })
 
 // The button goes away when the skeleton comes in, and the focus it holds would fall to the page.
 // The results stay through the reload, so the focus goes there first (ADR-0022).
 function retry() {
-  results.value?.focus({ preventScroll: true })
+  focusResults()
   void refresh()
 }
 </script>
@@ -27,7 +28,6 @@ function retry() {
          leaves here is not lost when the skeleton goes -->
     <section
       :id="RESULTS_ID"
-      ref="results"
       tabindex="-1"
       aria-label="Resultados"
       :class="S.Results"
@@ -45,25 +45,7 @@ function retry() {
         </li>
       </ul>
       <!-- Keyed on `status`: on a retry `error` keeps the last failure until the answer comes -->
-      <div
-        v-else-if="status === 'error'"
-        role="alert"
-        :class="S.Error"
-        data-testid="customers__error--alert"
-      >
-        <h2 :class="S.ErrorTitle">Não foi possível carregar os clientes</h2>
-        <p :class="S.ErrorText">
-          Verifique sua conexão e tente novamente. Seus filtros serão mantidos.
-        </p>
-        <button
-          type="button"
-          :class="S.RetryButton"
-          data-testid="customers__retry--button"
-          @click="retry"
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <ErrorState v-else-if="status === 'error'" @retry="retry" />
       <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
         <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
           <CustomerCard

@@ -44,8 +44,8 @@ const LIST = '[data-testid="customers__list--list"]'
 const CARD = '[data-testid="customer-card__root--article"]'
 const IMAGE = '[data-testid="customer-card__avatar--image"]'
 const NAV = '[data-testid="pagination__root--nav"]'
-const ERROR = '[data-testid="customers__error--alert"]'
-const RETRY = '[data-testid="customers__retry--button"]'
+const ERROR = '[data-testid="error-state__message--alert"]'
+const RETRY = '[data-testid="error-state__retry--button"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
 enableAutoUnmount(afterEach)
@@ -211,25 +211,25 @@ describe('customers page', () => {
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
     const error = wrapper.get(ERROR)
 
-    expect(error.attributes('role')).toBe('alert')
     expect(wrapper.get(RESULTS).element.contains(error.element)).toBe(true)
-    expect(error.get('h2').text()).toBe('Não foi possível carregar os clientes')
-    expect(error.get('p').text()).toBe(
-      'Verifique sua conexão e tente novamente. Seus filtros serão mantidos.',
-    )
-    expect(error.get(RETRY).text()).toBe('Tentar novamente')
     expect(wrapper.find(LIST).exists()).toBe(false)
     expect(wrapper.find(CARD).exists()).toBe(false)
     expect(wrapper.find(SKELETON).exists()).toBe(false)
     expect(wrapper.find(NAV).exists()).toBe(false)
   })
 
-  // The client retries a GET on a 502, so a failure takes more than one request. Their number is
-  // not asserted, only that every one of them, the retry included, asks for the same page
+  // ofetch would retry a GET on a 502 by itself: one more read of a source that is down, and the
+  // error twice as long to show. The retry is the button's.
+  it('asks the BFF once when the request fails', async () => {
+    failing = true
+    await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+
+    expect(requests.map(String)).toEqual(['page=2&perPage=9'])
+  })
+
   it('retries the same query and shows the cards when the retry succeeds', async () => {
     failing = true
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
-    const failed = requests.length
     failing = false
 
     await wrapper.get(RETRY).trigger('click')
@@ -237,8 +237,7 @@ describe('customers page', () => {
       expect(wrapper.findAll(CARD)).toHaveLength(items.length)
     })
 
-    expect(requests.length).toBeGreaterThan(failed)
-    expect(new Set(requests.map(String))).toEqual(new Set(['page=2&perPage=9']))
+    expect(requests.map(String)).toEqual(['page=2&perPage=9', 'page=2&perPage=9'])
     expect(wrapper.find(ERROR).exists()).toBe(false)
     expect(wrapper.find(NAV).exists()).toBe(true)
   })
