@@ -45,8 +45,8 @@ describe('scrollToResults', () => {
     expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ left: 0, top: TARGET, behavior: 'smooth' })
   })
 
-  it('does the same when the page size changes', () => {
-    scrollToResults(route('/customers?perPage=18'), route('/customers'))
+  it('does the same for a page of a page size other than the default', () => {
+    scrollToResults(route('/customers?page=3&perPage=18'), route('/customers?page=2&perPage=18'))
 
     expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ left: 0, top: TARGET, behavior: 'smooth' })
   })
@@ -86,6 +86,11 @@ describe('scrollToResults', () => {
     { name: 'a hash', to: '/customers?page=3#conteudo', from: '/customers?page=2' },
     { name: 'a query that is not the list state', to: '/customers?foo=1', from: '/customers' },
     { name: 'the same list state', to: '/customers?page=1&perPage=9', from: '/customers' },
+    // The select has the focus, and scrolling would take it off the screen
+    { name: 'a new page size', to: '/customers?perPage=18', from: '/customers' },
+    // A new page size goes back to page 1, so the page changes with it
+    { name: 'a new page size and page 1', to: '/customers?perPage=18', from: '/customers?page=3' },
+    { name: 'the default size back', to: '/customers', from: '/customers?page=2&perPage=18' },
   ])('does not scroll for $name', ({ to, from }) => {
     scrollToResults(route(to), route(from))
 

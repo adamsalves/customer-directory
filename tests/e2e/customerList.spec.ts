@@ -45,6 +45,25 @@ test('changing page brings the top of the list back under the header', async ({ 
     .toBe(24)
 })
 
+// The reader who changes the page size is on the select, and a scroll to the top of the list would
+// take it off the screen. The new size also goes back to page 1, so the page changes with it. Page 2
+// and not 3 because page 3 of the fixture has 2 cards: its list is already in sight, nothing scrolls.
+// Reduced motion makes any scroll instant, and two frames are enough for the plugin to have run.
+test('changing the page size leaves the select on the screen', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/customers?page=2')
+  const select = page.getByRole('combobox', { name: 'Itens por página' })
+  await select.focus()
+
+  await page.keyboard.press('ArrowDown')
+  await expect(page).toHaveURL(/\?perPage=18$/)
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  )
+
+  await expect(select).toBeInViewport()
+})
+
 // The fixture has 3 pages, too few for an ellipsis, so the next answer claims 23: the widest
 // compact list with an ellipsis ("1 2 3 … 23") has to fit a 320px screen. Up to 5 pages the compact
 // list shows every number and does not fit one yet (#20).
