@@ -160,3 +160,10 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Como:** 502 no handler, e não em `fetchCustomers`, para o SWR seguir servindo a cópia antiga; componente `ErrorState`; o retry leva o foco aos resultados.
 - **Resultado:** +338 −20 (eram +206 −13 antes do review). Review: o 502 fazia o ofetch repetir o GET sozinho, dobrando as leituras do S3 e o tempo até o erro. Mais 6 achados.
 - **Pendente:** leitor de tela e Safari reais.
+
+### #77 · Registro por issue no ai-journey · [PR #78](https://github.com/adamsalves/customer-directory/pull/78)
+
+- **Decidido:** [#77](https://github.com/adamsalves/customer-directory/issues/77) · sem ADR
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/77#issuecomment-6348474688) · estimativa ~170 linhas
+- **Como:** arquivo separado do `prompts.md`, que é curado; entradas tiradas dos PRs e das issues, sem reconstruir os planos antigos; a entrada vai no próprio PR, antes do merge.
+- **Resultado:** +LINHAS. Review: ainda não feito.
