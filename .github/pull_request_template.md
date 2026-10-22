@@ -39,4 +39,5 @@ Closes #
 - [ ] CI verde (lint, typecheck, test, e2e)
 - [ ] a11y: teclado, nomes acessíveis, contraste
 - [ ] Conferido no preview contra `docs/design/`, nos dois temas
+- [ ] Entrada da issue em `ai-journey/registro.md`, com o resultado depois do review
 - [ ] `ai-journey/` atualizado (se o PR fecha o milestone)

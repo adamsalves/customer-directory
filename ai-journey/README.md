@@ -14,6 +14,7 @@ Como usei IA neste projeto. A pasta é atualizada ao fim de cada milestone.
 - **Protótipo como fonte da verdade.** O layout foi prototipado antes no Claude Design e está em [`docs/design/`](../docs/design/). A IA revisou o protótipo, e os ajustes viraram desvios registrados na ADR-0013.
 - **Uma issue, uma branch, um PR**, com no máximo ~400 linhas. PRs pequenos são revisáveis de verdade, por mim e pela IA.
 - **Medir, planejar, implementar.** A partir do M2, o fluxo de cada issue tem quatro etapas: um sub-agente mede o código e devolve números com evidência, o agente principal planeja com base nisso, eu aprovo o plano, e só então outro sub-agente o implementa. Na #11 a aprovação foi pulada uma vez (ver [learnings](learnings.md)). O plano parte do que existe no código, não de suposição, e o contexto principal não se enche de arquivos.
+- **Plano e resultado registrados por issue.** O plano aprovado vira comentário na issue antes da implementação. Antes do merge, o PR acrescenta a entrada da issue no [registro](registro.md): o que foi decidido, como foi feito, o resultado e o que o review mudou. Até a #17 o plano ficava só na conversa; as entradas dessas issues foram reconstruídas dos PRs.
 - **Review independente em todo PR.** Um sub-agente sem o contexto da implementação revisa o diff contra as regras do repositório. Os achados viram correção no próprio PR e, quando são lições gerais, entram na memória do agente para não se repetirem.
 - **Nada é publicado sem comando meu.** Push, issues, releases, configurações do GitHub e deploy só acontecem quando eu peço.
 
@@ -28,4 +29,5 @@ Como usei IA neste projeto. A pasta é atualizada ao fim de cada milestone.
 ## Arquivos
 
 - [`prompts.md`](prompts.md): os prompts que mudaram o rumo do projeto, com o que aconteceu e a abordagem final.
+- [`registro.md`](registro.md): uma entrada por issue, com o que foi decidido, como foi feito e o resultado.
 - [`learnings.md`](learnings.md): o que funcionou, o que não funcionou e o que eu faria diferente.
