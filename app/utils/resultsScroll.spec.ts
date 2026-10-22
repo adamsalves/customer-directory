@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { RESULTS_ID, scrollToResults } from './resultsScroll'
 
 // The header (scroll-padding on <html>) and the margin of the results: 97 + 24
@@ -12,6 +12,7 @@ const route = (fullPath: string) => useRouter().resolve(fullPath)
 const scrollTo = vi.fn()
 
 let results: HTMLElement
+let focus: MockInstance<HTMLElement['focus']>
 let top = ABOVE
 let reducedMotion = false
 
@@ -22,6 +23,7 @@ beforeEach(() => {
   results = document.createElement('ul')
   results.id = RESULTS_ID
   results.style.setProperty('scroll-margin-top', '24px')
+  focus = vi.spyOn(results, 'focus')
   vi.spyOn(results, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, top, 100, 100))
   document.body.append(results)
   document.documentElement.style.setProperty('scroll-padding-top', '97px')
@@ -70,6 +72,21 @@ describe('scrollToResults', () => {
     )
   })
 
+  it('moves the focus to the results, without a scroll of its own', () => {
+    scrollToResults(route('/customers?page=3'), route('/customers?page=2'))
+
+    expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
+  })
+
+  it('moves the focus when the results are already in sight and nothing scrolls', () => {
+    top = OFFSET
+
+    scrollToResults(route('/customers?page=3'), route('/customers?page=2'))
+
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
+  })
+
   it('leaves the page alone when the results are already in sight', () => {
     top = OFFSET
 
@@ -91,10 +108,11 @@ describe('scrollToResults', () => {
     // A new page size goes back to page 1, so the page changes with it
     { name: 'a new page size and page 1', to: '/customers?perPage=18', from: '/customers?page=3' },
     { name: 'the default size back', to: '/customers', from: '/customers?page=2&perPage=18' },
-  ])('does not scroll for $name', ({ to, from }) => {
+  ])('does not scroll or move the focus for $name', ({ to, from }) => {
     scrollToResults(route(to), route(from))
 
     expect(scrollTo).not.toHaveBeenCalled()
+    expect(focus).not.toHaveBeenCalled()
   })
 
   it('does not scroll when the page has no results', () => {

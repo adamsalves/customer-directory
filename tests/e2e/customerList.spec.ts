@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { waitForHydration } from './hydration'
 
 // ADR-0009: the server reads the 20-record fixture, not the 200 records on S3. Page 3 is then
 // the last page, with 2 cards; on S3 it would have 9.
@@ -45,23 +46,89 @@ test('changing page brings the top of the list back under the header', async ({ 
     .toBe(24)
 })
 
-// The reader who changes the page size is on the select, and a scroll to the top of the list would
-// take it off the screen. The new size also goes back to page 1, so the page changes with it. Page 2
-// and not 3 because page 3 of the fixture has 2 cards: its list is already in sight, nothing scrolls.
-// Reduced motion makes any scroll instant, and two frames are enough for the plugin to have run.
-test('changing the page size leaves the select on the screen', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/customers?page=2')
-  const select = page.getByRole('combobox', { name: 'Itens por página' })
-  await select.focus()
+const resultsSection = (page: Page) => page.getByTestId('customers__results--section')
+const perPageSelect = (page: Page) => page.getByRole('combobox', { name: 'Itens por página' })
 
-  await page.keyboard.press('ArrowDown')
-  await expect(page).toHaveURL(/\?perPage=18$/)
-  await page.evaluate(
+// Two frames are enough for what runs a frame after a navigation: the focus and the anchoring
+const settle = (page: Page) =>
+  page.evaluate(
     () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
   )
 
-  await expect(select).toBeInViewport()
+// waitForHydration needs a dark system. The keys do nothing useful before the page is interactive:
+// Enter on a link is then a plain navigation.
+test.describe('with the keyboard', () => {
+  test.use({ colorScheme: 'dark' })
+
+  // The reader who changes the page size is on the select. The list above it changes height twice
+  // (list, skeleton of 9, list) and the select has to stay where it was, with the focus. A scroll to
+  // the top of the list would take it off the screen, so nothing scrolls but the correction.
+  // Reduced motion makes any scroll instant.
+  for (const { name, path, noAnchoring = false, shortScreen = false } of [
+    // A middle page. Chromium does not anchor the select here since the results got their wrapper
+    // (it did before), so this guards the correction should it start anchoring again
+    { name: 'page 2', path: '/customers?page=2' },
+    // The last page has 2 cards and the page is at the top, where no browser anchors to anything
+    { name: 'page 3, with 2 cards', path: '/customers?page=3', shortScreen: true },
+    // As in Safari before 27, which has no scroll anchoring at all
+    { name: 'page 2 without scroll anchoring', path: '/customers?page=2', noAnchoring: true },
+  ]) {
+    test(`changing the page size keeps the select where it was: ${name}`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.goto(path)
+      await waitForHydration(page)
+      if (noAnchoring) await page.addStyleTag({ content: 'html { overflow-anchor: none }' })
+      const select = perPageSelect(page)
+      if (shortScreen) {
+        // A page cannot scroll past its end, and the footer fills what a taller screen leaves under
+        // the 2 cards: the select would end that much lower. This screen is just tall enough for it.
+        const box = await select.boundingBox()
+        const size = page.viewportSize()
+        if (!box || !size) throw new Error('the page size select is not rendered')
+        await page.setViewportSize({
+          width: size.width,
+          height: Math.ceil(box.y + box.height) + 40,
+        })
+      }
+      await select.focus()
+      const before = await select.boundingBox()
+
+      await page.keyboard.press('ArrowDown')
+      await expect(page).toHaveURL(/\?perPage=18$/)
+      await expect(page.getByTestId('customer-card__root--article')).toHaveCount(18)
+      await settle(page)
+
+      const after = await select.boundingBox()
+      if (!before || !after) throw new Error('the page size select is not rendered')
+      expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1)
+      await expect(select).toBeFocused()
+    })
+  }
+
+  // The page link that was used turns into the current-page span, and the focus would be lost.
+  // Going back leaves the focus where it is: the select takes it first, so a plugin that also
+  // focused the results on a pop would be caught.
+  test('a page link leaves the focus on the results, and going back does not move it', async ({
+    page,
+  }) => {
+    await page.goto('/customers')
+    await waitForHydration(page)
+    await pageTwoLink(page).focus()
+
+    await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/page=2/)
+    await expect(resultsSection(page)).toBeFocused()
+    // It takes focus from code, not from a tab: a ring around the whole list would be noise
+    await expect(resultsSection(page)).toHaveCSS('outline-style', 'none')
+
+    await perPageSelect(page).focus()
+    await page.goBack()
+    await expect(page).toHaveURL(/\/customers$/)
+    // Page 1 has come back: its "Página 2" is a link again
+    await expect(pageTwoLink(page)).toBeVisible()
+    await settle(page)
+    await expect(perPageSelect(page)).toBeFocused()
+  })
 })
 
 // The fixture has 3 pages, too few for an ellipsis, so the next answer claims 23: the widest

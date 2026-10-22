@@ -8,6 +8,16 @@
   line-height: 1.2;
 }
 
+// A page change scrolls here; with the header's scroll-padding on <html> this leaves 24px of air
+.Results {
+  scroll-margin-block-start: 24px;
+}
+
+// The results only take focus from a page change (tabindex="-1"), they are never a tab stop.
+.Results:focus {
+  outline: none;
+}
+
 .List {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
@@ -15,9 +25,6 @@
   margin: 0;
   padding: 0;
   list-style: none;
-
-  // A page change scrolls here; with the header's scroll-padding on <html> this leaves 24px of air
-  scroll-margin-block-start: 24px;
 }
 
 // A flex item per cell, so the card inside stretches to the height of its row

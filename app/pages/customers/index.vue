@@ -15,30 +15,46 @@ const { data, status } = await useFetch('/api/customers', { query })
   <div>
     <AppBreadcrumb :items="[{ label: 'Home', to: '/customers' }, { label: 'Usuários' }]" />
     <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
-    <ul
-      v-if="status === 'pending'"
+    <!-- One element for the skeleton and the list, so the focus a page change leaves here is not lost
+         when the skeleton goes. Not rendered when the request failed: it would be an empty region -->
+    <section
+      v-if="status === 'pending' || data"
       :id="RESULTS_ID"
-      aria-busy="true"
-      aria-label="Carregando clientes"
-      :class="S.List"
-      data-testid="customers__skeleton--list"
+      tabindex="-1"
+      aria-label="Resultados"
+      :class="S.Results"
+      data-testid="customers__results--section"
     >
-      <li v-for="index in DEFAULT_PER_PAGE" :key="index" :class="S.Item">
-        <CustomerCardSkeleton />
-      </li>
-    </ul>
-    <ul v-else-if="data" :id="RESULTS_ID" :class="S.List" data-testid="customers__list--list">
-      <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
-        <CustomerCard
-          :customer="customer"
-          :loading="index < EAGER_IMAGES ? 'eager' : 'lazy'"
-          :fetchpriority="index === 0 ? 'high' : undefined"
-        />
-      </li>
-    </ul>
+      <ul
+        v-if="status === 'pending'"
+        aria-busy="true"
+        aria-label="Carregando clientes"
+        :class="S.List"
+        data-testid="customers__skeleton--list"
+      >
+        <li v-for="index in DEFAULT_PER_PAGE" :key="index" :class="S.Item">
+          <CustomerCardSkeleton />
+        </li>
+      </ul>
+      <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
+        <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
+          <CustomerCard
+            :customer="customer"
+            :loading="index < EAGER_IMAGES ? 'eager' : 'lazy'"
+            :fetchpriority="index === 0 ? 'high' : undefined"
+          />
+        </li>
+      </ul>
+    </section>
     <!-- Outside the skeleton/list branches, so it stays mounted while the next page loads. The
-         select and the arrows that stay links keep the focus; a page link loses it when it turns
-         into the current-page span (#72). `data` holds the previous answer until then -->
-    <PaginationNav v-if="data" :page="data.page" :total-pages="data.totalPages" />
+         select keeps the focus; any page change, by number or by arrow, moves it to the results,
+         since a page link turns into the current-page span. `data` holds the previous answer until
+         then -->
+    <PaginationNav
+      v-if="data"
+      :page="data.page"
+      :total-pages="data.totalPages"
+      :loading="status === 'pending'"
+    />
   </div>
 </template>

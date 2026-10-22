@@ -3,10 +3,12 @@ import { PER_PAGE_OPTIONS, parseListQuery, serializeListQuery } from '#shared/ut
 import { pageList } from '#shared/utils/pageList'
 import S from './PaginationNav.module.scss'
 
-// Both props come from the BFF answer, never from the URL: a page past the end is clamped there
+// page and totalPages come from the BFF answer, never from the URL: a page past the end is clamped
+// there. loading is true while the page waits for the next answer.
 const props = defineProps<{
   page: number
   totalPages: number
+  loading: boolean
 }>()
 
 const { query, setQuery } = useListQuery()
@@ -28,13 +30,48 @@ function pageLink(page: number) {
   return { query: serializeListQuery({ ...query.value, page }) }
 }
 
+// Where the select was when the page size changed, until the new list is in (not reactive). The list
+// above it changes height twice (the skeleton always has 9 cards) and no browser reliably holds the
+// select: none anchors with the page at the top (css-scroll-anchoring), Safari before 27 never
+// does, and Chromium stopped once the results got a wrapper that stays through the swap (#72).
+let anchor: { el: HTMLSelectElement; top: number } | undefined
+// Any scroll the reader starts while the list loads wins: going back to the original top would undo
+// it (a wheel, a touch, or a page link that scrolls to the results). Not a scrollY check: the page
+// gets shorter when the skeleton comes in and the browser moves scrollY back by itself. The keydown
+// that changed the select has already gone by when the change event runs.
+const forget = () => {
+  anchor = undefined
+}
+
 // Another page size starts over from page 1. The value goes back through the URL validator.
 async function changePerPage(event: Event) {
   const { target } = event
   if (!(target instanceof HTMLSelectElement)) return
   const { perPage } = parseListQuery({ perPage: target.value })
-  await setQuery({ ...query.value, page: 1, perPage })
+  anchor = { el: target, top: target.getBoundingClientRect().top }
+  for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const)
+    window.addEventListener(type, forget, { once: true, passive: true })
+  const failure = await setQuery({ ...query.value, page: 1, perPage })
+  // A navigation that did not happen has no loading to wait for
+  if (failure) anchor = undefined
 }
+
+// The select goes back to where it was at each change of height: the skeleton, then the new list.
+// Each distance is measured from the original top, a frame later: whatever anchoring the browser
+// did by itself in the meantime leaves about zero to correct, so nothing is added twice.
+watch(
+  () => props.loading,
+  (loading) => {
+    if (!anchor) return
+    const { el, top } = anchor
+    if (!loading) anchor = undefined
+    requestAnimationFrame(() => {
+      // The nav is gone when the answer failed before the frame
+      if (!el.isConnected) return
+      window.scrollBy(0, el.getBoundingClientRect().top - top)
+    })
+  },
+)
 </script>
 
 <template>
