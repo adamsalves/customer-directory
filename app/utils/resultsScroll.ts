@@ -19,16 +19,25 @@ function pageChanged(to: TRoute, from: TRoute) {
   return next.perPage === previous.perPage && next.page !== previous.page
 }
 
+// The focus goes to the results without a scroll of its own: a page change scrolls by itself, below,
+// and a retry stays where it is. The results stay while the skeleton comes and goes, the button or
+// link that had the focus does not (ADR-0022).
+export function focusResults(): HTMLElement | null {
+  const results = document.getElementById(RESULTS_ID)
+  results?.focus({ preventScroll: true })
+  return results
+}
+
 // Nuxt leaves the page where it is when only the query changes, so a click on another page would
 // leave the reader at the end of the new list. This brings the top of the results back, under the
 // sticky header, and moves the focus there: the page link that was used turned into the current-page
 // span and the focus would be lost. Any other navigation is left to Nuxt, a change of page size
 // included.
 export function scrollToResults(to: TRoute, from: TRoute) {
-  const results = document.getElementById(RESULTS_ID)
-  if (!results || !pageChanged(to, from)) return
-  // Even when the results are already in sight, and without a scroll of its own: that is below
-  results.focus({ preventScroll: true })
+  if (!pageChanged(to, from)) return
+  // Even when the results are already in sight
+  const results = focusResults()
+  if (!results) return
   // What Nuxt adds to a hash: the sticky header (scroll-padding on <html>) and the element's margin
   const offset =
     px(getComputedStyle(results).getPropertyValue('scroll-margin-top')) +

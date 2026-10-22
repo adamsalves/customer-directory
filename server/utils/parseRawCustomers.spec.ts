@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import customers from '../../tests/fixtures/customers.json'
 import { parseRawCustomers } from './parseRawCustomers'
+import { InvalidPayloadError } from './sourceFailure'
 
 type TFixtureRecord = (typeof customers.results)[number]
 type TStringFieldCase = { path: string; parent: (record: TFixtureRecord) => object; key: string }
@@ -150,11 +151,13 @@ describe('parseRawCustomers', () => {
     const payload = { results: customers.results.map((record) => ({ ...record, gender: 'other' })) }
 
     expect(() => parseRawCustomers(payload)).toThrow('no valid record')
+    expect(() => parseRawCustomers(payload)).toThrow(InvalidPayloadError)
   })
 
   // An empty list would replace the cached one and show no customers for an hour (PR #65 review)
   it('throws when the source is empty', () => {
     expect(() => parseRawCustomers({ results: [] })).toThrow('no valid record')
+    expect(() => parseRawCustomers({ results: [] })).toThrow(InvalidPayloadError)
   })
 
   it.each([
@@ -165,5 +168,6 @@ describe('parseRawCustomers', () => {
     { payload: { results: 'x' } },
   ])('throws when the payload is $payload', ({ payload }) => {
     expect(() => parseRawCustomers(payload)).toThrow('Invalid customers payload')
+    expect(() => parseRawCustomers(payload)).toThrow(InvalidPayloadError)
   })
 })

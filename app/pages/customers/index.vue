@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
-import { RESULTS_ID } from '~/utils/resultsScroll'
+import { RESULTS_ID, focusResults } from '~/utils/resultsScroll'
 import S from './index.module.scss'
 
 // The first row of the grid is on screen at load: its images skip lazy loading and the first one,
@@ -8,17 +8,25 @@ import S from './index.module.scss'
 const EAGER_IMAGES = 4
 
 const { query } = useListQuery()
-const { data, status } = await useFetch('/api/customers', { query })
+// No retry of its own on a 502: the error state has a button for that, and a retry here would read
+// the source twice and keep the error off the screen twice as long (ADR-0005)
+const { data, status, refresh } = await useFetch('/api/customers', { query, retry: false })
+
+// The button goes away when the skeleton comes in, and the focus it holds would fall to the page.
+// The results stay through the reload, so the focus goes there first (ADR-0022).
+function retry() {
+  focusResults()
+  void refresh()
+}
 </script>
 
 <template>
   <div>
     <AppBreadcrumb :items="[{ label: 'Home', to: '/customers' }, { label: 'Usuários' }]" />
     <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
-    <!-- One element for the skeleton and the list, so the focus a page change leaves here is not lost
-         when the skeleton goes. Not rendered when the request failed: it would be an empty region -->
+    <!-- One element for the skeleton, the error and the list, so the focus a page change or a retry
+         leaves here is not lost when the skeleton goes -->
     <section
-      v-if="status === 'pending' || data"
       :id="RESULTS_ID"
       tabindex="-1"
       aria-label="Resultados"
@@ -36,6 +44,8 @@ const { data, status } = await useFetch('/api/customers', { query })
           <CustomerCardSkeleton />
         </li>
       </ul>
+      <!-- Keyed on `status`: on a retry `error` keeps the last failure until the answer comes -->
+      <ErrorState v-else-if="status === 'error'" @retry="retry" />
       <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
         <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
           <CustomerCard

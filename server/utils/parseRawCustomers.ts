@@ -1,5 +1,6 @@
 import type { IRawCustomer } from '#shared/types/customer'
 import { isRecord } from '#shared/utils/isRecord'
+import { InvalidPayloadError } from './sourceFailure'
 
 function isDateString(value: unknown): value is string {
   return typeof value === 'string' && !Number.isNaN(Date.parse(value))
@@ -45,7 +46,7 @@ export function isRawCustomer(value: unknown): value is IRawCustomer {
 // the cached list for an hour (ADR-0005).
 export function parseRawCustomers(payload: unknown): IRawCustomer[] {
   if (!isRecord(payload) || !Array.isArray(payload.results)) {
-    throw new Error('Invalid customers payload: expected { results: [] }')
+    throw new InvalidPayloadError('Invalid customers payload: expected { results: [] }')
   }
   const customers = payload.results.flatMap((item: unknown, index) => {
     if (isRawCustomer(item)) return [item]
@@ -53,7 +54,7 @@ export function parseRawCustomers(payload: unknown): IRawCustomer[] {
     return []
   })
   if (customers.length === 0) {
-    throw new Error('Invalid customers payload: no valid record')
+    throw new InvalidPayloadError('Invalid customers payload: no valid record')
   }
   return customers
 }
