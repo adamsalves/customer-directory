@@ -46,9 +46,9 @@ const NOT_A_PER_PAGE: unknown[] = [
 // a search, so only a type check rejects them.
 const NOT_A_SEARCH: unknown[] = [['ariela'], ['ariela', 'nunes'], [], 42, 0, true, null, undefined]
 
-// Kept exactly as typed: the field must not lose a trailing space, and the words are split by the
-// search itself
-const SEARCHES = ['ariela', 'ELEUTÉRIO', ' álda ', 'girao  rosa', ' ']
+// Canonical searches: no space at the ends. The words are split by the search itself, so the ones
+// inside stay
+const SEARCHES = ['ariela', 'ELEUTÉRIO', 'álda', 'girao  rosa']
 
 // Objects, because `it.each` spreads a case that is an array into the callback arguments
 const asCases = (values: unknown[]) => values.map((value) => ({ value }))
@@ -90,6 +90,16 @@ describe('parseListQuery', () => {
 
   it.each(SEARCHES)('keeps search=%j as it came', (search) => {
     expect(parseListQuery({ search }).search).toBe(search)
+  })
+
+  // "ana " and "ana" are one list state, and a blank search is the whole list
+  it.each([
+    { value: ' álda ', search: 'álda' },
+    { value: '\tgirao  rosa\n', search: 'girao  rosa' },
+    { value: ' ', search: '' },
+    { value: ' \t\n', search: '' },
+  ])('trims search=$value', ({ value, search }) => {
+    expect(parseListQuery({ search: value }).search).toBe(search)
   })
 
   it.each(asCases(NOT_A_SEARCH))('falls back to an empty search for search=$value', ({ value }) => {
@@ -160,11 +170,6 @@ describe('serializeListQuery', () => {
       perPage: '18',
       search: 'álda',
     })
-  })
-
-  // Only the empty string is the default: a lone space is what the reader has typed so far
-  it('keeps a search that is only spaces', () => {
-    expect(serializeListQuery({ page: 1, perPage: 9, search: ' ' })).toStrictEqual({ search: ' ' })
   })
 
   it.each(queries)('round-trips page $page with perPage $perPage and search "$search"', (query) => {

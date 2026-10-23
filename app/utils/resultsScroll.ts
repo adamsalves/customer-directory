@@ -1,5 +1,5 @@
 import type { RouteLocationNormalized } from 'vue-router'
-import { parseListQuery } from '#shared/utils/listQuery'
+import { parseListQuery, type IListQuery } from '#shared/utils/listQuery'
 
 type TRoute = Pick<RouteLocationNormalized, 'path' | 'hash' | 'query'>
 
@@ -8,15 +8,15 @@ export const RESULTS_ID = 'results'
 
 const px = (value: string) => Number.parseFloat(value) || 0
 
-// Same page of the app, no hash, and another page of the same page size. A new page size also goes
-// back to page 1, but it is no page change: whoever made it is on the select, and the scroll would
-// take it off the screen. ponytail: only the page size is compared; when the list has more state
-// (search, filters), compare all of it but the page.
+// Same page of the app, no hash, and another page with the rest of the list state unchanged. A new
+// page size or search also goes back to page 1, but it is no page change: whoever made it is on the
+// select or the field, and the scroll would take the focus off it.
 function pageChanged(to: TRoute, from: TRoute) {
   if (to.path !== from.path || to.hash) return false
   const next = parseListQuery(to.query)
   const previous = parseListQuery(from.query)
-  return next.perPage === previous.perPage && next.page !== previous.page
+  const rest = (query: IListQuery) => JSON.stringify({ ...query, page: 0 })
+  return next.page !== previous.page && rest(next) === rest(previous)
 }
 
 // The focus goes to the results without a scroll of its own: a page change scrolls by itself, below,

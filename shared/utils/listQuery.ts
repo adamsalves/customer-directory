@@ -19,16 +19,16 @@ function parsePositiveInteger(value: unknown): number | undefined {
 
 // The only place that turns external input (`getQuery`, `route.query`) into an IListQuery
 // (ADR-0016). The URL keys are the field names (ADR-0021). Anything that is not a canonical
-// value, a repeated key included, falls back to the default. `search` is any string, kept as it
-// came (no trim, so the field does not lose a trailing space while the reader types): the words
-// are split by the search itself.
+// value, a repeated key included, falls back to the default. `search` is any string, trimmed so
+// "ana " and "ana" are one list state (the field keeps its own draft): the words are split by the
+// search itself.
 export function parseListQuery(input: unknown): IListQuery {
   const source = isRecord(input) ? input : {}
   const perPage = parsePositiveInteger(source.perPage)
   return {
     page: parsePositiveInteger(source.page) ?? DEFAULT_PAGE,
     perPage: PER_PAGE_OPTIONS.find((option) => option === perPage) ?? DEFAULT_PER_PAGE,
-    search: typeof source.search === 'string' ? source.search : '',
+    search: typeof source.search === 'string' ? source.search.trim() : '',
   }
 }
 

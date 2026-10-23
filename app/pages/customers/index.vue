@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
+import { DEFAULT_PER_PAGE, serializeListQuery } from '#shared/utils/listQuery'
 import { RESULTS_ID, focusResults } from '~/utils/resultsScroll'
 import S from './index.module.scss'
 
@@ -8,9 +8,14 @@ import S from './index.module.scss'
 const EAGER_IMAGES = 4
 
 const { query } = useListQuery()
+// The canonical keys only, as in the page URL: the defaults and an empty search stay out
+const apiQuery = computed(() => serializeListQuery(query.value))
 // No retry of its own on a 502: the error state has a button for that, and a retry here would read
 // the source twice and keep the error off the screen twice as long (ADR-0005)
-const { data, status, refresh } = await useFetch('/api/customers', { query, retry: false })
+const { data, status, refresh } = await useFetch('/api/customers', {
+  query: apiQuery,
+  retry: false,
+})
 
 // The button goes away when the skeleton comes in, and the focus it holds would fall to the page.
 // The results stay through the reload, so the focus goes there first (ADR-0022).

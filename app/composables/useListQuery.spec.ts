@@ -7,6 +7,16 @@ describe('useListQuery', () => {
     expect(useListQuery().query.value).toStrictEqual({ page: 2, perPage: 18, search: '' })
   })
 
+  it('reads the search from the URL, decoded and trimmed', async () => {
+    await navigateTo('/customers?search=%20ELEUT%C3%89RIO+almeida%20')
+
+    expect(useListQuery().query.value).toStrictEqual({
+      page: 1,
+      perPage: 9,
+      search: 'ELEUTÉRIO almeida',
+    })
+  })
+
   it('falls back to the defaults when the URL is not canonical', async () => {
     await navigateTo('/customers?page=abc&perPage=7')
 
