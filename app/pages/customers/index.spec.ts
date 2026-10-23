@@ -71,11 +71,11 @@ describe('customers page', () => {
     )
   })
 
-  it('opens with the Home > Usuários trail', async () => {
+  it('opens with the Home > Clientes trail', async () => {
     const wrapper = await mountSuspended(CustomersPage)
 
     expect(wrapper.get('[data-testid="breadcrumb__item--link"]').text()).toBe('Home')
-    expect(wrapper.get('[data-testid="breadcrumb__item--current"]').text()).toBe('Usuários')
+    expect(wrapper.get('[data-testid="breadcrumb__item--current"]').text()).toBe('Clientes')
   })
 
   it('asks the BFF for the page and the page size in the URL', async () => {

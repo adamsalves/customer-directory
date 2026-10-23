@@ -11,7 +11,7 @@ O repositório se chama `customer-directory` e o código já fala em `customer` 
 
 - A interface usa **cliente(s)**: URL pública `/clientes` e `/clientes/[id]`, título "Diretório de clientes", H1 "Lista de clientes".
 - Os arquivos de página ficam em `pages/customers/`, e o caminho público continua vindo de `definePageMeta({ path })` (ADR-0017).
-- Os demais textos do protótipo não mudam (por exemplo, "Usuários" no breadcrumb).
+- O breadcrumb da lista diz "Home › Clientes" (o protótipo diz "Usuários"). Os demais textos do protótipo não mudam.
 - Os arquivos `docs/design/diretorio-de-membros*.html` mantêm o nome, porque são o export do Claude Design.
 
 ## Consequências

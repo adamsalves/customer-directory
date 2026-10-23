@@ -4,7 +4,7 @@ import AppBreadcrumb, { type IBreadcrumbItem } from './AppBreadcrumb.vue'
 
 const items: IBreadcrumbItem[] = [
   { label: 'Home', to: '/customers' },
-  { label: 'Usuários', to: '/customers?page=2' },
+  { label: 'Clientes', to: '/customers?page=2' },
   { label: 'Detalhes' },
 ]
 
@@ -23,7 +23,7 @@ describe('AppBreadcrumb', () => {
 
     expect(links.map((link) => [link.text(), link.attributes('href')])).toEqual([
       ['Home', '/customers'],
-      ['Usuários', '/customers?page=2'],
+      ['Clientes', '/customers?page=2'],
     ])
   })
 
