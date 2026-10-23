@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import customers from '../../tests/fixtures/customers.json'
 import { normalizeCustomer } from './normalizeCustomer'
 import { parseRawCustomers } from './parseRawCustomers'
@@ -111,6 +111,18 @@ describe('queryCustomers with a search', () => {
     expect(slugsOf(result.items)).toStrictEqual(slugsOf(all.slice(0, 9)))
   })
 
+  // The most common request (no search at all). Folding the 20 names would change nothing, and it
+  // would run on every call: only the search itself is folded.
+  it.each(['', ' ', '\t \n'])('folds no name for the blank search %j', (search) => {
+    const normalize = vi.spyOn(String.prototype, 'normalize')
+
+    find(search)
+    const calls = normalize.mock.calls.length
+    normalize.mockRestore()
+
+    expect(calls).toBe(1)
+  })
+
   it.each(['eleuterio', 'ELEUTÉRIO', ' Eleutério '])(
     'finds Eleutério Almeida with %j',
     (search) => {
@@ -124,6 +136,14 @@ describe('queryCustomers with a search', () => {
   it('ignores an accent that only the search has', () => {
     expect(slugsOf(find('álda').items)).toStrictEqual(['alda-barbosa'])
   })
+
+  // What some keyboards type: one full-width character per letter
+  it.each(['ＥＬＥＵＴＥＲＩＯ', 'ｅｌｅｕｔéｒｉｏ'])(
+    'reads the full-width search %j as plain letters',
+    (search) => {
+      expect(slugsOf(find(search).items)).toStrictEqual(['eleuterio-almeida'])
+    },
+  )
 
   it('matches words that are not next to each other in the name', () => {
     expect(slugsOf(find('girao rosa').items)).toStrictEqual(['girao-darosa'])

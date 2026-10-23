@@ -115,9 +115,10 @@ describe('scrollToResults', () => {
     // A new page size goes back to page 1, so the page changes with it
     { name: 'a new page size and page 1', to: '/customers?perPage=18', from: '/customers?page=3' },
     { name: 'the default size back', to: '/customers', from: '/customers?page=2&perPage=18' },
-    // The field has the focus. Back from a search to a page of the whole list changes both too
+    // The field has the focus
     { name: 'a new search and page 1', to: '/customers?search=ana', from: '/customers?page=2' },
-    { name: 'the whole list back', to: '/customers?page=2', from: '/customers?search=ana' },
+    // The page changes, but the search with it
+    { name: 'another page and no search', to: '/customers?page=2', from: '/customers?search=ana' },
   ])('does not scroll or move the focus for $name', ({ to, from }) => {
     scrollToResults(route(to), route(from))
 

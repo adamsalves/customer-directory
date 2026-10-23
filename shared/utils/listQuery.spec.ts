@@ -2,7 +2,14 @@
 import { describe, expect, it } from 'vitest'
 import { prototypePage } from '../../tests/prototypePage'
 import type { IListQuery } from './listQuery'
-import { DEFAULT_PER_PAGE, PER_PAGE_OPTIONS, parseListQuery, serializeListQuery } from './listQuery'
+import {
+  DEFAULT_PER_PAGE,
+  MAX_SEARCH_LENGTH,
+  PER_PAGE_OPTIONS,
+  parseListQuery,
+  sameListState,
+  serializeListQuery,
+} from './listQuery'
 
 // Not a canonical positive integer string. The arrays matter: a single-element array and a
 // number both stringify into something that looks valid, so only a type check rejects them.
@@ -102,6 +109,28 @@ describe('parseListQuery', () => {
     expect(parseListQuery({ search: value }).search).toBe(search)
   })
 
+  // Every word is checked against every name on each request, so the length has a ceiling
+  it('cuts a search longer than MAX_SEARCH_LENGTH', () => {
+    const search = 'a '.repeat(5000)
+
+    expect(parseListQuery({ search }).search).toBe(search.slice(0, MAX_SEARCH_LENGTH - 1))
+  })
+
+  it('keeps a search of exactly MAX_SEARCH_LENGTH whole, after the trim', () => {
+    const search = 'a'.repeat(MAX_SEARCH_LENGTH)
+
+    expect(parseListQuery({ search: ` ${search} ` }).search).toBe(search)
+  })
+
+  // The cut lands on a space: the result has no space at the end, so it is canonical too
+  it('trims the end of a cut search again', () => {
+    const search = `${'a'.repeat(MAX_SEARCH_LENGTH - 1)} b`
+    const parsed = parseListQuery({ search })
+
+    expect(parsed.search).toBe('a'.repeat(MAX_SEARCH_LENGTH - 1))
+    expect(parseListQuery(serializeListQuery(parsed))).toStrictEqual(parsed)
+  })
+
   it.each(asCases(NOT_A_SEARCH))('falls back to an empty search for search=$value', ({ value }) => {
     expect(parseListQuery({ search: value }).search).toBe('')
   })
@@ -145,6 +174,24 @@ describe('parseListQuery', () => {
 
     expect(sizes).not.toBe('')
     expect([...PER_PAGE_OPTIONS]).toStrictEqual(sizes.split(',').map(Number))
+  })
+})
+
+describe('sameListState', () => {
+  const query: IListQuery = { page: 2, perPage: 18, search: 'ana' }
+
+  it('is true for two parses of the same list state', () => {
+    expect(sameListState(parseListQuery({ page: '2', perPage: '18', search: ' ana' }), query)).toBe(
+      true,
+    )
+  })
+
+  it.each([
+    { name: 'page', other: { ...query, page: 3 } },
+    { name: 'perPage', other: { ...query, perPage: 27 } },
+    { name: 'search', other: { ...query, search: 'anas' } },
+  ])('is false when $name differs', ({ other }) => {
+    expect(sameListState(other, query)).toBe(false)
   })
 })
 
