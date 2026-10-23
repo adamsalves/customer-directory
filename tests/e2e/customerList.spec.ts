@@ -26,8 +26,9 @@ test('the pagination marks only the current page', async ({ page }) => {
   expect(await label.boundingBox()).toMatchObject({ width: 1, height: 1 })
 })
 
+// Both page lists are in the DOM and CSS hides one of them
 const pageTwoLink = (page: Page) =>
-  page.getByRole('navigation', { name: 'Paginação' }).getByRole('link', { name: 'Página 2' })
+  page.getByTestId('pagination__page--link').filter({ hasText: /^\s*2\s*$/, visible: true })
 
 // toBeInViewport would also pass for a card under the sticky header, so the top of the list is
 // measured against the header: it settles 24px below it (the scroll is smooth)
@@ -47,7 +48,11 @@ test('changing page brings the top of the list back under the header', async ({ 
 })
 
 const resultsSection = (page: Page) => page.getByTestId('customers__results--section')
-const perPageSelect = (page: Page) => page.getByRole('combobox', { name: 'Itens por página' })
+const perPageSelect = (page: Page) => page.getByTestId('pagination__per-page--select')
+const cards = (page: Page) => page.getByTestId('customer-card__root--article')
+// Both page lists are in the DOM and CSS hides one of them
+const currentPage = (page: Page) =>
+  page.getByTestId('pagination__current--number').filter({ visible: true })
 
 // Two frames are enough for what runs a frame after a navigation: the focus and the anchoring
 const settle = (page: Page) =>
@@ -172,3 +177,41 @@ for (const { width, compact, arrow, link } of [
     expect(linkBox).toMatchObject(link)
   })
 }
+
+// Changing the page size starts over from page 1, so page 2 of 18 is one more step (#18). The
+// fixture has 20 records: 18 on the first page and 2 on the second.
+async function expectPageTwoOf18(page: Page) {
+  await expect(cards(page)).toHaveCount(2)
+  await expect(currentPage(page)).toHaveText('2')
+  await expect(perPageSelect(page)).toHaveValue('18')
+}
+
+// The select does nothing before the page is interactive, and waitForHydration needs a dark system
+test.describe('from the root', () => {
+  test.use({ colorScheme: 'dark' })
+
+  test('page 2, then 18 per page, then page 2 again', async ({ page }) => {
+    await page.goto('/')
+    await expect(page).toHaveURL('/customers')
+    await waitForHydration(page)
+
+    await pageTwoLink(page).click()
+    await expect(page).toHaveURL('/customers?page=2')
+    await expect(currentPage(page)).toHaveText('2')
+
+    await perPageSelect(page).selectOption('18')
+    await expect(page).toHaveURL('/customers?perPage=18')
+    await expect(cards(page)).toHaveCount(18)
+    await expect(currentPage(page)).toHaveText('1')
+
+    await pageTwoLink(page).click()
+    await expect(page).toHaveURL('/customers?page=2&perPage=18')
+    await expectPageTwoOf18(page)
+  })
+})
+
+test('opening page 2 with 18 per page shows the same state', async ({ page }) => {
+  await page.goto('/customers?page=2&perPage=18')
+
+  await expectPageTwoOf18(page)
+})

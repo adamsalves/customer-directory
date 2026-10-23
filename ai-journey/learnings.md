@@ -16,6 +16,12 @@
   - keyframes globais usados num CSS Module viravam um nome com hash e a animação sumia sem erro;
   - o breadcrumb anunciava duas "páginas atuais", e o teste de componente não via porque troca o link por um stub;
   - o header fixo cobria o conteúdo logo depois do skip link.
+- **No M3, o review pegou bugs que nenhum teste via.** Exemplos:
+  - uma fonte vazia gravava a lista vazia no cache por 1h (#12 e #14);
+  - os testes de idade só pegavam `getUTC*` trocado por getter local fora de UTC, e o CI roda em UTC (#13);
+  - o 502 fazia o ofetch repetir o GET sozinho, dobrando as leituras do S3 e o tempo até o erro (#17);
+  - trocar os itens por página pelo teclado tirava o select focado da tela (#71), e a correção desfazia a rolagem do leitor durante a carga (#72).
+- **Dividir quando a issue cresce.** A paginação (#16) passou do teto; rolagem e foco viraram a #71 e a #72, cada uma com review próprio.
 
 ## ❌ O que não funcionou
 
@@ -26,6 +32,10 @@
 - **Teste que não afirma o que diz.** O spec dos tokens conferia só os nomes: uma cor errada ou os temas trocados passavam. No dark mode, tirar a validade do cookie passou na suíte inteira, porque "recarregar mantém o tema" também passa com cookie de sessão.
 - **Pular a aprovação do plano.** Na #11, o plano foi direto ao sub-agente de implementação, sem o meu ok. Apontei o desvio e a aprovação passou a ser etapa explícita antes de chamar o `implementer`.
 - **Critério herdado do protótipo sem conferir o padrão.** A issue do toggle pedia `aria-pressed` junto com um rótulo que alterna. Pelo padrão APG, isso fazia o leitor de tela anunciar o tema errado. Só apareceu no review, depois de implementado.
+- **Estimar sem contar os specs.** No M3, a #16 fechou com +659 (estimada bem abaixo), a #71 com +336 contra +264 e a #72 com 449 depois do review. Os specs são perto de 40% do diff.
+- **Confiar no teste de componente para CSS e hidratação.** O happy-dom não aplica media query e o `mountSuspended` não hidrata. Layout por largura e erro vindo do SSR só ganharam teste no E2E da #18, com critérios acrescentados depois, a cada review que notava a falta.
+- **Pior caso tirado da fixture.** A "lista mais larga" da paginação veio dos dados de teste; o pior caso de verdade (`1 2 3 4 5`, 308px) só apareceu no review.
+- **Verde por sorte, de novo.** No E2E da #18, as repetições do `--repeat-each` rodaram em paralelo, colidiram na porta e passaram mesmo assim. Só a saída de erro mostrou.
 
 ## 🔄 O que eu faria diferente
 
@@ -34,3 +44,6 @@
 - Colocar os labels da issue no PR desde o primeiro: as notas de release são agrupadas pelos labels do PR.
 - Conferir os atributos ARIA de cada critério com o padrão APG já no plano da issue.
 - Provar link ativo, hidratação e cookie em E2E ou no HTML do servidor desde o início, e não em teste de componente.
+- Contar os specs na estimativa e dividir a issue já no plano quando passar de ~350 linhas.
+- Colocar na issue, desde o início, o critério de E2E de tudo que só o CSS ou a hidratação decidem.
+- Tirar o pior caso de todos os ramos do algoritmo, e não da fixture.

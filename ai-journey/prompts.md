@@ -116,3 +116,48 @@ Ninguém escreve o prompt do agente do zero. Ele é montado em três camadas:
 - **fatos e como:** o relatório do `measurer` e o plano feito a partir dele, depois de aprovado por mim.
 
 Na [#11](https://github.com/adamsalves/customer-directory/issues/11), os critérios viraram os quatro testes do E2E do tema, e o ADR-0011 trouxe o tema forçado pelo cookie. A medição mostrou que o CSS não tem media query de `prefers-color-scheme`: sem cookie, antes da primeira pintura, só o script inline aplica o escuro. Daí vieram o sistema escuro emulado em todos os testes e o rótulo do toggle como sinal de que a página hidratou. O plano listou também os defeitos plantados que provam cada teste.
+
+## M3 · Listagem paginada
+
+### 🔧 Prompt: Fonte fora do ar sem perder a lista
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+Um endpoint `/api/customers` paginado, que lê o S3 com cache de 1h e SWR ([#14](https://github.com/adamsalves/customer-directory/issues/14)), e uma tela de erro com "Tentar novamente" para quando o S3 falhar ([#17](https://github.com/adamsalves/customer-directory/issues/17)).
+
+**O que aconteceu:**
+O caminho feliz funcionou logo. Os reviews acharam os problemas na falha:
+
+- com todos os registros inválidos, o parser devolvia `[]`, e a lista vazia ia para o cache por 1h;
+- uma fonte vazia ainda apagava o cache, e o `event.waitUntil`, que o próprio PR tinha posto como conserto, não protegia nada no Nitro 2.13;
+- o 502 fazia o ofetch repetir o GET sozinho, o que dobrava as leituras do S3 e o tempo até o erro aparecer.
+
+**Abordagem final:**
+O parser lança erro quando não sobra nenhum registro válido, e o cache guarda a cópia antiga. O 502 sai do handler, e não do `fetchCustomers`, para o SWR continuar servindo essa cópia enquanto ela existir. O `useFetch` roda com `retry: false`. A tela de erro tem texto fixo, avisa que os filtros serão mantidos e chama `refresh`. O retry leva o foco de volta aos resultados.
+
+### 🔧 Prompt: Uma marcação, o CSS decide o layout
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O card do cliente, a lista e os skeletons ([#66](https://github.com/adamsalves/customer-directory/issues/66), [#15](https://github.com/adamsalves/customer-directory/issues/15), [#67](https://github.com/adamsalves/customer-directory/issues/67)) com uma marcação só para toda largura, como manda a ADR-0014: grade a partir de 640px e linha abaixo disso.
+
+**O que aconteceu:**
+O protótipo tem duas versões da linha de local (grade e linha). As duas ficaram no HTML, e o CSS esconde uma com `display: none`, que também a tira da árvore de acessibilidade. O hover sobe o card 2px só com `(hover: hover)`. A animação de entrada perdeu o `both`, porque o último quadro prendia `transform: none` e anulava o hover. Os skeletons são sempre 9, numa lista com `aria-busy`. Nenhum teste de componente via isso: o happy-dom não aplica media query, e os reviews da #66 e da #67 acrescentaram critérios ao E2E da #18.
+
+**Abordagem final:**
+O E2E da [#18](https://github.com/adamsalves/customer-directory/issues/18) mede o layout no navegador. Conta as colunas pelo `x` dos cards (1 em 639px, 2 em 640px, 3 em 768px), confere qual linha de local aparece em 375 e em 1280, testa o hover só no projeto desktop e mede o skeleton com `/api/customers` preso: 98px na linha e 310px na grade.
+
+### 🔧 Prompt: Paginação por links
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+Paginação com reticências, versão compacta no mobile, alvos de 44px abaixo de 960px e o seletor "Itens por página" (9, 18, 27, 54), que volta para a página 1 ([#16](https://github.com/adamsalves/customer-directory/issues/16)).
+
+**O que aconteceu:**
+Cada página virou um link, e não um `<button>`, para ter endereço e abrir em outra aba. Com isso, o RouterLink, que ignora a query, marcava todos os links para `/customers` com `aria-current="page"`. Só o E2E mostrava, porque o teste de componente troca o link por um stub. O algoritmo veio do protótipo, menos uma parte: a reticência que esconde uma página só (`1 … 3 4 5 … 8`) virou o próprio número, porque custava um clique a mais. O review mostrou que o pior caso de largura não era `1 2 3 … 23`, tirado da fixture, e sim `1 2 3 4 5`, com 308px. O PR fechou com +659 −1, acima do teto, como exceção.
+
+**Abordagem final:**
+Cada link leva `aria-current-value="false"` e o `aria-current` fica fixo no span da página atual. A rolagem e o foco saíram para a [#71](https://github.com/adamsalves/customer-directory/issues/71) e a [#72](https://github.com/adamsalves/customer-directory/issues/72). A página rola até os resultados só quando muda com o mesmo tamanho, porque rolar ao trocar os itens por página tirava o select focado da tela. O foco vai para a seção dos resultados, e o select fica no lugar enquanto a lista cresce acima dele.

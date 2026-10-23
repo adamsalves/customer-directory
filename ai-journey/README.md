@@ -20,11 +20,12 @@ Como usei IA neste projeto. A pasta é atualizada ao fim de cada milestone.
 
 ## Linha do tempo
 
-| Milestone             | O que a IA fez                                                                                            | Registro                                                         |
-| --------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Fase 0 · Planejamento | plano, revisão do protótipo, ADRs, backlog de 9 milestones                                                | [prompts](prompts.md#fase-0--planejamento)                       |
-| M1 · Fundação         | scaffold, lint, hooks, testes, CI, deploy e docs, um PR por issue                                         | [learnings](learnings.md)                                        |
-| M2 · Shell + tema     | tokens, fontes, layout, breadcrumb, dark mode por cookie, E2E do tema e "membros" → "clientes" (ADR-0020) | [prompts](prompts.md#m2--shell--tema), [learnings](learnings.md) |
+| Milestone              | O que a IA fez                                                                                                             | Registro                                                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Fase 0 · Planejamento  | plano, revisão do protótipo, ADRs, backlog de 9 milestones                                                                 | [prompts](prompts.md#fase-0--planejamento)                                                                            |
+| M1 · Fundação          | scaffold, lint, hooks, testes, CI, deploy e docs, um PR por issue                                                          | [learnings](learnings.md)                                                                                             |
+| M2 · Shell + tema      | tokens, fontes, layout, breadcrumb, dark mode por cookie, E2E do tema e "membros" → "clientes" (ADR-0020)                  | [prompts](prompts.md#m2--shell--tema), [learnings](learnings.md)                                                      |
+| M3 · Listagem paginada | guards do payload, BFF com cache, card, lista pela URL, skeleton, paginação, rolagem e foco, erro com retry e E2E da lista | [prompts](prompts.md#m3--listagem-paginada), [registro](registro.md#m3--listagem-paginada), [learnings](learnings.md) |
 
 ## Arquivos
 

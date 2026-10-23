@@ -167,3 +167,11 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/77#issuecomment-6348474688) · estimativa ~170 linhas
 - **Como:** arquivo separado do `prompts.md`, que é curado; entradas tiradas dos PRs e das issues, sem reconstruir os planos antigos; a entrada vai no próprio PR, antes do merge.
 - **Resultado:** +175 −1. Mergeado sem review.
+
+### #18 · E2E da lista paginada · [PR #79](https://github.com/adamsalves/customer-directory/pull/79)
+
+- **Decidido:** [#18](https://github.com/adamsalves/customer-directory/issues/18) · ADR-0009, sem ADR nova: a segunda instância do app é só infraestrutura de teste
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/18#issuecomment-6348796907) · estimativa ~280 linhas
+- **Como:** o fluxo e a URL direta ficam em `customerList.spec.ts`; o que depende da largura, em `customerListLayout.spec.ts`: colunas pelo `x` dos cards, hover só no desktop (o toque não casa `(hover: hover)`) e o skeleton medido com `/api/customers` preso. O erro vindo do SSR pede uma fonte que cai e volta: o `fixtureSource` ganhou `/flaky/<n>.json`, e o próprio teste sobe uma instância do app (mesmo `.output`, cache vazio) que lê dela, com porta e chave por worker. Esse teste roda só no desktop e sem retry, com trace guardado na falha.
+- **Resultado:** +367 −18 (estimativa ~280, com o fechamento do M3 no `ai-journey/`). 11 quebras plantadas (as 7 do plano e mais 4), cada uma derrubou ao menos um teste novo. Review (`/code-review`, 9 achados, nenhum bug no app): a segunda instância era uma 3ª entrada de `webServer`, que dependia da ordem de subida e, no `--ui`/`--repeat-each`, achava o cache cheio e falhava sem regressão; virou instância subida no teste. Na prova com `--repeat-each`, as repetições rodaram em paralelo e colidiram na porta (`EADDRINUSE`), daí porta e chave por worker. Também: skip por `isMobile` no lugar do nome do projeto, `networkidle` antes de conferir que não houve requisição, `trace: 'retain-on-failure'` (com `retries: 0` o `on-first-retry` nunca gravava) e o link e o select por `data-testid`.
+- **Pendente:** layout rodando também no projeto mobile (repete as larguras do desktop) e locators repetidos entre specs, apontados no review e deixados fora.
