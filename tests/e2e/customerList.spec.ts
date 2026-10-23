@@ -26,8 +26,9 @@ test('the pagination marks only the current page', async ({ page }) => {
   expect(await label.boundingBox()).toMatchObject({ width: 1, height: 1 })
 })
 
+// Both page lists are in the DOM and CSS hides one of them
 const pageTwoLink = (page: Page) =>
-  page.getByRole('navigation', { name: 'Paginação' }).getByRole('link', { name: 'Página 2' })
+  page.getByTestId('pagination__page--link').filter({ hasText: /^\s*2\s*$/, visible: true })
 
 // toBeInViewport would also pass for a card under the sticky header, so the top of the list is
 // measured against the header: it settles 24px below it (the scroll is smooth)
@@ -47,7 +48,7 @@ test('changing page brings the top of the list back under the header', async ({ 
 })
 
 const resultsSection = (page: Page) => page.getByTestId('customers__results--section')
-const perPageSelect = (page: Page) => page.getByRole('combobox', { name: 'Itens por página' })
+const perPageSelect = (page: Page) => page.getByTestId('pagination__per-page--select')
 const cards = (page: Page) => page.getByTestId('customer-card__root--article')
 // Both page lists are in the DOM and CSS hides one of them
 const currentPage = (page: Page) =>

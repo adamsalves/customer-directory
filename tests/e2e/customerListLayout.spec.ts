@@ -120,7 +120,9 @@ test.describe('the skeleton while the next page loads', () => {
         await route.continue()
       })
 
-      await page.getByRole('link', { name: 'Página 2', exact: true }).click()
+      await visible(page, 'pagination__page--link')
+        .filter({ hasText: /^\s*2\s*$/ })
+        .click()
 
       // Nine, whatever the page size: this one asked for 18
       const skeletons = page.getByTestId('customer-card-skeleton__root--block')

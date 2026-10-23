@@ -5,15 +5,19 @@ import { createServer } from 'node:http'
 
 const body = readFileSync(new URL('../fixtures/customers.json', import.meta.url))
 
-// /flaky.json is the same list behind a switch, for the spec that needs a source that is down and
-// comes back (customerListError.spec.ts). It starts down; POST /flaky/up and /flaky/down flip it.
-let flakyUp = false
+// /flaky/<n>.json is the same list behind a switch, for the spec that needs a source that is down
+// and comes back (customerListError.spec.ts). Each n has its own switch, so runs in parallel do not
+// flip each other's. It starts down; POST /flaky/<n>/up and /flaky/<n>/down flip it.
+const flakyUp = new Set<string>()
 
-createServer(({ method, url }, response) => {
-  if (method === 'POST' && (url === '/flaky/up' || url === '/flaky/down')) {
-    flakyUp = url === '/flaky/up'
+createServer(({ method, url = '' }, response) => {
+  const flip = /^\/flaky\/(\w+)\/(up|down)$/.exec(url)
+  const flaky = /^\/flaky\/(\w+)\.json$/.exec(url)
+  if (method === 'POST' && flip?.[1]) {
+    if (flip[2] === 'up') flakyUp.add(flip[1])
+    else flakyUp.delete(flip[1])
     response.writeHead(204).end()
-  } else if (url === '/flaky.json' && !flakyUp) {
+  } else if (flaky?.[1] && !flakyUp.has(flaky[1])) {
     response.writeHead(503).end()
   } else {
     response.writeHead(200, { 'content-type': 'application/json' }).end(body)
