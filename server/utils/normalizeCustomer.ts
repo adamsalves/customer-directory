@@ -1,5 +1,6 @@
 import type { ICustomer, IRawCustomer } from '#shared/types/customer'
 import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
+import { foldText } from './foldText'
 
 const TITLES: Record<IRawCustomer['name']['title'], ICustomer['title']> = {
   mr: 'Sr.',
@@ -45,10 +46,7 @@ function formatStreet(street: string): string {
 // The prototype's slug(): "Eleutério.Almeida" -> "eleuterio-almeida", "são  paulo" -> "sao-paulo".
 // Only [a-z0-9-] survives, so the URL stays ASCII (ADR-0006).
 function slugify(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
+  return foldText(text)
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 }

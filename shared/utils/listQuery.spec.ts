@@ -42,22 +42,33 @@ const NOT_A_PER_PAGE: unknown[] = [
   null,
 ]
 
+// Not a string. A single-element array and a number both stringify into something that looks like
+// a search, so only a type check rejects them.
+const NOT_A_SEARCH: unknown[] = [['ariela'], ['ariela', 'nunes'], [], 42, 0, true, null, undefined]
+
+// Kept exactly as typed: the field must not lose a trailing space, and the words are split by the
+// search itself
+const SEARCHES = ['ariela', 'ELEUTÉRIO', ' álda ', 'girao  rosa', ' ']
+
 // Objects, because `it.each` spreads a case that is an array into the callback arguments
 const asCases = (values: unknown[]) => values.map((value) => ({ value }))
 
-const queries: IListQuery[] = PER_PAGE_OPTIONS.flatMap((perPage) =>
-  [1, 2, 10].map((page) => ({ page, perPage })),
-)
+const queries: IListQuery[] = [
+  ...PER_PAGE_OPTIONS.flatMap((perPage) =>
+    [1, 2, 10].map((page) => ({ page, perPage, search: '' })),
+  ),
+  ...SEARCHES.map((search) => ({ page: 3, perPage: 18, search })),
+]
 
 describe('parseListQuery', () => {
   it('returns the defaults for an empty query', () => {
-    expect(parseListQuery({})).toStrictEqual({ page: 1, perPage: 9 })
+    expect(parseListQuery({})).toStrictEqual({ page: 1, perPage: 9, search: '' })
   })
 
   it.each(asCases([null, undefined, 'x', 42, []]))(
     'returns the defaults when the input is $value',
     ({ value }) => {
-      expect(parseListQuery(value)).toStrictEqual({ page: 1, perPage: 9 })
+      expect(parseListQuery(value)).toStrictEqual({ page: 1, perPage: 9, search: '' })
     },
   )
 
@@ -77,17 +88,46 @@ describe('parseListQuery', () => {
     expect(parseListQuery({ perPage: value }).perPage).toBe(DEFAULT_PER_PAGE)
   })
 
-  it('validates page and perPage independently, each under its own key', () => {
-    expect(parseListQuery({ page: '3', perPage: '18' })).toStrictEqual({ page: 3, perPage: 18 })
-    expect(parseListQuery({ page: 'x', perPage: '18' })).toStrictEqual({ page: 1, perPage: 18 })
-    expect(parseListQuery({ page: '3', perPage: 'x' })).toStrictEqual({ page: 3, perPage: 9 })
+  it.each(SEARCHES)('keeps search=%j as it came', (search) => {
+    expect(parseListQuery({ search }).search).toBe(search)
+  })
+
+  it.each(asCases(NOT_A_SEARCH))('falls back to an empty search for search=$value', ({ value }) => {
+    expect(parseListQuery({ search: value }).search).toBe('')
+  })
+
+  it('validates page, perPage and search independently, each under its own key', () => {
+    expect(parseListQuery({ page: '3', perPage: '18' })).toStrictEqual({
+      page: 3,
+      perPage: 18,
+      search: '',
+    })
+    expect(parseListQuery({ page: 'x', perPage: '18' })).toStrictEqual({
+      page: 1,
+      perPage: 18,
+      search: '',
+    })
+    expect(parseListQuery({ page: '3', perPage: 'x' })).toStrictEqual({
+      page: 3,
+      perPage: 9,
+      search: '',
+    })
+    expect(parseListQuery({ page: 'x', perPage: 'x', search: 'ariela' })).toStrictEqual({
+      page: 1,
+      perPage: 9,
+      search: 'ariela',
+    })
+    expect(parseListQuery({ page: '3', perPage: '18', search: ['ariela'] })).toStrictEqual({
+      page: 3,
+      perPage: 18,
+      search: '',
+    })
   })
 
   it('ignores unknown keys, the pt-BR ones that ADR-0021 retired included', () => {
-    expect(parseListQuery({ pagina: '3', por: '18', color: 'red' })).toStrictEqual({
-      page: 1,
-      perPage: 9,
-    })
+    expect(parseListQuery({ pagina: '3', por: '18', busca: 'ariela', color: 'red' })).toStrictEqual(
+      { page: 1, perPage: 9, search: '' },
+    )
   })
 
   it('offers the page sizes of the prototype', () => {
@@ -100,19 +140,34 @@ describe('parseListQuery', () => {
 
 describe('serializeListQuery', () => {
   it('leaves the defaults out of the URL', () => {
-    expect(serializeListQuery({ page: 1, perPage: 9 })).toStrictEqual({})
+    expect(serializeListQuery({ page: 1, perPage: 9, search: '' })).toStrictEqual({})
   })
 
   it('keeps what differs from the defaults, as strings', () => {
-    expect(serializeListQuery({ page: 2, perPage: 18 })).toStrictEqual({
+    expect(serializeListQuery({ page: 2, perPage: 18, search: '' })).toStrictEqual({
       page: '2',
       perPage: '18',
     })
-    expect(serializeListQuery({ page: 5, perPage: 9 })).toStrictEqual({ page: '5' })
-    expect(serializeListQuery({ page: 1, perPage: 27 })).toStrictEqual({ perPage: '27' })
+    expect(serializeListQuery({ page: 5, perPage: 9, search: '' })).toStrictEqual({ page: '5' })
+    expect(serializeListQuery({ page: 1, perPage: 27, search: '' })).toStrictEqual({
+      perPage: '27',
+    })
+    expect(serializeListQuery({ page: 1, perPage: 9, search: 'ariela nunes' })).toStrictEqual({
+      search: 'ariela nunes',
+    })
+    expect(serializeListQuery({ page: 2, perPage: 18, search: 'álda' })).toStrictEqual({
+      page: '2',
+      perPage: '18',
+      search: 'álda',
+    })
   })
 
-  it.each(queries)('round-trips page $page with perPage $perPage', (query) => {
+  // Only the empty string is the default: a lone space is what the reader has typed so far
+  it('keeps a search that is only spaces', () => {
+    expect(serializeListQuery({ page: 1, perPage: 9, search: ' ' })).toStrictEqual({ search: ' ' })
+  })
+
+  it.each(queries)('round-trips page $page with perPage $perPage and search "$search"', (query) => {
     expect(parseListQuery(serializeListQuery(query))).toStrictEqual(query)
   })
 })

@@ -185,3 +185,11 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Como:** troca do rótulo e dos specs que esperavam "Usuários"; a linha de desvio da ADR-0013 foi reescrita sem mudar a largura da tabela, para não reformatar as outras linhas.
 - **Resultado:** +18 −8. Mergeado sem review; o preview mostrou que o roteiro do PR errava ao dizer que a trilha da lista some no mobile.
 - **Pendente:** breadcrumb do detalhe (#35) e textos com "membro" das #34 e #38; protótipo em `docs/design/` no M9.
+
+### #19 · Busca por nome no BFF
+
+- **Decidido:** [#19](https://github.com/adamsalves/customer-directory/issues/19) · ADR-0004, ADR-0007, ADR-0021, sem ADR nova: a regra de busca é a do protótipo e a chave da URL segue a ADR-0021 (`search`, não `busca`)
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/19#issuecomment-6366729457) · estimativa ~150 linhas
+- **Como:** `IListQuery` ganha `search` (`''` por padrão). O parser aceita só `string` e não apara, para o campo da #20 não perder o espaço enquanto digita; o serializador deixa `''` fora da URL. `queryCustomers` filtra antes de paginar, então `total`, `totalPages` e o clamp contam só o que casou. A dobra de acento e de caixa saiu do `slugify` para o `foldText`, que a busca e o slug usam.
+- **Resultado:** tamanho do PR e review pendentes. 20 quebras plantadas, cada uma derrubou ao menos um teste, menos o filtro de palavras vazias e o `return` da busca em branco: `''` está em todo nome, então nenhum dos dois muda a saída (200 mil buscas aleatórias deram o mesmo resultado sem eles) e só poupam a passada pela lista. A página passou a mandar `search` vazio ao BFF em toda requisição, porque o `useFetch` leva a query inteira; 5 asserções de `index.spec.ts` ganharam `&search=`.
+- **Pendente:** o campo de busca (#20). O `pageChanged` de `app/utils/resultsScroll.ts` compara só o tamanho da página (há um `ponytail:` ali): buscar a partir da página 2 volta à página 1 e seria lido como troca de página, tirando o foco do campo. Chaves em pt-BR que sobraram no corpo das ADR-0007 e ADR-0017.

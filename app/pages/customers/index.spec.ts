@@ -78,16 +78,17 @@ describe('customers page', () => {
     expect(wrapper.get('[data-testid="breadcrumb__item--current"]').text()).toBe('Clientes')
   })
 
+  // The whole parsed query goes to the BFF, an empty search included
   it('asks the BFF for the page and the page size in the URL', async () => {
     await mountSuspended(CustomersPage, { route: '/customers?page=2&perPage=18' })
 
-    expect(requests.map(String)).toEqual(['page=2&perPage=18'])
+    expect(requests.map(String)).toEqual(['page=2&perPage=18&search='])
   })
 
   it('asks for the defaults when the URL is not canonical', async () => {
     await mountSuspended(CustomersPage, { route: '/customers?page=abc&perPage=7' })
 
-    expect(requests.map(String)).toEqual(['page=1&perPage=9'])
+    expect(requests.map(String)).toEqual(['page=1&perPage=9&search='])
   })
 
   it('renders one card per customer, in the order of the response', async () => {
@@ -224,7 +225,7 @@ describe('customers page', () => {
     failing = true
     await mountSuspended(CustomersPage, { route: '/customers?page=2' })
 
-    expect(requests.map(String)).toEqual(['page=2&perPage=9'])
+    expect(requests.map(String)).toEqual(['page=2&perPage=9&search='])
   })
 
   it('retries the same query and shows the cards when the retry succeeds', async () => {
@@ -237,7 +238,7 @@ describe('customers page', () => {
       expect(wrapper.findAll(CARD)).toHaveLength(items.length)
     })
 
-    expect(requests.map(String)).toEqual(['page=2&perPage=9', 'page=2&perPage=9'])
+    expect(requests.map(String)).toEqual(['page=2&perPage=9&search=', 'page=2&perPage=9&search='])
     expect(wrapper.find(ERROR).exists()).toBe(false)
     expect(wrapper.find(NAV).exists()).toBe(true)
   })
@@ -287,10 +288,10 @@ describe('customers page', () => {
 
   it('refetches when the page in the URL changes', async () => {
     await mountSuspended(CustomersPage, { route: '/customers?page=2' })
-    await useListQuery().setQuery({ page: 3, perPage: 9 })
+    await useListQuery().setQuery({ page: 3, perPage: 9, search: '' })
 
     await vi.waitFor(() => {
-      expect(requests.map(String)).toEqual(['page=2&perPage=9', 'page=3&perPage=9'])
+      expect(requests.map(String)).toEqual(['page=2&perPage=9&search=', 'page=3&perPage=9&search='])
     })
   })
 })
