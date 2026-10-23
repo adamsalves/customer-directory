@@ -183,5 +183,5 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Decidido:** [#80](https://github.com/adamsalves/customer-directory/issues/80) · ADR-0013, ADR-0020 (o breadcrumb deixa de ser exceção)
 - **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/80#issuecomment-6365890798) · estimativa ~20 linhas
 - **Como:** troca do rótulo e dos specs que esperavam "Usuários"; a linha de desvio da ADR-0013 foi reescrita sem mudar a largura da tabela, para não reformatar as outras linhas.
-- **Resultado:** +18 −8.
+- **Resultado:** +18 −8. Mergeado sem review; o preview mostrou que o roteiro do PR errava ao dizer que a trilha da lista some no mobile.
 - **Pendente:** breadcrumb do detalhe (#35) e textos com "membro" das #34 e #38; protótipo em `docs/design/` no M9.
