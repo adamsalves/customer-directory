@@ -17,14 +17,10 @@ function toCard({
 }
 
 // The customers whose name has every word of the search, accents and case aside ("girao rosa" finds
-// "Girão da Rosa"). A blank search has no words and keeps everyone. Dropping the empty words and
-// returning early only skip the pass over the list: an empty word is in every name, so the result
-// is the same without them.
+// "Girão da Rosa"). A blank search splits into empty words, which every name contains, so it keeps
+// everyone.
 function searchByName(customers: ICustomer[], search: string): ICustomer[] {
-  const words = foldText(search)
-    .split(/\s+/)
-    .filter((word) => word !== '')
-  if (words.length === 0) return customers
+  const words = foldText(search).split(/\s+/)
   return customers.filter(({ name }) => {
     const folded = foldText(name)
     return words.every((word) => folded.includes(word))
