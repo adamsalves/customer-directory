@@ -137,8 +137,7 @@ test.describe('with the keyboard', () => {
 })
 
 // The fixture has 3 pages, too few for an ellipsis, so the next answer claims 23: the widest
-// compact list with an ellipsis ("1 2 3 … 23") has to fit a 320px screen. Up to 5 pages the compact
-// list shows every number and does not fit one yet (#20).
+// compact list with an ellipsis ("1 2 3 … 23") has to fit a 320px screen.
 test('the widest compact list with an ellipsis fits a 320px screen', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 })
   await page.goto('/customers')
@@ -155,6 +154,49 @@ test('the widest compact list with an ellipsis fits a 320px screen', async ({ pa
   expect(box.width).toBeLessThanOrEqual(320 - 2 * 16)
   expect(box.x).toBeGreaterThanOrEqual(0)
   expect(box.x + box.width).toBeLessThanOrEqual(320)
+})
+
+// Up to 5 pages the compact list shows every number, and "‹ 1 2 3 4 5 ›" is the widest of them:
+// 348px with its spaces, 308px without. The next answer claims 2 to 5 pages (the fixture has 3),
+// with page 2 current to tell it from the fixture's answer. The nav is centered, so one that is
+// too wide spills on both sides: it has to stay inside the 16px gutters of 320, 360 and 375px.
+test.describe('the compact list with up to 5 pages', () => {
+  // The answer is faked in the browser, so the page has to be interactive before the click: before
+  // it a link is a plain navigation, answered by the server. waitForHydration needs a dark system.
+  test.use({ colorScheme: 'dark' })
+  test.skip(({ isMobile }) => isMobile, 'the width is set by the test, whatever the project')
+
+  for (const width of [320, 360, 375]) {
+    for (const totalPages of [2, 3, 4, 5]) {
+      test(`${String(totalPages)} pages fit a ${String(width)}px screen`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 640 })
+        await page.goto('/customers')
+        await waitForHydration(page)
+        await page.route(/\/api\/customers\?/, (route) =>
+          route.fulfill({
+            json: { items: [], total: totalPages * 9, page: 2, perPage: 9, totalPages },
+          }),
+        )
+        await pageTwoLink(page).click()
+        await expect(currentPage(page)).toHaveText('2')
+        // Every number is in the list, none behind an ellipsis
+        await expect(
+          page.getByTestId('pagination__compact--list').getByTestId('pagination__page--item'),
+        ).toHaveCount(totalPages)
+
+        const box = await page.getByRole('navigation', { name: 'Paginação' }).boundingBox()
+        if (!box) throw new Error('pagination not rendered')
+        expect(box.x).toBeGreaterThanOrEqual(16)
+        expect(box.x + box.width).toBeLessThanOrEqual(width - 16)
+        // ADR-0013: the targets go down to 40px only at 320px (container below 308px)
+        const size = width === 320 ? 40 : 44
+        expect(await page.getByTestId('pagination__prev--link').boundingBox()).toMatchObject({
+          width: size,
+          height: size,
+        })
+      })
+    }
+  }
 })
 
 // ADR-0014: the compact list below 640px. The issue: targets of 44px below 960px; from there the
