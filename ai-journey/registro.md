@@ -175,3 +175,13 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Como:** o fluxo e a URL direta ficam em `customerList.spec.ts`; o que depende da largura, em `customerListLayout.spec.ts`: colunas pelo `x` dos cards, hover só no desktop (o toque não casa `(hover: hover)`) e o skeleton medido com `/api/customers` preso. O erro vindo do SSR pede uma fonte que cai e volta: o `fixtureSource` ganhou `/flaky/<n>.json`, e o próprio teste sobe uma instância do app (mesmo `.output`, cache vazio) que lê dela, com porta e chave por worker. Esse teste roda só no desktop e sem retry, com trace guardado na falha.
 - **Resultado:** +367 −18 (estimativa ~280, com o fechamento do M3 no `ai-journey/`). 11 quebras plantadas (as 7 do plano e mais 4), cada uma derrubou ao menos um teste novo. Review (`/code-review`, 9 achados, nenhum bug no app): a segunda instância era uma 3ª entrada de `webServer`, que dependia da ordem de subida e, no `--ui`/`--repeat-each`, achava o cache cheio e falhava sem regressão; virou instância subida no teste. Na prova com `--repeat-each`, as repetições rodaram em paralelo e colidiram na porta (`EADDRINUSE`), daí porta e chave por worker. Também: skip por `isMobile` no lugar do nome do projeto, `networkidle` antes de conferir que não houve requisição, `trace: 'retain-on-failure'` (com `retries: 0` o `on-first-retry` nunca gravava) e o link e o select por `data-testid`.
 - **Pendente:** layout rodando também no projeto mobile (repete as larguras do desktop) e locators repetidos entre specs, apontados no review e deixados fora.
+
+## M4 · Busca
+
+### #80 · Breadcrumb "Clientes" · [PR #81](https://github.com/adamsalves/customer-directory/pull/81)
+
+- **Decidido:** [#80](https://github.com/adamsalves/customer-directory/issues/80) · ADR-0013, ADR-0020 (o breadcrumb deixa de ser exceção)
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/80#issuecomment-6365890798) · estimativa ~20 linhas
+- **Como:** troca do rótulo e dos specs que esperavam "Usuários"; a linha de desvio da ADR-0013 foi reescrita sem mudar a largura da tabela, para não reformatar as outras linhas.
+- **Resultado:** +18 −8.
+- **Pendente:** breadcrumb do detalhe (#35) e textos com "membro" das #34 e #38; protótipo em `docs/design/` no M9.
