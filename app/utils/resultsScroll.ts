@@ -1,5 +1,5 @@
 import type { RouteLocationNormalized } from 'vue-router'
-import { parseListQuery } from '#shared/utils/listQuery'
+import { parseListQuery, sameListState } from '#shared/utils/listQuery'
 
 type TRoute = Pick<RouteLocationNormalized, 'path' | 'hash' | 'query'>
 
@@ -8,15 +8,14 @@ export const RESULTS_ID = 'results'
 
 const px = (value: string) => Number.parseFloat(value) || 0
 
-// Same page of the app, no hash, and another page of the same page size. A new page size also goes
-// back to page 1, but it is no page change: whoever made it is on the select, and the scroll would
-// take it off the screen. ponytail: only the page size is compared; when the list has more state
-// (search, filters), compare all of it but the page.
+// Same page of the app, no hash, and another page with the rest of the list state unchanged. A new
+// page size or search also goes back to page 1, but it is no page change: whoever made it is on the
+// select or the field, and the scroll would take the focus off it.
 function pageChanged(to: TRoute, from: TRoute) {
   if (to.path !== from.path || to.hash) return false
   const next = parseListQuery(to.query)
   const previous = parseListQuery(from.query)
-  return next.perPage === previous.perPage && next.page !== previous.page
+  return next.page !== previous.page && sameListState({ ...next, page: previous.page }, previous)
 }
 
 // The focus goes to the results without a scroll of its own: a page change scrolls by itself, below,
@@ -31,8 +30,8 @@ export function focusResults(): HTMLElement | null {
 // Nuxt leaves the page where it is when only the query changes, so a click on another page would
 // leave the reader at the end of the new list. This brings the top of the results back, under the
 // sticky header, and moves the focus there: the page link that was used turned into the current-page
-// span and the focus would be lost. Any other navigation is left to Nuxt, a change of page size
-// included.
+// span and the focus would be lost. Any other navigation is left to Nuxt, a new page size or search
+// included. Back and forward never get here: the plugin leaves them to Nuxt.
 export function scrollToResults(to: TRoute, from: TRoute) {
   if (!pageChanged(to, from)) return
   // Even when the results are already in sight

@@ -47,8 +47,15 @@ describe('scrollToResults', () => {
     expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ left: 0, top: TARGET, behavior: 'smooth' })
   })
 
-  it('does the same for a page of a page size other than the default', () => {
-    scrollToResults(route('/customers?page=3&perPage=18'), route('/customers?page=2&perPage=18'))
+  it.each([
+    {
+      name: 'a page size other than the default',
+      to: '?page=3&perPage=18',
+      from: '?page=2&perPage=18',
+    },
+    { name: 'a search', to: '?search=ana&page=3', from: '?search=ana&page=2' },
+  ])('does the same for a page of $name', ({ to, from }) => {
+    scrollToResults(route(`/customers${to}`), route(`/customers${from}`))
 
     expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ left: 0, top: TARGET, behavior: 'smooth' })
   })
@@ -108,6 +115,10 @@ describe('scrollToResults', () => {
     // A new page size goes back to page 1, so the page changes with it
     { name: 'a new page size and page 1', to: '/customers?perPage=18', from: '/customers?page=3' },
     { name: 'the default size back', to: '/customers', from: '/customers?page=2&perPage=18' },
+    // The field has the focus
+    { name: 'a new search and page 1', to: '/customers?search=ana', from: '/customers?page=2' },
+    // The page changes, but the search with it
+    { name: 'another page and no search', to: '/customers?page=2', from: '/customers?search=ana' },
   ])('does not scroll or move the focus for $name', ({ to, from }) => {
     scrollToResults(route(to), route(from))
 

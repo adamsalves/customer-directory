@@ -87,6 +87,26 @@ describe('GET /api/customers', () => {
     expect(body).toHaveProperty('items.length', 2)
   })
 
+  // The key `search` goes through getQuery and parseListQuery, and the total follows the match
+  it('reads search from the query and filters before paginating', async () => {
+    const body: unknown = await $fetch('/api/customers?search=quevin')
+
+    expect(body).toMatchObject({ total: 1, page: 1, perPage: 9, totalPages: 1 })
+    expect(body).toHaveProperty('items.length', 1)
+    expect(body).toHaveProperty('items[0].slug', 'quevin-cavalcanti')
+  })
+
+  // getQuery decodes the accent and both forms of a space before the search folds them
+  it.each([
+    { search: 'ELEUT%C3%89RIO', slug: 'eleuterio-almeida' },
+    { search: 'girao+rosa', slug: 'girao-darosa' },
+    { search: 'rosa%20girao', slug: 'girao-darosa' },
+  ])('decodes search=$search from the URL', async ({ search, slug }) => {
+    const body: unknown = await $fetch(`/api/customers?search=${search}`)
+
+    expect(body).toMatchObject({ total: 1, items: [{ slug }] })
+  })
+
   // One cached list for every query: a key per URL would refetch, and with swr never expire
   it('reads the source once for different queries', async () => {
     await $fetch('/api/customers?page=3')

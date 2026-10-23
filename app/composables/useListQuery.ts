@@ -1,4 +1,9 @@
-import { parseListQuery, serializeListQuery, type IListQuery } from '#shared/utils/listQuery'
+import {
+  parseListQuery,
+  sameListState,
+  serializeListQuery,
+  type IListQuery,
+} from '#shared/utils/listQuery'
 
 // ADR-0007: the URL is the source of truth for the list. `query` reads it through
 // parseListQuery; `setQuery` writes it back as a navigation, so back and shared links work.
@@ -10,7 +15,7 @@ export function useListQuery() {
   // previous object while the parsed value is the same stops useFetch from refetching it.
   const query = computed<IListQuery>((previous) => {
     const next = parseListQuery(route.query)
-    return previous && JSON.stringify(previous) === JSON.stringify(next) ? previous : next
+    return previous && sameListState(previous, next) ? previous : next
   })
 
   // Takes the whole list state and writes its canonical URL: keys outside IListQuery are dropped
