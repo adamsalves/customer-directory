@@ -62,10 +62,29 @@ async function arriveAt(url: string) {
   }
 }
 
+// The write that is on its way lands: the frame it waits for runs out and the clock stays put, so
+// the wait of a key typed meanwhile keeps waiting. The caller says what the URL ends on.
+async function landOn(url: string) {
+  for (let turn = 0; turn < 50 && useRoute().fullPath !== url; turn++) {
+    await flushPromises()
+    vi.advanceTimersByTime(0)
+  }
+  await flushPromises()
+}
+
 // A page that is not the list, for as long as the test runs
 function addPageOutsideTheList() {
   onTestFinished(useRouter().addRoute({ path: '/elsewhere', component: { render: () => null } }))
 }
+
+// The Enter of a field in a form is the submit of the form
+function pressEnter(wrapper: TWrapper) {
+  const submit = new Event('submit', { bubbles: true, cancelable: true })
+  wrapper.get(FORM).element.dispatchEvent(submit)
+  return submit
+}
+
+const inputOfType = (type: string) => Object.assign(document.createElement('input'), { type })
 
 // A key as the page gets it: it bubbles up to the window, and a handler may cancel it
 function press(key: string, init: KeyboardEventInit = {}, target: EventTarget = document.body) {
@@ -88,6 +107,7 @@ describe('SearchField', () => {
       type: 'text',
       inputmode: 'search',
       enterkeyhint: 'search',
+      'aria-keyshortcuts': '/',
       autocomplete: 'off',
       spellcheck: 'false',
       placeholder: 'Buscar aqui',
@@ -158,9 +178,8 @@ describe('SearchField writing the URL', () => {
     const wrapper = await mountField()
     const { replace } = spyOnRouter()
     await wrapper.get(INPUT).setValue('ana')
-    const submit = new Event('submit', { bubbles: true, cancelable: true })
 
-    wrapper.get(FORM).element.dispatchEvent(submit)
+    const submit = pressEnter(wrapper)
 
     expect(submit.defaultPrevented).toBe(true)
     expect(replace).toHaveBeenCalledOnce()
@@ -190,6 +209,20 @@ describe('SearchField writing the URL', () => {
     vi.advanceTimersByTime(300)
 
     expect(escape.defaultPrevented).toBe(false)
+    expect(replace).not.toHaveBeenCalled()
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  // The key that ends a composition (an IME, a dead key) is not for the field to clear
+  it('leaves Escape alone while the reader is composing', async () => {
+    const wrapper = await mountField('/customers?search=ana')
+    const { replace, push } = spyOnRouter()
+
+    const escape = press('Escape', { isComposing: true }, inputOf(wrapper))
+    vi.advanceTimersByTime(300)
+
+    expect(escape.defaultPrevented).toBe(false)
+    expect(inputOf(wrapper).value).toBe('ana')
     expect(replace).not.toHaveBeenCalled()
     expect(push).not.toHaveBeenCalled()
   })
@@ -268,8 +301,7 @@ describe('SearchField writing the URL', () => {
     {
       how: 'Enter',
       act: (wrapper: TWrapper) => {
-        const submit = new Event('submit', { bubbles: true, cancelable: true })
-        wrapper.get(FORM).element.dispatchEvent(submit)
+        pressEnter(wrapper)
       },
     },
   ])('keeps page 2 of the same search when a space is added, on $how', async ({ act }) => {
@@ -297,6 +329,181 @@ describe('SearchField writing the URL', () => {
     expect(push).toHaveBeenCalledOnce()
     await urlIs('/customers?page=2&search=e')
   })
+
+  // The route is a frame behind the field: what lands is the write of "an", and the key typed
+  // meanwhile is not the route's to take back. Landing on the list from another page is no reason
+  // to drop the wait either: it is that same write.
+  it.each(['/customers', '/elsewhere'])(
+    'keeps a key typed while its write is on the way, and writes it after, from %s',
+    async (path) => {
+      addPageOutsideTheList()
+      const wrapper = await mountField(path)
+      const { replace } = spyOnRouter()
+
+      await wrapper.get(INPUT).setValue('an')
+      vi.advanceTimersByTime(300)
+      await wrapper.get(INPUT).setValue('ana')
+      await landOn('/customers?search=an')
+
+      expect(inputOf(wrapper).value).toBe('ana')
+      vi.advanceTimersByTime(300)
+      expect(replace).toHaveBeenLastCalledWith({ path: '/customers', query: { search: 'ana' } })
+      await urlIs('/customers?search=ana')
+    },
+  )
+
+  // The write that a newer one replaced settles too, and must not take the place of the newer one
+  it('keeps a key typed while a newer write is on the way, after an older one was replaced', async () => {
+    const wrapper = await mountField()
+    await wrapper.get(INPUT).setValue('an')
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+    await wrapper.get(INPUT).setValue('ana')
+    vi.advanceTimersByTime(300)
+    await wrapper.get(INPUT).setValue('anab')
+
+    await landOn('/customers?search=ana')
+
+    expect(inputOf(wrapper).value).toBe('anab')
+  })
+
+  // The Enter takes the wait of the keys before it, even when the router refuses its write: nothing
+  // sends it again when that wait would have run out
+  it('does not send again a write that Enter made and the router refused', async () => {
+    const wrapper = await mountField()
+    const { replace } = spyOnRouter()
+    onTestFinished(useRouter().beforeEach(() => false))
+    await wrapper.get(INPUT).setValue('ana')
+
+    pressEnter(wrapper)
+    await flushPromises()
+    vi.advanceTimersByTime(300)
+
+    expect(replace).toHaveBeenCalledOnce()
+  })
+
+  // A change from elsewhere to the trimmed text of the field has nothing to take from it
+  it('leaves the field as typed when the URL moves to the trimmed text of it', async () => {
+    const wrapper = await mountField()
+    await wrapper.get(INPUT).setValue('ana ')
+
+    await arriveAt('/customers?search=ana')
+    await flushPromises()
+
+    expect(inputOf(wrapper).value).toBe('ana ')
+  })
+
+  // The URL does not have the search yet, so what says it is on its way is the field
+  it('sends one navigation when Enter comes after the wait wrote the same search', async () => {
+    const wrapper = await mountField()
+    const { replace } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    vi.advanceTimersByTime(300)
+
+    pressEnter(wrapper)
+
+    expect(replace).toHaveBeenCalledOnce()
+    await landOn('/customers?search=ana')
+  })
+
+  // The same goes for going back to the search the URL has: the write on its way would still land
+  it('takes back a write on its way when the field goes back to the search of the URL', async () => {
+    const wrapper = await mountField('/customers?search=a')
+    await wrapper.get(INPUT).setValue('an')
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+    await wrapper.get(INPUT).setValue('a')
+    vi.advanceTimersByTime(300)
+    for (let turn = 0; turn < 5; turn++) {
+      await flushPromises()
+      vi.advanceTimersByTime(0)
+    }
+
+    expect(useRoute().fullPath).toBe('/customers?search=a')
+    expect(inputOf(wrapper).value).toBe('a')
+  })
+
+  // A write that never lands, aborted by a guard or replaced by another navigation, leaves nothing
+  // behind: a back or forward to its search later is a change from elsewhere like any other
+  it.each([
+    {
+      how: 'aborted',
+      stop: async () => {
+        const removeGuard = useRouter().beforeEach(() => false)
+        onTestFinished(removeGuard)
+        vi.advanceTimersByTime(300)
+        await flushPromises()
+        removeGuard()
+      },
+    },
+    {
+      how: 'replaced',
+      stop: async () => {
+        vi.advanceTimersByTime(300)
+        await arriveAt('/customers?search=x')
+      },
+    },
+  ])('follows a search it had written when that write was $how', async ({ stop }) => {
+    const wrapper = await mountField()
+    await wrapper.get(INPUT).setValue('an')
+    await stop()
+    await wrapper.get(INPUT).setValue('ana')
+
+    await arriveAt('/customers?search=an')
+    await flushPromises()
+
+    expect(inputOf(wrapper).value).toBe('an')
+  })
+
+  // Leaving the list takes the wait with it: off the list it would write, and take the reader back
+  it('drops the write it was waiting to do when the reader leaves the list', async () => {
+    addPageOutsideTheList()
+    const wrapper = await mountField()
+    await wrapper.get(INPUT).setValue('ana')
+
+    await arriveAt('/elsewhere')
+    const { replace, push } = spyOnRouter()
+    vi.advanceTimersByTime(300)
+
+    expect(replace).not.toHaveBeenCalled()
+    expect(push).not.toHaveBeenCalled()
+    expect(useRoute().fullPath).toBe('/elsewhere')
+  })
+
+  // Off the list an empty search has nothing to say, and the reader stays where they are
+  it.each([
+    {
+      how: 'Escape',
+      act: (wrapper: TWrapper) => {
+        press('Escape', {}, inputOf(wrapper))
+      },
+    },
+    {
+      how: 'the clear button',
+      act: (wrapper: TWrapper) => {
+        void wrapper.get(CLEAR).trigger('click')
+      },
+    },
+    {
+      how: 'deleting the text',
+      act: (wrapper: TWrapper) => {
+        void wrapper.get(INPUT).setValue('')
+      },
+    },
+  ])('stays on another page when the search is emptied with $how', async ({ act }) => {
+    addPageOutsideTheList()
+    const wrapper = await mountField('/elsewhere?search=ana')
+    const { replace, push } = spyOnRouter()
+
+    act(wrapper)
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+
+    expect(replace).not.toHaveBeenCalled()
+    expect(push).not.toHaveBeenCalled()
+    expect(useRoute().fullPath).toBe('/elsewhere?search=ana')
+    expect(inputOf(wrapper).value).toBe('')
+  })
 })
 
 describe('SearchField "/" shortcut', () => {
@@ -311,6 +518,8 @@ describe('SearchField "/" shortcut', () => {
 
   it.each([
     { name: 'an input', make: () => document.createElement('input') },
+    { name: 'an input of type text', make: () => inputOfType('text') },
+    { name: 'an input of type search', make: () => inputOfType('search') },
     { name: 'a textarea', make: () => document.createElement('textarea') },
     { name: 'a select', make: () => document.createElement('select') },
     {
@@ -329,6 +538,23 @@ describe('SearchField "/" shortcut', () => {
     expect(slash.defaultPrevented).toBe(false)
     expect(document.activeElement).not.toBe(inputOf(wrapper))
   })
+
+  // There is no text to type in these, and no character a slash could be
+  it.each(['checkbox', 'radio', 'range', 'button', 'submit', 'reset', 'color', 'file', 'image'])(
+    'focuses the field on a slash from an input of type %s',
+    async (type) => {
+      const wrapper = await mountField()
+      const other = document.body.appendChild(inputOfType(type))
+      onTestFinished(() => {
+        other.remove()
+      })
+
+      const slash = press('/', {}, other)
+
+      expect(slash.defaultPrevented).toBe(true)
+      expect(document.activeElement).toBe(inputOf(wrapper))
+    },
+  )
 
   it.each([
     { name: 'Ctrl', init: { ctrlKey: true } },

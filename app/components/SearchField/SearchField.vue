@@ -6,6 +6,10 @@ import S from './SearchField.module.scss'
 // (ADR-0013)
 const DEBOUNCE_MS = 300
 
+// Where a "/" is a character the reader is typing: every input but the ones with no text to type
+const TYPING =
+  'textarea,select,input:not([type=checkbox],[type=radio],[type=range],[type=button],[type=submit],[type=reset],[type=color],[type=file],[type=image])'
+
 const route = useRoute()
 const { query, setQuery } = useListQuery()
 const inputId = useId()
@@ -14,27 +18,38 @@ const inputRef = useTemplateRef('input')
 // What the field shows. The URL gets it trimmed and the field keeps what was typed, so "ana " stays
 const draft = ref(query.value.search)
 let timer: ReturnType<typeof setTimeout> | undefined
+// The search this field wrote and the route has not brought back yet. The route is a frame behind
+// the field, so this is how the field tells its own write coming back from a change that came from
+// elsewhere, and what keeps it from sending the same write twice.
+let pending: string | undefined
 
 function cancel() {
   clearTimeout(timer)
 }
 
 // Another search starts over from page 1 and keeps the rest of the list state; the same search keeps
-// its page. On the list it replaces the history entry, so back does not walk through every term,
-// and a write that changes nothing is skipped: the results scroll would take it for a page change
-// and move the focus off the field. From another page it adds an entry, so back returns there, and
-// it goes to the list even for the same search (ADR-0013).
+// its page. On the list the write replaces the history entry, so back does not walk through every
+// term; from another page it adds one, so back returns there. A write that says nothing new is not
+// sent: an empty search off the list (the reader stays where they are), the search that is already
+// on its way, and, on the list, the one the URL has (the results scroll would take it for a page
+// change and move the focus off the field), unless a write is on its way, which the URL does not
+// know of yet (ADR-0013).
 function commit() {
   cancel()
   const search = draft.value.trim()
+  const onList = route.path === LIST_PATH
+  if ((!onList && search === '') || search === pending) return
   const next = {
     ...query.value,
     search,
     page: search === query.value.search ? query.value.page : 1,
   }
-  const onList = route.path === LIST_PATH
-  if (onList && sameListState(next, query.value)) return
-  void setQuery(next, { replace: onList })
+  if (onList && pending === undefined && sameListState(next, query.value)) return
+  pending = search
+  void setQuery(next, { replace: onList }).finally(() => {
+    // Landed, or aborted or replaced: either way the route is not coming with this search anymore
+    if (pending === search) pending = undefined
+  })
 }
 
 function clear() {
@@ -49,9 +64,10 @@ function onInput() {
   timer = setTimeout(commit, DEBOUNCE_MS)
 }
 
-// Escape only acts on text: with the field empty it stays free for whatever else listens for it
+// Escape only acts on text: with the field empty it stays free for whatever else listens for it. It
+// also ends a composition (an IME, a dead key), which is not the field's to clear.
 function onEscape(event: KeyboardEvent) {
-  if (draft.value === '') return
+  if (event.isComposing || draft.value === '') return
   event.preventDefault()
   clear()
 }
@@ -67,23 +83,33 @@ function onClear() {
   focusField()
 }
 
-// Back, forward or a link moved the search: the field follows it. The trimmed draft coming back is
-// the field's own write, and the draft stays as typed.
+// Back, forward or a link moved the search: the field follows it. Its own write coming back is not
+// that: the draft is ahead of it by the keys typed meanwhile, and so is the wait they started. The
+// trimmed draft coming back stays as typed.
 watch(
   () => query.value.search,
   (search) => {
+    if (search === pending) {
+      pending = undefined
+      return
+    }
     if (search === draft.value.trim()) return
     cancel()
     draft.value = search
   },
 )
 
-// Where a "/" is a character the reader is typing
+// The wait does not follow the reader out of the list: it would take them back. It does not stop on
+// the way in either, which is the field's own write landing, and the keys typed meanwhile still go.
+watch(
+  () => route.path,
+  (path) => {
+    if (path !== LIST_PATH) cancel()
+  },
+)
+
 function isTyping(target: EventTarget | null) {
-  return (
-    target instanceof HTMLElement &&
-    (target.matches('input, textarea, select') || target.isContentEditable)
-  )
+  return target instanceof HTMLElement && (target.matches(TYPING) || target.isContentEditable)
 }
 
 // "/" focuses the field from anywhere on the page but a field that takes text (as in the prototype)
@@ -128,6 +154,7 @@ onBeforeUnmount(() => {
       type="text"
       inputmode="search"
       enterkeyhint="search"
+      aria-keyshortcuts="/"
       autocomplete="off"
       spellcheck="false"
       placeholder="Buscar aqui"

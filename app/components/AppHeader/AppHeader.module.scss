@@ -32,11 +32,17 @@
   inline-size: auto;
 }
 
-// From 960px the logo link is 272px wide, whatever its image is (as in the prototype): the search
-// starts after it
+// From 960px the header is a grid and the logo has a column of 272px: the search starts after it, in
+// either theme. The column belongs to the grid; the pill and the focus ring belong to the logo, so
+// the link is only as wide as its image.
 @media (width >= 960px) {
+  .Inner {
+    display: grid;
+    grid-template-columns: 272px minmax(0, 1fr) auto;
+  }
+
   .Logo {
-    flex: 0 0 272px;
+    justify-self: start;
   }
 }
 
