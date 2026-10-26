@@ -36,7 +36,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `aria-label` no span da página atual                | o mesmo texto, escondido só da vista       | ARIA 1.2 proíbe nome em `generic`               |
 | `aria-hidden` no span da reticência                 | `aria-hidden` no próprio `<li>`            | sem `listitem` vazio para o leitor de tela      |
 | espaços de 12px e 4px em qualquer largura           | sem espaços abaixo de 348px de container   | as listas compactas cabem de 320px a 375px      |
-| alvos de 32px (44px do projeto abaixo de 960px)     | 40px a 320px (container abaixo de 308px)   | 5 páginas em 288px; mínimo de 24px (WCAG 2.5.8) |
+| alvos de 32px (44px do projeto abaixo de 960px)     | container ÷ 7 abaixo de 308px (41px a 320) | 5 páginas a 280px; mínimo de 24px (WCAG 2.5.8)  |
 | `goPage` rola se `top < 0` e leva o topo a 130px    | `top` < header + 24px: leva-o a esse ponto | 130 = header + toolbar sticky (ainda não há)    |
 | rolagem suave sempre                                | imediata com `prefers-reduced-motion`      | respeita o movimento reduzido do sistema        |
 
