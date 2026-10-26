@@ -157,19 +157,6 @@ async function expectInsideGutters(nav: Locator, width: number) {
   expect(box.x + box.width).toBeLessThanOrEqual(width - 16)
 }
 
-// The fixture has 3 pages, too few for an ellipsis, so the next answer claims 23: the widest
-// compact list with an ellipsis ("1 2 3 … 23") has to fit a 320px screen.
-test('the widest compact list with an ellipsis fits a 320px screen', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 640 })
-  await page.goto('/customers')
-  await fakeAnswer(page, { page: 3, totalPages: 23 })
-  await pageTwoLink(page).click()
-  const nav = page.getByRole('navigation', { name: 'Paginação' })
-  await expect(nav.getByRole('link', { name: 'Página 23' })).toBeVisible()
-
-  await expectInsideGutters(nav, 320)
-})
-
 // Up to 5 pages the compact list shows every number, and "‹ 1 2 3 4 5 ›" is the widest of them:
 // seven targets, 348px with their spaces and 308px without. Below 960px a target is 44px, or a
 // seventh of the container when that is less (ADR-0013), and the nav has to stay inside the 16px
@@ -180,6 +167,20 @@ test.describe('the compact list with up to 5 pages', () => {
   // The page has to be interactive before the click. waitForHydration needs a dark system.
   test.use({ colorScheme: 'dark' })
   test.skip(({ isMobile }) => isMobile, 'the width is set by the test, whatever the project')
+
+  // The fixture has 3 pages, too few for an ellipsis, so the next answer claims 23: the widest
+  // compact list with an ellipsis ("1 2 3 … 23") has to fit a 320px screen.
+  test('the widest one with an ellipsis fits a 320px screen', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 })
+    await page.goto('/customers')
+    await waitForHydration(page)
+    await fakeAnswer(page, { page: 3, totalPages: 23 })
+    await pageTwoLink(page).click()
+    const nav = page.getByRole('navigation', { name: 'Paginação' })
+    await expect(nav.getByRole('link', { name: 'Página 23' })).toBeVisible()
+
+    await expectInsideGutters(nav, 320)
+  })
 
   for (const width of [280, 320, 360, 375]) {
     test(`2 to 5 pages fit a ${String(width)}px screen`, async ({ page }) => {
