@@ -1,0 +1,110 @@
+// The icon, the clear button and the shortcut hint sit over the input, which leaves room for them
+// in its padding (v2 prototype, ADR-0013).
+.Search {
+  position: relative;
+  flex: 1;
+  min-inline-size: 0;
+  max-inline-size: 464px;
+  margin: 0;
+}
+
+// Read by screen readers, invisible to everyone else
+.VisuallyHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.Icon {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 17px;
+  transform: translateY(-50%);
+  color: var(--text-strong);
+  pointer-events: none;
+}
+
+.Input {
+  inline-size: 100%;
+  block-size: 48px;
+  padding-block: 0;
+  padding-inline: 50px 48px;
+  border: 1px solid var(--input-border);
+  border-radius: 24px;
+  background: var(--input-bg);
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 16px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+// The border and the ring take the place of the outline. It stays transparent, not none, so forced
+// colors, which drop the shadow and the border color, still draw a focus indicator.
+.Input:focus {
+  border-color: var(--link);
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.Clear {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 40px;
+  block-size: 40px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave a button in that state (ADR-0013)
+@media (hover: hover) {
+  .Clear:hover {
+    background: var(--surface-alt);
+  }
+}
+
+// No color here: the base layer sets it on every kbd (ADR-0013), and this unlayered rule would win
+.Hint {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 16px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 22px;
+  block-size: 22px;
+  padding-inline: 6px;
+  transform: translateY(-50%);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface-alt);
+  font-size: 12px;
+}
+
+@media (width >= 960px) {
+  .Hint {
+    display: flex;
+  }
+}
+
+@media (width < 640px) {
+  .Input {
+    block-size: 44px;
+  }
+}

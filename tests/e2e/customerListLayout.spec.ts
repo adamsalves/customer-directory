@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
 
 // ADR-0014: the layout changes in CSS, at 640px and at 960px. happy-dom applies no media query,
@@ -67,6 +67,88 @@ for (const { width, shown } of [
 
     await expect(visible(page, 'customer-card__chevron--icon')).toHaveCount(shown ? 9 : 0)
   })
+}
+
+// The shortcut hint of the search field is in the HTML at any width, and CSS shows it from 960px
+// while the field is empty
+for (const { width, shown } of [
+  { width: 959, shown: false },
+  { width: 1280, shown: true },
+]) {
+  test(`the search shortcut hint at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    await expect(page.getByTestId('header__search--hint')).toBeVisible({ visible: shown })
+  })
+}
+
+// The search field is 48px tall, and 44px below 640px
+for (const { width, height } of [
+  { width: 768, height: 48 },
+  { width: 375, height: 44 },
+]) {
+  test(`the search field is ${String(height)}px tall at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    await expect(page.getByTestId('header__search--input')).toHaveCSS(
+      'height',
+      `${String(height)}px`,
+    )
+  })
+}
+
+// The theme is the cookie, which the server renders at once: nothing flips after the page loads
+async function openListIn(page: Page, context: BrowserContext, theme: string, width: number) {
+  await context.addCookies([{ name: 'jsm-theme', value: theme, domain: 'localhost', path: '/' }])
+  await openList(page, width)
+}
+
+async function boxOf(locator: Locator) {
+  const box = await locator.boundingBox()
+  if (!box) throw new Error('the element is not rendered')
+  return box
+}
+
+type TBox = { x: number; width: number }
+// Where the search starts: a gap after the image, or after the 272px column that starts with it
+const afterImage = (gap: number) => (image: TBox) => image.x + image.width + gap
+const afterColumn = (image: TBox) => image.x + 272 + 16
+
+// The header row, in both themes. The dark one puts the logo on a light pill, --logo-pill-pad (6px)
+// around the image: the link is that pill, its focus ring and its click area, so it is as wide as
+// the image and the pad on each side, and no more. From 960px the logo has a column of 272px in the
+// header grid and the search starts 16px after it, counted from the image, in either theme; below
+// that the search follows the logo by a gap of 16px (12px under 640px). The header is 97px tall
+// from 640px and 69px under it, the two numbers base.scss holds in scroll-padding. The theme toggle
+// is at the far end of the row, the padding of the header (24px, 16px under 640px) from its edge.
+for (const theme of ['light', 'dark']) {
+  const pad = theme === 'dark' ? 6 : 0
+
+  for (const { width, height, inset, searchAt } of [
+    { width: 375, height: 69, inset: 16, searchAt: afterImage(12) },
+    { width: 639, height: 69, inset: 16, searchAt: afterImage(12) },
+    { width: 640, height: 97, inset: 24, searchAt: afterImage(16) },
+    { width: 959, height: 97, inset: 24, searchAt: afterImage(16) },
+    { width: 960, height: 97, inset: 24, searchAt: afterColumn },
+    { width: 1280, height: 97, inset: 24, searchAt: afterColumn },
+  ]) {
+    test(`the header at ${String(width)}px in the ${theme} theme`, async ({ page, context }) => {
+      await openListIn(page, context, theme, width)
+
+      const header = await boxOf(page.getByRole('banner'))
+      const link = await boxOf(page.getByTestId('header__logo--link'))
+      const image = await boxOf(page.getByTestId('header__logo--image'))
+      const form = await boxOf(page.getByTestId('header__search--form'))
+      const toggle = await boxOf(page.getByTestId('header__theme--toggle'))
+
+      expect(header.height).toBeCloseTo(height, 1)
+      expect(link.width).toBeCloseTo(image.width + 2 * pad, 1)
+      expect(form.x).toBeCloseTo(searchAt(image), 1)
+      // The row is as wide as the header up to 1184px and centered beyond
+      const row = Math.min(1184, header.width)
+      expect(toggle.x + toggle.width).toBeCloseTo((header.width + row) / 2 - inset, 1)
+    })
+  }
 }
 
 // The card lifts on hover only from 640px and only where a pointer can hover (ADR-0013). The mobile

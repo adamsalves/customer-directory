@@ -39,6 +39,9 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | alvos de 32px (44px do projeto abaixo de 960px)     | container ÷ 7 abaixo de 308px (41px a 320) | 5 páginas a 280px; mínimo de 24px (WCAG 2.5.8)  |
 | `goPage` rola se `top < 0` e leva o topo a 130px    | `top` < header + 24px: leva-o a esse ponto | 130 = header + toolbar sticky (ainda não há)    |
 | rolagem suave sempre                                | imediata com `prefers-reduced-motion`      | respeita o movimento reduzido do sistema        |
+| filtra a cada tecla, sem espera                     | grava a URL 300ms depois da última tecla   | cada gravação da URL refaz a busca no BFF       |
+| `replaceState` em toda busca                        | `replace` na lista, `push` vindo de fora   | voltar não percorre cada termo e volta à origem |
+| link de 272px a partir de 960px, com pílula e foco  | coluna do grid; pílula e foco só na imagem | a pílula é do logo (dono); protótipo no M9      |
 
 ## Consequências
 

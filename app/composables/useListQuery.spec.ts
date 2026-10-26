@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 describe('useListQuery', () => {
   it('reads the page and the page size from the URL', async () => {
@@ -63,5 +63,33 @@ describe('useListQuery', () => {
     await vi.waitFor(() => {
       expect(useRoute().fullPath).toBe('/customers?page=2')
     })
+  })
+
+  // Back skips the entry that was replaced
+  it('replaces the history entry when asked to', async () => {
+    await navigateTo('/customers?page=2')
+    await navigateTo('/customers?page=3')
+
+    await useListQuery().setQuery({ page: 4, perPage: 9, search: '' }, { replace: true })
+    expect(useRoute().fullPath).toBe('/customers?page=4')
+
+    useRouter().back()
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?page=2')
+    })
+  })
+
+  // A search from the detail page (#36) has to land on the list, not on the page it came from
+  it('writes the list state on the list, whatever the current page is', async () => {
+    const removeRoute = useRouter().addRoute({
+      path: '/elsewhere',
+      component: { render: () => null },
+    })
+    onTestFinished(removeRoute)
+    await navigateTo('/elsewhere')
+
+    await useListQuery().setQuery({ page: 2, perPage: 9, search: 'ana' })
+
+    expect(useRoute().fullPath).toBe('/customers?page=2&search=ana')
   })
 })

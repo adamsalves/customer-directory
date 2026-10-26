@@ -32,6 +32,20 @@
   inline-size: auto;
 }
 
+// From 960px the header is a grid and the logo has a column of 272px: the search starts after it, in
+// either theme. The column belongs to the grid; the pill and the focus ring belong to the logo, so
+// the link is only as wide as its image.
+@media (width >= 960px) {
+  .Inner {
+    display: grid;
+    grid-template-columns: 272px minmax(0, 1fr) auto;
+  }
+
+  .Logo {
+    justify-self: start;
+  }
+}
+
 @media (width < 640px) {
   .Inner {
     gap: 12px;
