@@ -69,6 +69,48 @@ for (const { width, shown } of [
   })
 }
 
+// The shortcut hint of the search field is in the HTML at any width, and CSS shows it from 960px
+// while the field is empty
+for (const { width, shown } of [
+  { width: 959, shown: false },
+  { width: 1280, shown: true },
+]) {
+  test(`the search shortcut hint at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    await expect(page.getByTestId('header__search--hint')).toBeVisible({ visible: shown })
+  })
+}
+
+// The search field is 48px tall, and 44px below 640px
+for (const { width, height } of [
+  { width: 768, height: 48 },
+  { width: 375, height: 44 },
+]) {
+  test(`the search field is ${String(height)}px tall at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    await expect(page.getByTestId('header__search--input')).toHaveCSS(
+      'height',
+      `${String(height)}px`,
+    )
+  })
+}
+
+// From 960px the logo link is 272px wide, whatever its image is
+for (const { width, wide } of [
+  { width: 959, wide: false },
+  { width: 960, wide: true },
+]) {
+  test(`the logo link at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    const box = await page.getByTestId('header__logo--link').boundingBox()
+    if (!box) throw new Error('the logo link is not rendered')
+    expect(box.width === 272, 'the logo link is 272px wide').toBe(wide)
+  })
+}
+
 // The card lifts on hover only from 640px and only where a pointer can hover (ADR-0013). The mobile
 // project has a touch screen, which does not match (hover: hover): there is nothing to lift in it.
 test.describe('hover', () => {

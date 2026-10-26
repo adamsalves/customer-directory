@@ -21,6 +21,7 @@ import S from './AppHeader.module.scss'
           data-testid="header__logo--image"
         />
       </NuxtLink>
+      <SearchField />
       <AppThemeToggle />
     </div>
   </header>

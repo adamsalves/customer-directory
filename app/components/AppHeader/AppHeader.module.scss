@@ -32,6 +32,14 @@
   inline-size: auto;
 }
 
+// From 960px the logo link is 272px wide, whatever its image is (as in the prototype): the search
+// starts after it
+@media (width >= 960px) {
+  .Logo {
+    flex: 0 0 272px;
+  }
+}
+
 @media (width < 640px) {
   .Inner {
     gap: 12px;

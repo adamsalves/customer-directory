@@ -75,7 +75,9 @@ test('a request with the cookie gets the theme in the server HTML', async ({ pag
   expect(await response.text()).toMatch(/<html[^>]*data-theme="dark"/)
 })
 
-test('the keyboard reaches the toggle after the skip link and the logo', async ({ page }) => {
+test('the keyboard reaches the toggle after the skip link, the logo and the search', async ({
+  page,
+}) => {
   await page.goto('/customers')
   await waitForHydration(page)
 
@@ -83,6 +85,9 @@ test('the keyboard reaches the toggle after the skip link and the logo', async (
   await expect(page.getByTestId('layout__skip--link')).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(page.getByTestId('header__logo--link')).toBeFocused()
+  // Empty, so the clear button is not there to take a stop
+  await page.keyboard.press('Tab')
+  await expect(page.getByTestId('header__search--input')).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(page.getByTestId('header__theme--toggle')).toBeFocused()
 
