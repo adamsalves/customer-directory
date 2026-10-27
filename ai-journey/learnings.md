@@ -21,6 +21,10 @@
   - os testes de idade só pegavam `getUTC*` trocado por getter local fora de UTC, e o CI roda em UTC (#13);
   - o 502 fazia o ofetch repetir o GET sozinho, dobrando as leituras do S3 e o tempo até o erro (#17);
   - trocar os itens por página pelo teclado tirava o select focado da tela (#71), e a correção desfazia a rolagem do leitor durante a carga (#72).
+- **No M4, o review seguiu achando o que a suíte deixava passar.** Exemplos:
+  - uma tecla digitada enquanto a gravação anterior ainda navegava sumia do campo (#20);
+  - `?search=ana%20` e `?search=ana` eram dois estados, com entrada nova no histórico (#19);
+  - a busca do E2E dava o mesmo card casando todas as palavras, qualquer uma ou só a primeira (#22).
 - **Dividir quando a issue cresce.** A paginação (#16) passou do teto; rolagem e foco viraram a #71 e a #72, cada uma com review próprio.
 
 ## ❌ O que não funcionou
@@ -32,10 +36,11 @@
 - **Teste que não afirma o que diz.** O spec dos tokens conferia só os nomes: uma cor errada ou os temas trocados passavam. No dark mode, tirar a validade do cookie passou na suíte inteira, porque "recarregar mantém o tema" também passa com cookie de sessão.
 - **Pular a aprovação do plano.** Na #11, o plano foi direto ao sub-agente de implementação, sem o meu ok. Apontei o desvio e a aprovação passou a ser etapa explícita antes de chamar o `implementer`.
 - **Critério herdado do protótipo sem conferir o padrão.** A issue do toggle pedia `aria-pressed` junto com um rótulo que alterna. Pelo padrão APG, isso fazia o leitor de tela anunciar o tema errado. Só apareceu no review, depois de implementado.
-- **Estimar sem contar os specs.** No M3, a #16 fechou com +659 (estimada bem abaixo), a #71 com +336 contra +264 e a #72 com 449 depois do review. Os specs são perto de 40% do diff.
+- **Estimar sem contar os specs.** No M3, a #16 fechou com +659 (estimada bem abaixo), a #71 com +336 contra +264 e a #72 com 449 depois do review. Os specs são perto de 40% do diff. No M4, a #20 fechou com +1060 contra 340.
 - **Confiar no teste de componente para CSS e hidratação.** O happy-dom não aplica media query e o `mountSuspended` não hidrata. Layout por largura e erro vindo do SSR só ganharam teste no E2E da #18, com critérios acrescentados depois, a cada review que notava a falta.
 - **Pior caso tirado da fixture.** A "lista mais larga" da paginação veio dos dados de teste; o pior caso de verdade (`1 2 3 4 5`, 308px) só apareceu no review.
 - **Verde por sorte, de novo.** No E2E da #18, as repetições do `--repeat-each` rodaram em paralelo, colidiram na porta e passaram mesmo assim. Só a saída de erro mostrou.
+- **Apagar código porque a mutação sobreviveu.** Na #19, o `return` da busca em branco saiu porque não mudava a saída. Era o atalho da chamada mais comum, e sem ele a listagem dobrava os 200 nomes a cada pedido. O segundo review o trouxe de volta.
 
 ## 🔄 O que eu faria diferente
 
@@ -47,3 +52,5 @@
 - Contar os specs na estimativa e dividir a issue já no plano quando passar de ~350 linhas.
 - Colocar na issue, desde o início, o critério de E2E de tudo que só o CSS ou a hidratação decidem.
 - Tirar o pior caso de todos os ramos do algoritmo, e não da fixture.
+- Antes de apagar um `return` antecipado que a mutação não pega, medir o custo do caminho mais comum.
+- Escolher dados de teste que separem as variantes do algoritmo (todas as palavras, qualquer uma, só a primeira), e não só os que dão o resultado esperado.

@@ -161,3 +161,54 @@ Cada página virou um link, e não um `<button>`, para ter endereço e abrir em 
 
 **Abordagem final:**
 Cada link leva `aria-current-value="false"` e o `aria-current` fica fixo no span da página atual. A rolagem e o foco saíram para a [#71](https://github.com/adamsalves/customer-directory/issues/71) e a [#72](https://github.com/adamsalves/customer-directory/issues/72). A página rola até os resultados só quando muda com o mesmo tamanho, porque rolar ao trocar os itens por página tirava o select focado da tela. O foco vai para a seção dos resultados, e o select fica no lugar enquanto a lista cresce acima dele.
+
+## M4 · Busca
+
+### 🔧 Prompt: Busca sem acento no BFF
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+Busca por nome e/ou sobrenome no `/api/customers`, sem diferenciar acento nem caixa, com a chave `search` na URL ([#19](https://github.com/adamsalves/customer-directory/issues/19), ADR-0021).
+
+**O que aconteceu:**
+O filtro roda antes da paginação, então `total` e `totalPages` contam só o que casou. A dobra de acento saiu do `slugify` para um `foldText` que a busca e o slug usam. Na mutação, o `return` da busca em branco sobreviveu, porque `''` está em todo nome e a saída não mudava, e saiu do código. O segundo review trouxe esse `return` de volta: sem ele, a listagem sem busca, que é a chamada mais comum, dobrava os 200 nomes à toa. Os dois reviews também acharam:
+
+- `?search=ana%20` e `?search=ana` eram dois estados, com busca repetida e entrada nova no histórico;
+- voltar de `?page=2` para `?search=ana` rolava a tela e tirava o foco do campo, porque o `pageChanged` só comparava a página;
+- cada palavra é comparada com cada nome sem cache, e a busca não tinha tamanho máximo.
+
+**Abordagem final:**
+O parser apara a busca e corta em 100 caracteres. O `foldText` usa NFKD, que também lê letras de largura cheia. O `sameListState` compara todo o estado menos a página, e o `useListQuery` e o `pageChanged` usam essa função. O `return` da busca em branco tem um teste que conta as chamadas a `normalize`.
+
+### 🔧 Prompt: Um campo que grava na URL
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O campo de busca no header ([#20](https://github.com/adamsalves/customer-directory/issues/20)), com espera de 300ms, histórico com `replace` na lista, atalho `/` e o hint `kbd` a partir de 960px.
+
+**O que aconteceu:**
+O `refDebounced` do plano não serviu, porque o rascunho reescrito por voltar ou avançar viraria uma gravação. O timer ficou no componente, disparado pelo `@input`. Antes do PR, a conferência do implementer achou três problemas. Um espaço no fim, na página 2, voltava à página 1. Acima de 100 caracteres, a URL guardava o texto inteiro e o campo era cortado. E o CSS só tinha medida manual. O review achou mais:
+
+- uma tecla digitada enquanto a gravação anterior ainda navegava sumia do campo;
+- no tema escuro, a pílula clara do logo esticava junto com a coluna de 272px. Decidi que a pílula fica só no logo;
+- o Esc ignorava `isComposing` (tecla morta, IME), e o `/` não valia com o foco num checkbox.
+
+O PR fechou com +1060 contra a estimativa de 340. Quase tudo é teste, e o tamanho foi aceito como exceção.
+
+**Abordagem final:**
+O campo guarda a busca em voo (`pending`), cancela a espera quando a rota sai da lista e não navega com a busca vazia fora dela. O header virou um grid a partir de 960px, e o input ganhou `aria-keyshortcuts="/"`. Os E2E de layout travam o hint (959 e 1280px), a altura do input e a coluna do logo.
+
+### 🔧 Prompt: Nenhum resultado e o caminho de volta
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O estado vazio com "Limpar busca e filtros" ([#21](https://github.com/adamsalves/customer-directory/issues/21)) e o E2E do fluxo de busca ([#22](https://github.com/adamsalves/customer-directory/issues/22)).
+
+**O que aconteceu:**
+O protótipo não move o foco depois de "Limpar", mas o botão some quando o skeleton entra, e o foco cairia no `body`. Ele passou a ir para os resultados (ADR-0013). A conferência do implementer achou um termo longo sem espaço, como um e-mail, estourando a dica a 320 e 375px, o mesmo defeito do protótipo. No E2E, o review da #22 mostrou que `girao rosa` não provava que todas as palavras precisam casar, porque nenhuma outra pessoa da fixture tem "girao" ou "rosa". Mostrou também que o teste do histórico podia perder a primeira letra, porque o foco vai aos resultados um frame depois da troca de página. E que o arquivo pulava o mobile, que a ADR-0009 pede.
+
+**Abordagem final:**
+O "Limpar" grava com `replace`, mantém o `perPage` e leva o foco aos resultados. A dica quebra dentro da palavra (`overflow-wrap: anywhere`). O E2E busca `girao jesus` para o estado vazio: cada palavra casa com alguém e as duas juntas com ninguém, então as mutações "qualquer palavra" e "só a primeira" no BFF derrubam o teste. O teste do histórico espera o foco nos resultados antes de digitar, e o fluxo roda nos dois projetos.

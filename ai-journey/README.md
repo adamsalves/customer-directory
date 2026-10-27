@@ -26,6 +26,7 @@ Como usei IA neste projeto. A pasta é atualizada ao fim de cada milestone.
 | M1 · Fundação          | scaffold, lint, hooks, testes, CI, deploy e docs, um PR por issue                                                          | [learnings](learnings.md)                                                                                             |
 | M2 · Shell + tema      | tokens, fontes, layout, breadcrumb, dark mode por cookie, E2E do tema e "membros" → "clientes" (ADR-0020)                  | [prompts](prompts.md#m2--shell--tema), [learnings](learnings.md)                                                      |
 | M3 · Listagem paginada | guards do payload, BFF com cache, card, lista pela URL, skeleton, paginação, rolagem e foco, erro com retry e E2E da lista | [prompts](prompts.md#m3--listagem-paginada), [registro](registro.md#m3--listagem-paginada), [learnings](learnings.md) |
+| M4 · Busca             | busca sem acento no BFF, campo no header ligado à URL, estado vazio com "Limpar" e E2E da busca                            | [prompts](prompts.md#m4--busca), [registro](registro.md#m4--busca), [learnings](learnings.md)                         |
 
 ## Arquivos
 
