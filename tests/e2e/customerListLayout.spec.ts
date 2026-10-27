@@ -40,12 +40,17 @@ for (const { width, row } of [
 }
 
 // One column below 640px, then a grid with as many columns as fit: 208px each at least up to 960px
-// (232px from there). At 768px that is 3 columns, where 232px would fit 2.
+// (232px from there). At 768px that is 3 columns, where 232px would fit 2. From 960px the filter
+// panel and its gap take 288px of the row: 2 columns at 960px, 3 at 1280px, where the cards would
+// fit 3 and 4 without it.
 for (const { width, columns } of [
   { width: 375, columns: 1 },
   { width: 639, columns: 1 },
   { width: 640, columns: 2 },
   { width: 768, columns: 3 },
+  { width: 959, columns: 4 },
+  { width: 960, columns: 2 },
+  { width: 1280, columns: 3 },
 ]) {
   test(`the list columns at ${String(width)}px`, async ({ page }) => {
     await openList(page, width)
@@ -180,6 +185,133 @@ for (const theme of ['light', 'dark']) {
     })
   }
 }
+
+// The filter panel is out of the page below 960px until the sheet (#26): display none, so it is out of
+// the accessibility tree too and no tab stop is left behind a hidden control.
+for (const width of [375, 959]) {
+  test(`the filter panel is out of the page at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    await expect(page.getByTestId('customers__filters--aside')).toBeHidden()
+    await expect(page.getByRole('complementary', { name: 'Filtros' })).toHaveCount(0)
+  })
+}
+
+// From 960px it is a column of 272px, 16px before the results, which take the rest of the row, and
+// it is as tall as what it holds, not as the cards beside it.
+for (const width of [960, 1280]) {
+  test(`the filter panel is a column of 272px at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    const panel = await boxOf(page.getByRole('complementary', { name: 'Filtros' }))
+    const column = await boxOf(page.getByTestId('customers__column--div'))
+    expect(panel.width).toBeCloseTo(272, 1)
+    expect(column.x - (panel.x + panel.width)).toBeCloseTo(16, 1)
+    // The page is 24px in from each edge, up to 1184px
+    expect(column.width).toBeCloseTo(Math.min(1184, width) - 48 - 272 - 16, 1)
+    expect(panel.y).toBeCloseTo(column.y, 1)
+    expect(panel.height).toBeLessThan(column.height / 2)
+  })
+}
+
+// An option is a target of 36px (WCAG 2.5.8 asks for 24px) with the box of 18px 2px in, 10px before
+// the name, and the count at the far end; the buttons are no smaller than 24px and the toggle starts
+// where the options do.
+test('the options and the buttons of the filter panel', async ({ page }) => {
+  // A filter, so the clear button is there
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/customers?gender=female')
+  const option = page.locator('label:has([data-testid="filter-panel__state--checkbox"])').first()
+  const row = await boxOf(option)
+  const input = await boxOf(option.getByTestId('filter-panel__state--checkbox'))
+  const name = await boxOf(option.getByTestId('filter-panel__name--text'))
+  const count = await boxOf(option.getByTestId('filter-panel__count--number'))
+
+  expect(row.height).toBeCloseTo(36, 1)
+  expect(input).toMatchObject({ width: 18, height: 18 })
+  expect(input.x - row.x).toBeCloseTo(2, 1)
+  expect(name.x - (input.x + input.width)).toBeCloseTo(10, 1)
+  expect(count.x + count.width).toBeCloseTo(row.x + row.width, 1)
+
+  const toggle = await boxOf(page.getByTestId('filter-panel__toggle--button'))
+  const clear = await boxOf(page.getByTestId('filter-panel__clear--button'))
+  expect(toggle.height).toBeGreaterThanOrEqual(24)
+  expect(toggle.x).toBeCloseTo(row.x, 1)
+  expect(clear.height).toBeCloseTo(40, 1)
+})
+
+// The resolved value of a color token in the theme of the page
+const colorOfToken = (page: Page, token: string) =>
+  page.evaluate((name) => {
+    const probe = document.body.appendChild(document.createElement('i'))
+    probe.style.color = `var(${name})`
+    const { color } = getComputedStyle(probe)
+    probe.remove()
+    return color
+  }, token)
+
+// A state nobody is from is in the muted text color, and a picked one never is (ADR-0013). The
+// fixture has nobody from São Paulo, Rio de Janeiro or Bahia, and two from Minas Gerais.
+for (const theme of ['light', 'dark']) {
+  test(`the dimmed states of the filter panel in the ${theme} theme`, async ({ page, context }) => {
+    await openListIn(page, context, theme, 1280)
+    const muted = await colorOfToken(page, '--text-muted')
+    const strong = await colorOfToken(page, '--text-strong')
+    const nameOf = (slug: string) =>
+      page
+        .locator(`label:has([data-testid="filter-panel__state--checkbox"][value="${slug}"])`)
+        .getByTestId('filter-panel__name--text')
+    expect(muted).not.toBe(strong)
+
+    await expect(nameOf('sao-paulo')).toHaveCSS('color', muted)
+    await expect(nameOf('bahia')).toHaveCSS('color', muted)
+    await expect(nameOf('minas-gerais')).toHaveCSS('color', strong)
+
+    // Picked, with nobody in it: it is what the list is filtered by
+    await page.goto('/customers?states=sao-paulo')
+    await expect(nameOf('sao-paulo')).toHaveCSS('color', strong)
+    await expect(nameOf('bahia')).toHaveCSS('color', muted)
+  })
+}
+
+// The count is a number to the eye and a phrase to the screen reader, which sits in the row as text
+// that takes no room (ADR-0013)
+test('the hidden phrase of a count takes no room', async ({ page }) => {
+  await openList(page, 1280)
+  const count = page.getByTestId('filter-panel__count--text').first()
+  const phrase = count.getByTestId('filter-panel__count--label')
+
+  await expect(phrase).toHaveText('0 clientes')
+  expect(await boxOf(phrase)).toMatchObject({ width: 1, height: 1 })
+  const number = await boxOf(count.getByTestId('filter-panel__count--number'))
+  expect((await boxOf(count)).width).toBeCloseTo(number.width, 1)
+})
+
+// Hover only where a pointer can hover (ADR-0013): the desktop project has a mouse, the mobile one a
+// touch screen, which (hover: hover) does not match
+test('the buttons of the filter panel react to hover only with a mouse', async ({
+  page,
+  isMobile,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/customers?gender=female')
+  const clear = page.getByTestId('filter-panel__clear--button')
+  const toggle = page.getByTestId('filter-panel__toggle--button')
+  const strong = await colorOfToken(page, '--text-strong')
+
+  await clear.hover()
+  await expect(clear).toHaveCSS(
+    'background-color',
+    await colorOfToken(page, isMobile ? '--surface' : '--inverse-bg'),
+  )
+  await expect(clear).toHaveCSS(
+    'color',
+    isMobile ? strong : await colorOfToken(page, '--inverse-text'),
+  )
+
+  await toggle.hover()
+  await expect(toggle).toHaveCSS('color', isMobile ? strong : await colorOfToken(page, '--link'))
+})
 
 // The card lifts on hover only from 640px and only where a pointer can hover (ADR-0013). The mobile
 // project has a touch screen, which does not match (hover: hover): there is nothing to lift in it.
