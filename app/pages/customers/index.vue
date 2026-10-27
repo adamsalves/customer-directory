@@ -40,52 +40,56 @@ function clearSearchAndFilters() {
   <div>
     <AppBreadcrumb :items="[{ label: 'Home', to: '/customers' }, { label: 'Clientes' }]" />
     <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
-    <!-- One element for the skeleton, the error, the empty state and the list, so the focus a page
-         change, a retry or a clear leaves here is not lost when the skeleton goes -->
-    <section
-      :id="RESULTS_ID"
-      tabindex="-1"
-      aria-label="Resultados"
-      :class="S.Results"
-      data-testid="customers__results--section"
-    >
-      <ul
-        v-if="status === 'pending'"
-        aria-busy="true"
-        aria-label="Carregando clientes"
-        :class="S.List"
-        data-testid="customers__skeleton--list"
-      >
-        <li v-for="index in DEFAULT_PER_PAGE" :key="index" :class="S.Item">
-          <CustomerCardSkeleton />
-        </li>
-      </ul>
-      <!-- Keyed on `status`: on a retry `error` keeps the last failure until the answer comes -->
-      <ErrorState v-else-if="status === 'error'" @retry="retry" />
-      <EmptyState
-        v-else-if="data?.total === 0"
-        :search="query.search"
-        @clear="clearSearchAndFilters"
-      />
-      <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
-        <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
-          <CustomerCard
-            :customer="customer"
-            :loading="index < EAGER_IMAGES ? 'eager' : 'lazy'"
-            :fetchpriority="index === 0 ? 'high' : undefined"
+    <div :class="S.Layout">
+      <div data-testid="customers__column--div">
+        <!-- One element for the skeleton, the error, the empty state and the list, so the focus a page
+             change, a retry or a clear leaves here is not lost when the skeleton goes -->
+        <section
+          :id="RESULTS_ID"
+          tabindex="-1"
+          aria-label="Resultados"
+          :class="S.Results"
+          data-testid="customers__results--section"
+        >
+          <ul
+            v-if="status === 'pending'"
+            aria-busy="true"
+            aria-label="Carregando clientes"
+            :class="S.List"
+            data-testid="customers__skeleton--list"
+          >
+            <li v-for="index in DEFAULT_PER_PAGE" :key="index" :class="S.Item">
+              <CustomerCardSkeleton />
+            </li>
+          </ul>
+          <!-- Keyed on `status`: on a retry `error` keeps the last failure until the answer comes -->
+          <ErrorState v-else-if="status === 'error'" @retry="retry" />
+          <EmptyState
+            v-else-if="data?.total === 0"
+            :search="query.search"
+            @clear="clearSearchAndFilters"
           />
-        </li>
-      </ul>
-    </section>
-    <!-- Outside the skeleton/list branches, so it stays mounted while the next page loads. The
-         select keeps the focus; any page change, by number or by arrow, moves it to the results,
-         since a page link turns into the current-page span. `data` holds the previous answer until
-         then. Not with no results: there is no page to go to -->
-    <PaginationNav
-      v-if="data && data.total > 0"
-      :page="data.page"
-      :total-pages="data.totalPages"
-      :loading="status === 'pending'"
-    />
+          <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
+            <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
+              <CustomerCard
+                :customer="customer"
+                :loading="index < EAGER_IMAGES ? 'eager' : 'lazy'"
+                :fetchpriority="index === 0 ? 'high' : undefined"
+              />
+            </li>
+          </ul>
+        </section>
+        <!-- Outside the skeleton/list branches, so it stays mounted while the next page loads. The
+             select keeps the focus; any page change, by number or by arrow, moves it to the results,
+             since a page link turns into the current-page span. `data` holds the previous answer until
+             then. Not with no results: there is no page to go to -->
+        <PaginationNav
+          v-if="data && data.total > 0"
+          :page="data.page"
+          :total-pages="data.totalPages"
+          :loading="status === 'pending'"
+        />
+      </div>
+    </div>
   </div>
 </template>

@@ -8,6 +8,12 @@
   line-height: 1.2;
 }
 
+// The results column, alone for now: the filter panel takes the first track from 960px
+.Layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 // A page change scrolls here; with the header's scroll-padding on <html> this leaves 24px of air
 .Results {
   scroll-margin-block-start: 24px;

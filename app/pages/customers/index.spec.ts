@@ -51,6 +51,7 @@ registerEndpoint('/api/customers', async (event) => {
   return empty ? noResults : response
 })
 
+const COLUMN = '[data-testid="customers__column--div"]'
 const RESULTS = '[data-testid="customers__results--section"]'
 const SKELETON = '[data-testid="customers__skeleton--list"]'
 const LIST = '[data-testid="customers__list--list"]'
@@ -141,6 +142,16 @@ describe('customers page', () => {
       'aria-label': 'Resultados',
     })
     expect(results.find(LIST).exists()).toBe(true)
+  })
+
+  // One item of the page grid, whose first column is the filter panel's from 960px: the pagination
+  // centers under the cards, not under the panel too
+  it('puts the results and the pagination in one column', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+    const column = wrapper.get(COLUMN).element
+
+    expect(column.contains(wrapper.get(RESULTS).element)).toBe(true)
+    expect(column.contains(wrapper.get(NAV).element)).toBe(true)
   })
 
   it('loads the first row of images eagerly and only the first with high priority', async () => {
