@@ -2,6 +2,7 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ICustomerCard, ICustomerFacets, ICustomerListResponse } from '#shared/types/customer'
+import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
 import PaginationNav from '~/components/PaginationNav/PaginationNav.vue'
 import { RESULTS_ID } from '~/utils/resultsScroll'
@@ -17,8 +18,15 @@ const items: ICustomerCard[] = Array.from({ length: 6 }, (_, index) => ({
   postcode: '43646',
   picture: `https://example.com/${String(index)}.jpg`,
 }))
-// The page does not read the facets yet: the filter panel comes with #25
-const facets: ICustomerFacets = { states: {}, gender: { all: 0, female: 0, male: 0 } }
+// Every state, as the BFF answers, with nobody in it but two
+const facets: ICustomerFacets = {
+  states: {
+    ...Object.fromEntries(BRAZILIAN_STATES.map(({ slug }) => [slug, 0])),
+    'sao-paulo': 12,
+    'minas-gerais': 8,
+  },
+  gender: { all: 20, female: 9, male: 11 },
+}
 const response: ICustomerListResponse = {
   items,
   total: 20,
@@ -51,6 +59,11 @@ registerEndpoint('/api/customers', async (event) => {
   return empty ? noResults : response
 })
 
+const FILTERS = '[data-testid="customers__filters--aside"]'
+const PANEL = '[data-testid="filter-panel__root--div"]'
+const STATE = '[data-testid="filter-panel__state--checkbox"]'
+const COUNT = '[data-testid="filter-panel__count--number"]'
+const PANEL_CLEAR = '[data-testid="filter-panel__clear--button"]'
 const COLUMN = '[data-testid="customers__column--div"]'
 const RESULTS = '[data-testid="customers__results--section"]'
 const SKELETON = '[data-testid="customers__skeleton--list"]'
@@ -71,6 +84,8 @@ function htmlElement(element: Element): HTMLElement {
   if (!(element instanceof HTMLElement)) throw new Error('the element is not an HTML element')
   return element
 }
+
+const isChecked = (element: Element) => element instanceof HTMLInputElement && element.checked
 
 beforeEach(() => {
   requests = []
@@ -152,6 +167,40 @@ describe('customers page', () => {
 
     expect(column.contains(wrapper.get(RESULTS).element)).toBe(true)
     expect(column.contains(wrapper.get(NAV).element)).toBe(true)
+  })
+
+  // CSS shows the aside from 960px (happy-dom applies no media query: the E2E checks that)
+  it('has the filter panel beside the results, in a complementary region named Filtros', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
+    const aside = wrapper.get(FILTERS)
+
+    expect(aside.element.tagName).toBe('ASIDE')
+    expect(aside.attributes('aria-label')).toBe('Filtros')
+    expect(aside.find(PANEL).exists()).toBe(true)
+    expect(wrapper.get(COLUMN).find(PANEL).exists()).toBe(false)
+    expect(wrapper.get(RESULTS).find(PANEL).exists()).toBe(false)
+  })
+
+  it('gives the panel the counts of the answer', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers' })
+    const counts = wrapper
+      .get(PANEL)
+      .findAll(COUNT)
+      .map((count) => count.text())
+
+    // The five states (São Paulo, Rio de Janeiro, Minas Gerais, Espírito Santo, Bahia), then the
+    // three genders (Todos, Feminino, Masculino)
+    expect(counts).toEqual(['12', '0', '8', '0', '0', '20', '9', '11'])
+  })
+
+  // The error state says the filters are kept: they stay on the panel, from the URL, without counts
+  it('keeps the panel with no counts when the request fails', async () => {
+    failing = true
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?states=bahia' })
+    const picked = wrapper.findAll(STATE).filter(({ element }) => isChecked(element))
+
+    expect(picked.map((state) => state.attributes('value'))).toEqual(['bahia'])
+    expect(wrapper.find(COUNT).exists()).toBe(false)
   })
 
   it('loads the first row of images eagerly and only the first with high priority', async () => {
@@ -404,6 +453,36 @@ describe('customers page', () => {
     await vi.waitFor(() => {
       expect(wrapper.findAll(CARD)).toHaveLength(items.length)
     })
+    expect(document.activeElement).toBe(results)
+  })
+
+  // The panel's button is the empty state's: the same page function, so the same history entry, the
+  // same page size and the same focus. It is the one on screen when a filter alone finds someone.
+  it('clears the search and the filters from the panel, keeping the page size', async () => {
+    const wrapper = await mountSuspended(CustomersPage, {
+      route: '/customers?search=ana&page=3&perPage=18&states=bahia&gender=female',
+      attachTo: document.body,
+    })
+    const router = useRouter()
+    const replace = vi.spyOn(router, 'replace')
+    const push = vi.spyOn(router, 'push')
+    const results = htmlElement(wrapper.get(RESULTS).element)
+    const focus = vi.spyOn(results, 'focus')
+    htmlElement(wrapper.get(PANEL_CLEAR).element).focus()
+
+    await wrapper.get(PANEL_CLEAR).trigger('click')
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=18')
+    })
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith({
+      path: '/customers',
+      query: { perPage: '18' },
+    })
+    expect(push).not.toHaveBeenCalled()
+    // The button is gone with the filters, and the focus it held is somewhere that stays
+    expect(wrapper.find(PANEL_CLEAR).exists()).toBe(false)
+    expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
     expect(document.activeElement).toBe(results)
   })
 

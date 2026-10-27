@@ -8,10 +8,21 @@
   line-height: 1.2;
 }
 
-// The results column, alone for now: the filter panel takes the first track from 960px
+// One column, the results. From 960px the filter panel has the first one, as a column of 272px.
 .Layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+}
+
+// The card around the panel, as in the prototype. Below 960px the filters wait for the sheet (#26),
+// so the panel is out of the page, not just out of sight (ADR-0014).
+.Filters {
+  display: none;
+  padding-block: 24px 28px;
+  padding-inline: 26px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
 }
 
 // A page change scrolls here; with the header's scroll-padding on <html> this leaves 24px of air
@@ -37,6 +48,18 @@
 // A flex item per cell, so the card inside stretches to the height of its row
 .Item {
   display: flex;
+}
+
+@media (width >= 960px) {
+  .Layout {
+    grid-template-columns: 272px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .Filters {
+    display: block;
+  }
 }
 
 @media (width < 960px) {

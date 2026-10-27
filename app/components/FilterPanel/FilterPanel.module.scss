@@ -1,0 +1,82 @@
+// Measures of the prototype's side panel (v2, ADR-0013). It has no width and no frame of its own: the
+// page gives it a column and the card around it, and the sheet (#26) another frame.
+.Panel {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.Group {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.Legend {
+  margin-block-end: 12px;
+  padding: 0;
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.Options {
+  display: flex;
+  flex-direction: column;
+}
+
+.Option {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-block-size: 36px;
+  color: var(--text-strong);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.Input {
+  flex: 0 0 auto;
+  inline-size: 18px;
+  block-size: 18px;
+  margin-block: 0;
+  margin-inline: 2px 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.Name {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.Count {
+  color: var(--text-count);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.Clear {
+  align-self: flex-start;
+  block-size: 40px;
+  padding-block: 0;
+  padding-inline: 16px;
+  border: 1px solid var(--text-strong);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave a button in that state (ADR-0013)
+@media (hover: hover) {
+  .Clear:hover {
+    background: var(--inverse-bg);
+    color: var(--inverse-text);
+  }
+}

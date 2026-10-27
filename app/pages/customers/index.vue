@@ -24,9 +24,10 @@ function retry() {
   void refresh()
 }
 
-// The same for the clear button: it goes away with the skeleton, and the focus it holds would fall to
-// the page (ADR-0022). Like any search written on the list, it replaces the history entry (ADR-0013).
-// It clears the filters too: a link with states or gender alone can also find no one.
+// The same for the clear buttons, the empty state's and the filter panel's: the first goes away with
+// the skeleton, the second with the filters, and the focus they hold would fall to the page
+// (ADR-0022). Like any search written on the list, it replaces the history entry (ADR-0013). It
+// clears the filters too: a link with states or gender alone can also find no one.
 function clearSearchAndFilters() {
   focusResults()
   void setQuery(
@@ -41,6 +42,11 @@ function clearSearchAndFilters() {
     <AppBreadcrumb :items="[{ label: 'Home', to: '/customers' }, { label: 'Clientes' }]" />
     <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
     <div :class="S.Layout">
+      <!-- In the HTML for any width: CSS shows it from 960px, and the sheet (#26) takes the filters
+           below that (ADR-0014) -->
+      <aside aria-label="Filtros" :class="S.Filters" data-testid="customers__filters--aside">
+        <FilterPanel :facets="data?.facets" @clear="clearSearchAndFilters" />
+      </aside>
       <div data-testid="customers__column--div">
         <!-- One element for the skeleton, the error, the empty state and the list, so the focus a page
              change, a retry or a clear leaves here is not lost when the skeleton goes -->
