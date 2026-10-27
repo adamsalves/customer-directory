@@ -37,6 +37,9 @@
   font-size: 15px;
   line-height: 1.5;
   text-wrap: pretty;
+
+  // The search it repeats can be one long word, like an email: break it rather than overflow
+  overflow-wrap: anywhere;
 }
 
 .Clear {

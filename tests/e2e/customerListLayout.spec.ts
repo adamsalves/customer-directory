@@ -97,6 +97,35 @@ for (const { width, height } of [
   })
 }
 
+// The hint repeats the search, which can be 100 characters with no space (MAX_SEARCH_LENGTH), like
+// an email. It breaks inside the word: else it is wider than the empty state and the page scrolls
+// sideways.
+for (const width of [320, 375]) {
+  test(`a long search in the empty state at ${String(width)}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto(`/customers?search=${'w'.repeat(100)}`)
+
+    const hint = page.getByTestId('empty-state__hint--text')
+    await expect(hint).toBeVisible()
+    const box = await hint.evaluate((el) => {
+      const parent = el.parentElement?.getBoundingClientRect()
+      const own = el.getBoundingClientRect()
+      if (!parent) throw new Error('the hint has no parent')
+      return {
+        left: own.left - parent.left,
+        right: parent.right - own.right,
+        overflow: el.scrollWidth - el.clientWidth,
+      }
+    })
+    // Inside the empty state, and the text inside the hint
+    expect(box.left).toBeGreaterThanOrEqual(0)
+    expect(box.right).toBeGreaterThanOrEqual(0)
+    expect(box.overflow).toBe(0)
+    const scroll = await page.evaluate(() => document.documentElement.scrollWidth)
+    expect(scroll).toBe(width)
+  })
+}
+
 // The theme is the cookie, which the server renders at once: nothing flips after the page loads
 async function openListIn(page: Page, context: BrowserContext, theme: string, width: number) {
   await context.addCookies([{ name: 'jsm-theme', value: theme, domain: 'localhost', path: '/' }])
