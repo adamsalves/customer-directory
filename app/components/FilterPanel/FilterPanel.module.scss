@@ -7,7 +7,6 @@
 }
 
 .Group {
-  min-inline-size: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -22,18 +21,12 @@
   line-height: 24px;
 }
 
-.Options {
-  display: flex;
-  flex-direction: column;
-}
-
 .Option {
   display: flex;
   gap: 10px;
   align-items: center;
   min-block-size: 36px;
   color: var(--text-strong);
-  font-size: 16px;
   cursor: pointer;
 }
 
@@ -44,10 +37,8 @@
 }
 
 .Input {
-  flex: 0 0 auto;
   inline-size: 18px;
   block-size: 18px;
-  margin-block: 0;
   margin-inline: 2px 0;
   accent-color: var(--accent);
   cursor: pointer;
@@ -55,7 +46,6 @@
 
 .Name {
   flex: 1;
-  min-inline-size: 0;
 }
 
 .Count {
@@ -81,7 +71,6 @@
 .Clear {
   align-self: flex-start;
   block-size: 40px;
-  padding-block: 0;
   padding-inline: 16px;
   border: 1px solid var(--text-strong);
   border-radius: 20px;

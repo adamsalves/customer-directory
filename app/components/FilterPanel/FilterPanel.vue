@@ -107,7 +107,7 @@ function toggleState(slug: string) {
   <div :class="S.Panel" data-testid="filter-panel__root--div">
     <fieldset :class="S.Group" data-testid="filter-panel__states--fieldset">
       <legend :class="S.Legend">Por Estado</legend>
-      <div :id="statesListId" :class="S.Options">
+      <div :id="statesListId">
         <label v-for="row in stateRows" :key="row.slug" :class="[S.Option, row.dimmed && S.Dimmed]">
           <input
             type="checkbox"
@@ -146,32 +146,30 @@ function toggleState(slug: string) {
     </fieldset>
     <fieldset :class="S.Group" data-testid="filter-panel__gender--fieldset">
       <legend :class="S.Legend">Por Gênero</legend>
-      <div :class="S.Options">
-        <label v-for="row in genderRows" :key="row.value" :class="S.Option">
-          <input
-            type="radio"
-            :name="genderName"
-            :value="row.value"
-            :checked="row.checked"
-            :class="S.Input"
-            data-testid="filter-panel__gender--radio"
-            @change="pick({ gender: row.value })"
-          />
-          <span :class="S.Name" data-testid="filter-panel__name--text">{{ row.label }}</span>
-          <span
-            v-if="row.count !== undefined"
-            :class="S.Count"
-            data-testid="filter-panel__count--text"
-          >
-            <span class="VisuallyHidden" data-testid="filter-panel__count--label">
-              {{ countLabel(row.count) }}
-            </span>
-            <span aria-hidden="true" data-testid="filter-panel__count--number">
-              {{ row.count }}
-            </span>
+      <label v-for="row in genderRows" :key="row.value" :class="S.Option">
+        <input
+          type="radio"
+          :name="genderName"
+          :value="row.value"
+          :checked="row.checked"
+          :class="S.Input"
+          data-testid="filter-panel__gender--radio"
+          @change="pick({ gender: row.value })"
+        />
+        <span :class="S.Name" data-testid="filter-panel__name--text">{{ row.label }}</span>
+        <span
+          v-if="row.count !== undefined"
+          :class="S.Count"
+          data-testid="filter-panel__count--text"
+        >
+          <span class="VisuallyHidden" data-testid="filter-panel__count--label">
+            {{ countLabel(row.count) }}
           </span>
-        </label>
-      </div>
+          <span aria-hidden="true" data-testid="filter-panel__count--number">
+            {{ row.count }}
+          </span>
+        </span>
+      </label>
     </fieldset>
     <button
       v-if="hasFilter"
