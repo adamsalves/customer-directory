@@ -13,7 +13,8 @@
   scroll-margin-block-start: 24px;
 }
 
-// The results only take focus from a page change (tabindex="-1"), they are never a tab stop.
+// The results only take focus from code (page change, retry, clear; tabindex="-1"), they are never a
+// tab stop.
 .Results:focus {
   outline: none;
 }

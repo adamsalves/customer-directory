@@ -16,7 +16,6 @@ const hint = computed(
   <div :class="S.EmptyState">
     <span aria-hidden="true" :class="S.Icon">
       <svg
-        aria-hidden="true"
         width="34"
         height="34"
         viewBox="0 0 24 24"
