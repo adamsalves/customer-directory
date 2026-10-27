@@ -355,6 +355,12 @@ describe('serializeListQuery', () => {
     ).toStrictEqual({ states: 'bahia,sao-paulo,tocantins' })
   })
 
+  it('writes the states in the order of the table, each once, whatever order they come in', () => {
+    expect(
+      serializeListQuery({ ...defaults, states: ['tocantins', 'bahia', 'tocantins', 'atlantida'] }),
+    ).toStrictEqual({ states: 'bahia,tocantins' })
+  })
+
   it.each(['female', 'male'] as const)('keeps gender=%s', (gender) => {
     expect(serializeListQuery({ ...defaults, gender })).toStrictEqual({ gender })
   })

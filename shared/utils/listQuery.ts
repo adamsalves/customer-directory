@@ -66,15 +66,15 @@ export function sameListState(a: IListQuery, b: IListQuery): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
 }
 
-// Inverse of parseListQuery, for links. Defaults stay out of the URL (ADR-0007).
-// ponytail: writes the states as they come, so a caller that builds them keeps the order of the
-// table to write the canonical URL, as the parser does. Upgrade: sort them here if a caller cannot.
+// Inverse of parseListQuery, for links. Defaults stay out of the URL (ADR-0007). The states go
+// through the parser's rule, so a caller that toggles them in any order still writes one URL.
 export function serializeListQuery(query: IListQuery): Record<string, string> {
   const params: Record<string, string> = {}
   if (query.page !== DEFAULT_PAGE) params.page = String(query.page)
   if (query.perPage !== DEFAULT_PER_PAGE) params.perPage = String(query.perPage)
   if (query.search !== '') params.search = query.search
-  if (query.states.length > 0) params.states = query.states.join(',')
+  const states = parseStates(query.states.join(','))
+  if (states.length > 0) params.states = states.join(',')
   if (query.gender !== DEFAULT_GENDER) params.gender = query.gender
   return params
 }
