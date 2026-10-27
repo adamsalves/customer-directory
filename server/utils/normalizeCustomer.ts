@@ -80,6 +80,7 @@ export function normalizeCustomer(raw: IRawCustomer, now = new Date()): ICustome
     uf: state?.uf ?? '',
     postcode: String(location.postcode),
     picture: raw.picture.large,
+    stateSlug,
     title: TITLES[name.title],
     gender: raw.gender,
     email: raw.email,

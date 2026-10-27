@@ -107,6 +107,24 @@ describe('GET /api/customers', () => {
     expect(body).toMatchObject({ total: 1, items: [{ slug }] })
   })
 
+  // getQuery decodes the comma written either way. Women of MG or SC: 2 of the 4 customers of the
+  // two states, and 2 of the 7 women.
+  it.each(['minas-gerais,santa-catarina', 'minas-gerais%2Csanta-catarina'])(
+    'reads states=%s and gender from the query',
+    async (states) => {
+      const body: unknown = await $fetch(`/api/customers?states=${states}&gender=female`)
+
+      expect(body).toMatchObject({
+        total: 2,
+        items: [{ slug: 'alejandra-rodrigues' }, { slug: 'gilda-pires' }],
+        facets: {
+          states: { 'minas-gerais': 1, 'santa-catarina': 1, 'sao-paulo': 0 },
+          gender: { all: 4, female: 2, male: 2 },
+        },
+      })
+    },
+  )
+
   // One cached list for every query: a key per URL would refetch, and with swr never expire
   it('reads the source once for different queries', async () => {
     await $fetch('/api/customers?page=3')
