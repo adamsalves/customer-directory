@@ -1,0 +1,66 @@
+// Measures of the prototype's empty state
+.EmptyState {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding-block: 64px;
+  padding-inline: 24px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 2px;
+  text-align: center;
+}
+
+.Icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 80px;
+  block-size: 80px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  color: var(--icon-muted);
+}
+
+.Title {
+  margin: 0;
+  margin-block-start: 8px;
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.Hint {
+  max-inline-size: 46ch;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.5;
+  text-wrap: pretty;
+
+  // The search it repeats can be one long word, like an email: break it rather than overflow
+  overflow-wrap: anywhere;
+}
+
+.Clear {
+  block-size: 44px;
+  margin-block-start: 8px;
+  padding-block: 0;
+  padding-inline: 24px;
+  border: 1px solid var(--text-strong);
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave the button in that state (ADR-0013)
+@media (hover: hover) {
+  .Clear:hover {
+    background: var(--inverse-bg);
+    color: var(--inverse-text);
+  }
+}

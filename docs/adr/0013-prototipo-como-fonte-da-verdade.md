@@ -42,6 +42,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | filtra a cada tecla, sem espera                     | grava a URL 300ms depois da última tecla   | cada gravação da URL refaz a busca no BFF       |
 | `replaceState` em toda busca                        | `replace` na lista, `push` vindo de fora   | voltar não percorre cada termo e volta à origem |
 | link de 272px a partir de 960px, com pílula e foco  | coluna do grid; pílula e foco só na imagem | a pílula é do logo (dono); protótipo no M9      |
+| "Limpar busca e filtros" não move o foco            | o foco vai para os resultados (`#results`) | o botão sai e o foco cai no `body` (ADR-0022)   |
 
 ## Consequências
 

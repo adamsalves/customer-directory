@@ -24,18 +24,27 @@ const response: ICustomerListResponse = {
   perPage: 6,
   totalPages: 4,
 }
+// What the BFF answers when nothing matches: a page 1 with no items, not an error
+const noResults: ICustomerListResponse = {
+  items: [],
+  total: 0,
+  page: 1,
+  perPage: 6,
+  totalPages: 1,
+}
 
 // What the page asked the BFF for, one entry per request
 let requests: URLSearchParams[] = []
 let release: (() => void) | undefined
 let gate: Promise<void> | undefined
 let failing = false
+let empty = false
 
 registerEndpoint('/api/customers', async (event) => {
   requests.push(new URL(event.path, 'http://localhost').searchParams)
   await gate
   if (failing) throw createError({ statusCode: 502, statusMessage: 'Bad Gateway' })
-  return response
+  return empty ? noResults : response
 })
 
 const RESULTS = '[data-testid="customers__results--section"]'
@@ -46,6 +55,9 @@ const IMAGE = '[data-testid="customer-card__avatar--image"]'
 const NAV = '[data-testid="pagination__root--nav"]'
 const ERROR = '[data-testid="error-state__message--alert"]'
 const RETRY = '[data-testid="error-state__retry--button"]'
+const EMPTY_TITLE = '[data-testid="empty-state__title--heading"]'
+const EMPTY_HINT = '[data-testid="empty-state__hint--text"]'
+const CLEAR = '[data-testid="empty-state__clear--button"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
 enableAutoUnmount(afterEach)
@@ -60,6 +72,11 @@ beforeEach(() => {
   release = undefined
   gate = undefined
   failing = false
+  empty = false
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('customers page', () => {
@@ -289,6 +306,89 @@ describe('customers page', () => {
     await wrapper.get(RETRY).trigger('click')
 
     expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
+    expect(document.activeElement).toBe(results)
+  })
+
+  // No match is an answer, not a failure: the empty state takes the place of the list, inside the
+  // results. With no page to go to there is no pagination either.
+  it('shows only the empty state when nothing matches', async () => {
+    empty = true
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?search=zzzz' })
+    const title = wrapper.get(EMPTY_TITLE)
+
+    expect(wrapper.get(RESULTS).element.contains(title.element)).toBe(true)
+    expect(wrapper.find(LIST).exists()).toBe(false)
+    expect(wrapper.find(CARD).exists()).toBe(false)
+    expect(wrapper.find(SKELETON).exists()).toBe(false)
+    expect(wrapper.find(ERROR).exists()).toBe(false)
+    expect(wrapper.find(NAV).exists()).toBe(false)
+  })
+
+  it('names the search in the URL in the empty state', async () => {
+    empty = true
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?search=zzzz' })
+
+    expect(wrapper.get(EMPTY_HINT).text()).toContain('chamado “zzzz”')
+  })
+
+  // The page size stays, the search and the page go: the list starts over from its first page. A
+  // search written on the list replaces its history entry (ADR-0013).
+  it('clears the search, keeps the page size and replaces the history entry', async () => {
+    empty = true
+    const wrapper = await mountSuspended(CustomersPage, {
+      route: '/customers?search=zzzz&page=3&perPage=18',
+    })
+    empty = false
+    const router = useRouter()
+    const replace = vi.spyOn(router, 'replace')
+    const push = vi.spyOn(router, 'push')
+
+    await wrapper.get(CLEAR).trigger('click')
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=18')
+    })
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith({
+      path: '/customers',
+      query: { perPage: '18' },
+    })
+    expect(push).not.toHaveBeenCalled()
+    await vi.waitFor(() => {
+      expect(wrapper.findAll(CARD)).toHaveLength(items.length)
+    })
+    expect(wrapper.find(EMPTY_TITLE).exists()).toBe(false)
+  })
+
+  // The button goes when the skeleton comes in: the focus it holds has to be somewhere that stays,
+  // and moving it there must not scroll the page
+  it('moves the focus to the results when clearing and keeps it there while the list loads', async () => {
+    empty = true
+    const wrapper = await mountSuspended(CustomersPage, {
+      route: '/customers?search=zzzz',
+      attachTo: document.body,
+    })
+    empty = false
+    const button = htmlElement(wrapper.get(CLEAR).element)
+    const results = htmlElement(wrapper.get(RESULTS).element)
+    const focus = vi.spyOn(results, 'focus')
+    button.focus()
+    expect(document.activeElement).toBe(button)
+    gate = new Promise((resolve) => {
+      release = resolve
+    })
+
+    await wrapper.get(CLEAR).trigger('click')
+    await vi.waitFor(() => {
+      expect(wrapper.find(SKELETON).exists()).toBe(true)
+    })
+
+    expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
+    expect(wrapper.find(CLEAR).exists()).toBe(false)
+    expect(document.activeElement).toBe(results)
+    release?.()
+    await vi.waitFor(() => {
+      expect(wrapper.findAll(CARD)).toHaveLength(items.length)
+    })
     expect(document.activeElement).toBe(results)
   })
 
