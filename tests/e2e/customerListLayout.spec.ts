@@ -214,30 +214,122 @@ for (const width of [960, 1280]) {
   })
 }
 
-// An option is a target of 36px (WCAG 2.5.8 asks for 24px) with the box of 18px 2px in, 10px before
-// the name, and the count at the far end; the buttons are no smaller than 24px and the toggle starts
-// where the options do.
-test('the options and the buttons of the filter panel', async ({ page }) => {
+// The grid takes its width from the page, not from what is in it: a wide child (a name with no break,
+// a toolbar to come) overflows the results instead of widening the column, and of pushing the panel
+// off its place from 960px.
+for (const width of [375, 1280]) {
+  test(`a wide result does not widen the page grid at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+    const column = page.getByTestId('customers__column--div')
+    const before = (await boxOf(column)).width
+
+    await page.getByTestId('customers__results--section').evaluate((results) => {
+      results.style.minInlineSize = '2000px'
+    })
+
+    expect((await boxOf(column)).width).toBeCloseTo(before, 1)
+  })
+}
+
+// The prototype's card: 1px of border, 24px of padding above, 26px at the sides and 28px under; the
+// groups 28px apart, a legend of 24px with 12px under it. An option is a target of 36px (WCAG 2.5.8
+// asks for 24px) with the box of 18px 2px in, centered, 10px before the name, and the count at the
+// far end. The buttons are no smaller than 24px, the toggle is a line of text 8px under the options
+// that starts where they do and the clear button is not stretched to the width of the panel.
+test('the geometry of the filter panel', async ({ page }) => {
   // A filter, so the clear button is there
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/customers?gender=female')
-  const option = page.locator('label:has([data-testid="filter-panel__state--checkbox"])').first()
+  const panel = await boxOf(page.getByTestId('customers__filters--aside'))
+  const statesLegend = page.locator('legend', { hasText: 'Por Estado' })
+  const gendersLegend = page.locator('legend', { hasText: 'Por Gênero' })
+  const legend = await boxOf(statesLegend)
+  const options = page.locator('label:has([data-testid="filter-panel__state--checkbox"])')
+  const option = options.first()
   const row = await boxOf(option)
+  const lastRow = await boxOf(options.last())
   const input = await boxOf(option.getByTestId('filter-panel__state--checkbox'))
   const name = await boxOf(option.getByTestId('filter-panel__name--text'))
   const count = await boxOf(option.getByTestId('filter-panel__count--number'))
+  const toggleButton = page.getByTestId('filter-panel__toggle--button')
+  const toggle = await boxOf(toggleButton)
+  const clear = await boxOf(page.getByTestId('filter-panel__clear--button'))
+  const toggleText = await toggleButton.evaluate((button) => {
+    const range = document.createRange()
+    range.selectNodeContents(button)
+    return range.getBoundingClientRect().left
+  })
+
+  expect(legend.y - panel.y).toBeCloseTo(1 + 24, 1)
+  expect(row.x - panel.x).toBeCloseTo(1 + 26, 1)
+  expect(panel.y + panel.height - (clear.y + clear.height)).toBeCloseTo(28 + 1, 1)
+  await expect(statesLegend).toHaveCSS('font-size', '20px')
+  await expect(statesLegend).toHaveCSS('font-weight', '500')
+  expect(legend.height).toBeCloseTo(24, 1)
+  expect(row.y - (legend.y + legend.height)).toBeCloseTo(12, 1)
+  expect((await boxOf(gendersLegend)).y - (toggle.y + toggle.height)).toBeCloseTo(28, 1)
 
   expect(row.height).toBeCloseTo(36, 1)
   expect(input).toMatchObject({ width: 18, height: 18 })
   expect(input.x - row.x).toBeCloseTo(2, 1)
+  expect(input.y + input.height / 2).toBeCloseTo(row.y + row.height / 2, 1)
   expect(name.x - (input.x + input.width)).toBeCloseTo(10, 1)
   expect(count.x + count.width).toBeCloseTo(row.x + row.width, 1)
 
-  const toggle = await boxOf(page.getByTestId('filter-panel__toggle--button'))
-  const clear = await boxOf(page.getByTestId('filter-panel__clear--button'))
   expect(toggle.height).toBeGreaterThanOrEqual(24)
-  expect(toggle.x).toBeCloseTo(row.x, 1)
+  expect(toggle.y - (lastRow.y + lastRow.height)).toBeCloseTo(8, 1)
+  expect(toggleText).toBeCloseTo(row.x, 1)
+  await expect(toggleButton).toHaveCSS('border-top-width', '0px')
+  await expect(toggleButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
   expect(clear.height).toBeCloseTo(40, 1)
+  expect(clear.width).toBeLessThan(panel.width / 2)
+})
+
+// What the prototype writes in the style of each piece, read where it shows: the legend has no padding,
+// the count is 13px with digits of one width, the buttons are in the font of the page (a button has
+// its own by default), the toggle reads as an underlined link and the clear button as an outlined
+// pill of 14px, and everything that takes a click shows the pointer.
+test('the style of the pieces of the filter panel', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/customers?gender=female')
+  const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
+  const option = page.locator('label:has([data-testid="filter-panel__state--checkbox"])').first()
+  const looks: [Locator, Record<string, string>][] = [
+    [page.locator('legend').first(), { 'padding-left': '0px', 'line-height': '24px' }],
+    [
+      page.getByTestId('filter-panel__count--text').first(),
+      { 'font-size': '13px', 'font-variant-numeric': 'tabular-nums' },
+    ],
+    [option, { cursor: 'pointer' }],
+    [option.getByTestId('filter-panel__state--checkbox'), { cursor: 'pointer' }],
+    [
+      page.getByTestId('filter-panel__toggle--button'),
+      {
+        cursor: 'pointer',
+        'font-family': font,
+        'text-decoration-line': 'underline',
+        'text-underline-offset': '3px',
+      },
+    ],
+    [
+      page.getByTestId('filter-panel__clear--button'),
+      {
+        cursor: 'pointer',
+        'font-family': font,
+        'font-size': '14px',
+        'font-weight': '500',
+        'padding-left': '16px',
+        'border-top-width': '1px',
+        'border-top-left-radius': '20px',
+      },
+    ],
+  ]
+
+  for (const [target, style] of looks) {
+    for (const [property, value] of Object.entries(style)) {
+      await expect(target).toHaveCSS(property, value)
+    }
+  }
 })
 
 // The resolved value of a color token in the theme of the page
@@ -253,7 +345,7 @@ const colorOfToken = (page: Page, token: string) =>
 // A state nobody is from is in the muted text color, and a picked one never is (ADR-0013). The
 // fixture has nobody from São Paulo, Rio de Janeiro or Bahia, and two from Minas Gerais.
 for (const theme of ['light', 'dark']) {
-  test(`the dimmed states of the filter panel in the ${theme} theme`, async ({ page, context }) => {
+  test(`the colors of the filter panel in the ${theme} theme`, async ({ page, context }) => {
     await openListIn(page, context, theme, 1280)
     const muted = await colorOfToken(page, '--text-muted')
     const strong = await colorOfToken(page, '--text-strong')
@@ -267,8 +359,30 @@ for (const theme of ['light', 'dark']) {
     await expect(nameOf('bahia')).toHaveCSS('color', muted)
     await expect(nameOf('minas-gerais')).toHaveCSS('color', strong)
 
-    // Picked, with nobody in it: it is what the list is filtered by
+    // The legends, the counts and the outline of the clear button have their own tokens
+    await expect(page.locator('legend').first()).toHaveCSS('color', strong)
+    await expect(page.getByTestId('filter-panel__count--text').first()).toHaveCSS(
+      'color',
+      await colorOfToken(page, '--text-count'),
+    )
+
+    // The card around the panel and the color of its boxes, in the colors of the theme
+    const panel = page.getByTestId('customers__filters--aside')
+    await expect(panel).toHaveCSS('background-color', await colorOfToken(page, '--surface'))
+    await expect(panel).toHaveCSS('border-top-color', await colorOfToken(page, '--border'))
+    await expect(panel).toHaveCSS('border-top-left-radius', '2px')
+    await expect(page.getByTestId('filter-panel__state--checkbox').first()).toHaveCSS(
+      'accent-color',
+      await colorOfToken(page, '--accent'),
+    )
+
+    // Picked, with nobody in it: it is what the list is filtered by. A filter is there, and so is the
+    // clear button, outlined in the strong color.
     await page.goto('/customers?states=sao-paulo')
+    await expect(page.getByTestId('filter-panel__clear--button')).toHaveCSS(
+      'border-top-color',
+      strong,
+    )
     await expect(nameOf('sao-paulo')).toHaveCSS('color', strong)
     await expect(nameOf('bahia')).toHaveCSS('color', muted)
   })
