@@ -26,9 +26,13 @@ function retry() {
 
 // The same for the clear button: it goes away with the skeleton, and the focus it holds would fall to
 // the page (ADR-0022). Like any search written on the list, it replaces the history entry (ADR-0013).
-function clearSearch() {
+// It clears the filters too: a link with states or gender alone can also find no one.
+function clearSearchAndFilters() {
   focusResults()
-  void setQuery({ ...query.value, search: '', page: 1 }, { replace: true })
+  void setQuery(
+    { ...query.value, search: '', states: [], gender: 'all', page: 1 },
+    { replace: true },
+  )
 }
 </script>
 
@@ -58,7 +62,11 @@ function clearSearch() {
       </ul>
       <!-- Keyed on `status`: on a retry `error` keeps the last failure until the answer comes -->
       <ErrorState v-else-if="status === 'error'" @retry="retry" />
-      <EmptyState v-else-if="data?.total === 0" :search="query.search" @clear="clearSearch" />
+      <EmptyState
+        v-else-if="data?.total === 0"
+        :search="query.search"
+        @clear="clearSearchAndFilters"
+      />
       <ul v-else-if="data" :class="S.List" data-testid="customers__list--list">
         <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
           <CustomerCard

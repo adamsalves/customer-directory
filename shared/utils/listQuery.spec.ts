@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { prototypePage } from '../../tests/prototypePage'
+import { BRAZILIAN_STATES } from './brazilianStates'
 import type { IListQuery } from './listQuery'
 import {
   DEFAULT_PER_PAGE,
@@ -57,25 +58,76 @@ const NOT_A_SEARCH: unknown[] = [['ariela'], ['ariela', 'nunes'], [], 42, 0, tru
 // inside stay
 const SEARCHES = ['ariela', 'ELEUTÉRIO', 'álda', 'girao  rosa']
 
+// Not a string. A repeated key comes as an array, and a one-element array stringifies into a list
+// that looks valid, so only a type check rejects it.
+const NOT_A_STATE_LIST: unknown[] = [['bahia'], ['bahia', 'acre'], [], 42, 0, true, null, undefined]
+
+// Not a slug of the table: the comparison is exact, and an object lookup would let the names of
+// Object.prototype through
+const NOT_A_STATE = [
+  '',
+  ',',
+  ' ',
+  'BAHIA',
+  ' bahia',
+  'atlantis',
+  'ba',
+  'são-paulo',
+  'bahia;acre',
+  '__proto__',
+  'constructor',
+]
+
+// 'all' is no exception: it is the default, so it is the value that stays out of the URL
+const NOT_A_GENDER: unknown[] = [
+  '',
+  'FEMALE',
+  ' male',
+  'other',
+  'male,female',
+  ['male'],
+  ['male', 'female'],
+  [],
+  1,
+  null,
+  undefined,
+]
+
+const SLUGS = BRAZILIAN_STATES.map(({ slug }) => slug)
+
 // Objects, because `it.each` spreads a case that is an array into the callback arguments
 const asCases = (values: unknown[]) => values.map((value) => ({ value }))
 
+// The list state with nothing set; each test overrides what it exercises
+const defaults: IListQuery = { page: 1, perPage: 9, search: '', states: [], gender: 'all' }
+
 const queries: IListQuery[] = [
   ...PER_PAGE_OPTIONS.flatMap((perPage) =>
-    [1, 2, 10].map((page) => ({ page, perPage, search: '' })),
+    [1, 2, 10].map((page) => ({ ...defaults, page, perPage })),
   ),
-  ...SEARCHES.map((search) => ({ page: 3, perPage: 18, search })),
+  ...SEARCHES.map((search) => ({ ...defaults, page: 3, perPage: 18, search })),
+  ...[['acre'], ['bahia', 'sao-paulo'], ['minas-gerais', 'santa-catarina', 'tocantins']].map(
+    (states) => ({ ...defaults, states }),
+  ),
+  ...(['female', 'male'] as const).map((gender) => ({ ...defaults, gender })),
+  {
+    page: 2,
+    perPage: 27,
+    search: 'álda',
+    states: ['minas-gerais', 'santa-catarina'],
+    gender: 'male',
+  },
 ]
 
 describe('parseListQuery', () => {
   it('returns the defaults for an empty query', () => {
-    expect(parseListQuery({})).toStrictEqual({ page: 1, perPage: 9, search: '' })
+    expect(parseListQuery({})).toStrictEqual(defaults)
   })
 
   it.each(asCases([null, undefined, 'x', 42, []]))(
     'returns the defaults when the input is $value',
     ({ value }) => {
-      expect(parseListQuery(value)).toStrictEqual({ page: 1, perPage: 9, search: '' })
+      expect(parseListQuery(value)).toStrictEqual(defaults)
     },
   )
 
@@ -135,38 +187,100 @@ describe('parseListQuery', () => {
     expect(parseListQuery({ search: value }).search).toBe('')
   })
 
-  it('validates page, perPage and search independently, each under its own key', () => {
+  it.each([
+    { name: 'one state', value: 'bahia', states: ['bahia'] },
+    {
+      name: 'two states',
+      value: 'minas-gerais,santa-catarina',
+      states: ['minas-gerais', 'santa-catarina'],
+    },
+    { name: 'all 27 states', value: SLUGS.join(','), states: SLUGS },
+  ])('accepts $name', ({ value, states }) => {
+    expect(parseListQuery({ states: value }).states).toStrictEqual(states)
+  })
+
+  // One list state however the URL spells it: "sao-paulo,bahia" is the example of the issue, and
+  // the table lists Bahia first. Without this the page would see a new query, and refetch, on a
+  // link that only reordered the states.
+  it.each([
+    'sao-paulo,bahia',
+    'bahia,sao-paulo',
+    'bahia,sao-paulo,bahia',
+    ',bahia,,sao-paulo,',
+    'atlantis,sao-paulo,bahia,sp',
+  ])('reads states=%j as bahia and sao-paulo, in the order of the table', (value) => {
+    expect(parseListQuery({ states: value }).states).toStrictEqual(['bahia', 'sao-paulo'])
+  })
+
+  // However long the value, the list ends at the 27 states
+  it('keeps each state once, whatever the length of the value', () => {
+    const states = Array.from({ length: 50 }, () => [...SLUGS].reverse().join(',')).join(',')
+
+    expect(parseListQuery({ states }).states).toStrictEqual(SLUGS)
+  })
+
+  // A segment that is no slug goes alone: the slugs around it stay
+  it.each(NOT_A_STATE)('drops states=%j', (value) => {
+    expect(parseListQuery({ states: value }).states).toStrictEqual([])
+    expect(parseListQuery({ states: `acre,${value},bahia` }).states).toStrictEqual([
+      'acre',
+      'bahia',
+    ])
+  })
+
+  it.each(asCases(NOT_A_STATE_LIST))('falls back to no states for states=$value', ({ value }) => {
+    expect(parseListQuery({ states: value }).states).toStrictEqual([])
+  })
+
+  it.each(['female', 'male', 'all'])('accepts gender=%s', (gender) => {
+    expect(parseListQuery({ gender }).gender).toBe(gender)
+  })
+
+  it.each(asCases(NOT_A_GENDER))('falls back to all for gender=$value', ({ value }) => {
+    expect(parseListQuery({ gender: value }).gender).toBe('all')
+  })
+
+  it('validates each key independently, under its own key', () => {
     expect(parseListQuery({ page: '3', perPage: '18' })).toStrictEqual({
+      ...defaults,
       page: 3,
       perPage: 18,
-      search: '',
     })
     expect(parseListQuery({ page: 'x', perPage: '18' })).toStrictEqual({
-      page: 1,
+      ...defaults,
       perPage: 18,
-      search: '',
     })
-    expect(parseListQuery({ page: '3', perPage: 'x' })).toStrictEqual({
-      page: 3,
-      perPage: 9,
-      search: '',
-    })
+    expect(parseListQuery({ page: '3', perPage: 'x' })).toStrictEqual({ ...defaults, page: 3 })
     expect(parseListQuery({ page: 'x', perPage: 'x', search: 'ariela' })).toStrictEqual({
-      page: 1,
-      perPage: 9,
+      ...defaults,
       search: 'ariela',
     })
     expect(parseListQuery({ page: '3', perPage: '18', search: ['ariela'] })).toStrictEqual({
+      ...defaults,
       page: 3,
       perPage: 18,
-      search: '',
+    })
+    expect(parseListQuery({ states: 'bahia', gender: 'other' })).toStrictEqual({
+      ...defaults,
+      states: ['bahia'],
+    })
+    expect(parseListQuery({ states: ['bahia'], gender: 'male' })).toStrictEqual({
+      ...defaults,
+      gender: 'male',
     })
   })
 
   it('ignores unknown keys, the pt-BR ones that ADR-0021 retired included', () => {
-    expect(parseListQuery({ pagina: '3', por: '18', busca: 'ariela', color: 'red' })).toStrictEqual(
-      { page: 1, perPage: 9, search: '' },
-    )
+    expect(
+      parseListQuery({
+        pagina: '3',
+        por: '18',
+        busca: 'ariela',
+        estados: 'bahia',
+        genero: 'female',
+        color: 'red',
+      }),
+    ).toStrictEqual(defaults)
   })
 
   it('offers the page sizes of the prototype', () => {
@@ -178,18 +292,39 @@ describe('parseListQuery', () => {
 })
 
 describe('sameListState', () => {
-  const query: IListQuery = { page: 2, perPage: 18, search: 'ana' }
+  const query: IListQuery = {
+    page: 2,
+    perPage: 18,
+    search: 'ana',
+    states: ['bahia', 'sao-paulo'],
+    gender: 'female',
+  }
 
   it('is true for two parses of the same list state', () => {
-    expect(sameListState(parseListQuery({ page: '2', perPage: '18', search: ' ana' }), query)).toBe(
-      true,
-    )
+    expect(
+      sameListState(
+        parseListQuery({
+          page: '2',
+          perPage: '18',
+          search: ' ana',
+          states: 'sao-paulo,bahia,bahia',
+          gender: 'female',
+        }),
+        query,
+      ),
+    ).toBe(true)
   })
 
-  it.each([
+  it('is true for the same states picked in another order', () => {
+    expect(sameListState({ ...query, states: ['sao-paulo', 'bahia', 'bahia'] }, query)).toBe(true)
+  })
+
+  it.each<{ name: string; other: IListQuery }>([
     { name: 'page', other: { ...query, page: 3 } },
     { name: 'perPage', other: { ...query, perPage: 27 } },
     { name: 'search', other: { ...query, search: 'anas' } },
+    { name: 'states', other: { ...query, states: ['bahia'] } },
+    { name: 'gender', other: { ...query, gender: 'male' } },
   ])('is false when $name differs', ({ other }) => {
     expect(sameListState(other, query)).toBe(false)
   })
@@ -197,29 +332,47 @@ describe('sameListState', () => {
 
 describe('serializeListQuery', () => {
   it('leaves the defaults out of the URL', () => {
-    expect(serializeListQuery({ page: 1, perPage: 9, search: '' })).toStrictEqual({})
+    expect(serializeListQuery(defaults)).toStrictEqual({})
   })
 
   it('keeps what differs from the defaults, as strings', () => {
-    expect(serializeListQuery({ page: 2, perPage: 18, search: '' })).toStrictEqual({
+    expect(serializeListQuery({ ...defaults, page: 2, perPage: 18 })).toStrictEqual({
       page: '2',
       perPage: '18',
     })
-    expect(serializeListQuery({ page: 5, perPage: 9, search: '' })).toStrictEqual({ page: '5' })
-    expect(serializeListQuery({ page: 1, perPage: 27, search: '' })).toStrictEqual({
-      perPage: '27',
-    })
-    expect(serializeListQuery({ page: 1, perPage: 9, search: 'ariela nunes' })).toStrictEqual({
+    expect(serializeListQuery({ ...defaults, page: 5 })).toStrictEqual({ page: '5' })
+    expect(serializeListQuery({ ...defaults, perPage: 27 })).toStrictEqual({ perPage: '27' })
+    expect(serializeListQuery({ ...defaults, search: 'ariela nunes' })).toStrictEqual({
       search: 'ariela nunes',
     })
-    expect(serializeListQuery({ page: 2, perPage: 18, search: 'álda' })).toStrictEqual({
-      page: '2',
-      perPage: '18',
-      search: 'álda',
-    })
+    expect(serializeListQuery({ ...defaults, page: 2, perPage: 18, search: 'álda' })).toStrictEqual(
+      { page: '2', perPage: '18', search: 'álda' },
+    )
   })
 
-  it.each(queries)('round-trips page $page with perPage $perPage and search "$search"', (query) => {
-    expect(parseListQuery(serializeListQuery(query))).toStrictEqual(query)
+  it('writes the states in one value, joined by commas', () => {
+    expect(serializeListQuery({ ...defaults, states: ['bahia'] })).toStrictEqual({
+      states: 'bahia',
+    })
+    expect(
+      serializeListQuery({ ...defaults, states: ['bahia', 'sao-paulo', 'tocantins'] }),
+    ).toStrictEqual({ states: 'bahia,sao-paulo,tocantins' })
   })
+
+  it('writes the states in the order of the table, each once, whatever order they come in', () => {
+    expect(
+      serializeListQuery({ ...defaults, states: ['tocantins', 'bahia', 'tocantins', 'atlantida'] }),
+    ).toStrictEqual({ states: 'bahia,tocantins' })
+  })
+
+  it.each(['female', 'male'] as const)('keeps gender=%s', (gender) => {
+    expect(serializeListQuery({ ...defaults, gender })).toStrictEqual({ gender })
+  })
+
+  it.each(queries)(
+    'round-trips page $page, perPage $perPage, search "$search", states $states and gender $gender',
+    (query) => {
+      expect(parseListQuery(serializeListQuery(query))).toStrictEqual(query)
+    },
+  )
 })

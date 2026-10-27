@@ -29,3 +29,12 @@ export const BRAZILIAN_STATES = [
   { name: 'Sergipe', uf: 'SE', slug: 'sergipe' },
   { name: 'Tocantins', uf: 'TO', slug: 'tocantins' },
 ] as const
+
+// The states the filter always lists, in this order; the other states appear on "Ver todos"
+export const DEFAULT_STATE_SLUGS = [
+  'sao-paulo',
+  'rio-de-janeiro',
+  'minas-gerais',
+  'espirito-santo',
+  'bahia',
+] as const satisfies readonly (typeof BRAZILIAN_STATES)[number]['slug'][]

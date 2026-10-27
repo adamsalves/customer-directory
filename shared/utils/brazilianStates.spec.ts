@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { prototypePage } from '../../tests/prototypePage'
-import { BRAZILIAN_STATES } from './brazilianStates'
+import { BRAZILIAN_STATES, DEFAULT_STATE_SLUGS } from './brazilianStates'
 
 describe('BRAZILIAN_STATES', () => {
   it('has the UF of every state in the prototype map', () => {
@@ -31,5 +31,21 @@ describe('BRAZILIAN_STATES', () => {
     const withoutAccents = name.normalize('NFD').replace(/\p{M}/gu, '')
 
     expect(slug).toBe(withoutAccents.toLowerCase().replace(/[^a-z0-9]+/g, '-'))
+  })
+})
+
+describe('DEFAULT_STATE_SLUGS', () => {
+  it('lists the default states of the prototype, in its order', () => {
+    const list = /const DEFAULT_STATES = \[(.*)\];/.exec(prototypePage())?.[1] ?? ''
+    const prototypeSlugs = [...list.matchAll(/\['([a-z-]+)', '[^']*'\]/g)].map(([, slug]) => slug)
+
+    expect(prototypeSlugs).toHaveLength(5)
+    expect([...DEFAULT_STATE_SLUGS]).toStrictEqual(prototypeSlugs)
+  })
+
+  it('has only slugs of BRAZILIAN_STATES', () => {
+    const slugs = BRAZILIAN_STATES.map(({ slug }): string => slug)
+
+    expect(DEFAULT_STATE_SLUGS.filter((slug) => !slugs.includes(slug))).toStrictEqual([])
   })
 })

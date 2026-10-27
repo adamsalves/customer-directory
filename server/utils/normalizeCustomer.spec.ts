@@ -95,6 +95,7 @@ describe('normalizeCustomer', () => {
       uf: 'SC',
       postcode: '43646',
       picture: 'https://randomuser.me/api/portraits/women/18.jpg',
+      stateSlug: 'santa-catarina',
       title: 'Sra.',
       gender: 'female',
       email: 'alejandra.rodrigues@example.com',
@@ -133,20 +134,29 @@ describe('normalizeCustomer', () => {
   })
 
   it.each([
-    { state: 'paraná', name: 'Paraná', uf: 'PR' },
-    { state: 'mato grosso do sul', name: 'Mato Grosso do Sul', uf: 'MS' },
-    { state: ' SÃO Paulo ', name: 'São Paulo', uf: 'SP' },
-    { state: 'sao  paulo', name: 'São Paulo', uf: 'SP' },
-    { state: 'espirito santo', name: 'Espírito Santo', uf: 'ES' },
-    { state: 'atlantis', name: 'Atlantis', uf: '' },
-  ])('resolves the state "$state" to $name with UF "$uf"', ({ state, name, uf }) => {
-    const customer = normalizeEdited((raw) => {
-      raw.location.state = state
-    })
+    { state: 'paraná', name: 'Paraná', uf: 'PR', stateSlug: 'parana' },
+    {
+      state: 'mato grosso do sul',
+      name: 'Mato Grosso do Sul',
+      uf: 'MS',
+      stateSlug: 'mato-grosso-do-sul',
+    },
+    { state: ' SÃO Paulo ', name: 'São Paulo', uf: 'SP', stateSlug: 'sao-paulo' },
+    { state: 'sao  paulo', name: 'São Paulo', uf: 'SP', stateSlug: 'sao-paulo' },
+    { state: 'espirito santo', name: 'Espírito Santo', uf: 'ES', stateSlug: 'espirito-santo' },
+    { state: 'atlantis', name: 'Atlantis', uf: '', stateSlug: 'atlantis' },
+  ])(
+    'resolves the state "$state" to $name with UF "$uf" and slug "$stateSlug"',
+    ({ state, name, uf, stateSlug }) => {
+      const customer = normalizeEdited((raw) => {
+        raw.location.state = state
+      })
 
-    expect(customer.state).toBe(name)
-    expect(customer.uf).toBe(uf)
-  })
+      expect(customer.state).toBe(name)
+      expect(customer.uf).toBe(uf)
+      expect(customer.stateSlug).toBe(stateSlug)
+    },
+  )
 
   it.each([
     { index: 12, timezone: 'UTC-3:00 · Brazil, Buenos Aires, Georgetown' },

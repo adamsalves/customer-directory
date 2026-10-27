@@ -1,7 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ICustomerCard, ICustomerListResponse } from '#shared/types/customer'
+import type { ICustomerCard, ICustomerFacets, ICustomerListResponse } from '#shared/types/customer'
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
 import PaginationNav from '~/components/PaginationNav/PaginationNav.vue'
 import { RESULTS_ID } from '~/utils/resultsScroll'
@@ -17,12 +17,15 @@ const items: ICustomerCard[] = Array.from({ length: 6 }, (_, index) => ({
   postcode: '43646',
   picture: `https://example.com/${String(index)}.jpg`,
 }))
+// The page does not read the facets yet: the filter panel comes with #25
+const facets: ICustomerFacets = { states: {}, gender: { all: 0, female: 0, male: 0 } }
 const response: ICustomerListResponse = {
   items,
   total: 20,
   page: 2,
   perPage: 6,
   totalPages: 4,
+  facets,
 }
 // What the BFF answers when nothing matches: a page 1 with no items, not an error
 const noResults: ICustomerListResponse = {
@@ -31,6 +34,7 @@ const noResults: ICustomerListResponse = {
   page: 1,
   perPage: 6,
   totalPages: 1,
+  facets,
 }
 
 // What the page asked the BFF for, one entry per request
@@ -333,10 +337,10 @@ describe('customers page', () => {
 
   // The page size stays, the search and the page go: the list starts over from its first page. A
   // search written on the list replaces its history entry (ADR-0013).
-  it('clears the search, keeps the page size and replaces the history entry', async () => {
+  it('clears the search and the filters, keeps the page size and replaces the history entry', async () => {
     empty = true
     const wrapper = await mountSuspended(CustomersPage, {
-      route: '/customers?search=zzzz&page=3&perPage=18',
+      route: '/customers?search=zzzz&page=3&perPage=18&states=bahia&gender=female',
     })
     empty = false
     const router = useRouter()
@@ -394,7 +398,7 @@ describe('customers page', () => {
 
   it('refetches when the page in the URL changes', async () => {
     await mountSuspended(CustomersPage, { route: '/customers?page=2' })
-    await useListQuery().setQuery({ page: 3, perPage: 9, search: '' })
+    await useListQuery().setQuery({ page: 3, perPage: 9, search: '', states: [], gender: 'all' })
 
     await vi.waitFor(() => {
       expect(requests.map(String)).toEqual(['page=2', 'page=3'])
