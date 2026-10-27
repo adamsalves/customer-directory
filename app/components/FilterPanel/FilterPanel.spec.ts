@@ -61,6 +61,13 @@ function pickedOf(wrapper: TWrapper, control: string) {
     .map((input) => input.attributes('value'))
 }
 
+// The labels of a group that have a control in them: a click on the name reaches it
+const labelsOf = (wrapper: TWrapper, group: string, control: string) =>
+  wrapper
+    .get(group)
+    .findAll('label')
+    .filter((label) => label.find(control).exists())
+
 function namesIn(wrapper: TWrapper, group: string) {
   return wrapper
     .get(group)
@@ -110,10 +117,12 @@ describe('FilterPanel states', () => {
 
   it('puts a native checkbox in the label of each state', async () => {
     const wrapper = await mountPanel()
-    const box = stateBox(wrapper, 'bahia')
 
-    expect(box.attributes('type')).toBe('checkbox')
-    expect(box.element.closest('label')?.textContent).toContain('Bahia')
+    expect(wrapper.findAll(STATE).map((box) => box.attributes('type'))).toEqual(
+      Array.from({ length: 5 }, () => 'checkbox'),
+    )
+    expect(labelsOf(wrapper, STATES, STATE)).toHaveLength(5)
+    expect(stateBox(wrapper, 'bahia').element.closest('label')?.textContent).toContain('Bahia')
   })
 
   it('lists the picked states outside the five after them, in table order', async () => {
@@ -121,6 +130,20 @@ describe('FilterPanel states', () => {
 
     expect(namesIn(wrapper, STATES)).toEqual([...FIVE, 'Acre', 'Tocantins'])
     expect(pickedOf(wrapper, STATE)).toEqual(['bahia', 'acre', 'tocantins'])
+  })
+
+  // A row that stays keeps its element, and the focus in it: the list of picks changes under a reader
+  // who is on the last of them when another one goes (back, a link)
+  it('keeps the element of a state when another one leaves the list', async () => {
+    const wrapper = await mountPanel('/customers?states=acre,tocantins')
+    const box = stateBox(wrapper, 'tocantins').element
+
+    await navigateTo('/customers?states=tocantins')
+    await vi.waitFor(() => {
+      expect(wrapper.find(`${STATE}[value="acre"]`).exists()).toBe(false)
+    })
+
+    expect(stateBox(wrapper, 'tocantins').element).toBe(box)
   })
 
   it('does not list a picked default state twice', async () => {
@@ -375,6 +398,7 @@ describe('FilterPanel gender', () => {
       'radio',
       'radio',
     ])
+    expect(labelsOf(wrapper, GENDERS, GENDER)).toHaveLength(3)
     expect(pickedOf(wrapper, GENDER)).toEqual(['all'])
   })
 
@@ -434,17 +458,21 @@ describe('FilterPanel gender', () => {
 describe('FilterPanel counts', () => {
   // The bare number is for the eye and the whole phrase for the screen reader: a name on a span
   // would be ignored (ARIA 1.2), so the text is hidden, not labelled (ADR-0013)
-  it('shows the number and hides the phrase a screen reader reads in its place', async () => {
+  it('shows each number to the eye and hides the phrase a screen reader reads in its place', async () => {
     const wrapper = await mountPanel()
-    const count = stateBox(wrapper, 'sao-paulo').element.closest('label')
-    const label = wrapper.get(`label:has(${STATE}[value="sao-paulo"]) ${COUNT_LABEL}`)
-    const number = wrapper.get(`label:has(${STATE}[value="sao-paulo"]) ${COUNT_NUMBER}`)
+    const counts = wrapper.findAll(COUNT)
 
-    expect(count?.textContent).toContain('São Paulo')
-    expect(label.text()).toBe('12 clientes')
-    expect(label.classes()).toContain('VisuallyHidden')
-    expect(number.text()).toBe('12')
-    expect(number.attributes('aria-hidden')).toBe('true')
+    // The five states and the three genders
+    expect(counts).toHaveLength(8)
+    for (const count of counts) {
+      const number = count.get(COUNT_NUMBER)
+      const phrase = count.get(COUNT_LABEL)
+      expect(number.attributes('aria-hidden')).toBe('true')
+      expect(phrase.classes()).toContain('VisuallyHidden')
+      expect(phrase.text()).toBe(
+        `${number.text()} ${number.text() === '1' ? 'cliente' : 'clientes'}`,
+      )
+    }
   })
 
   it('says "1 cliente" for one and "0 clientes" for none', async () => {
