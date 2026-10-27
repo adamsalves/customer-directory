@@ -37,6 +37,12 @@
   cursor: pointer;
 }
 
+// Nobody to find and not picked: still there to pick, in the muted text color instead of the
+// prototype's opacity of .45, which gives 2.58:1 on a control that works (ADR-0013)
+.Dimmed {
+  color: var(--text-muted);
+}
+
 .Input {
   flex: 0 0 auto;
   inline-size: 18px;
@@ -58,6 +64,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+.Toggle {
+  margin-block-start: 8px;
+  padding-block: 4px;
+  padding-inline: 0;
+  border: 0;
+  background: none;
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .Clear {
   align-self: flex-start;
   block-size: 40px;
@@ -75,6 +95,10 @@
 
 // Hover only where a pointer can hover, so a tap does not leave a button in that state (ADR-0013)
 @media (hover: hover) {
+  .Toggle:hover {
+    color: var(--link);
+  }
+
   .Clear:hover {
     background: var(--inverse-bg);
     color: var(--inverse-text);

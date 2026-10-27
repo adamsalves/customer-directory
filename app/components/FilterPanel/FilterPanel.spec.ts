@@ -15,6 +15,7 @@ const COUNT = '[data-testid="filter-panel__count--text"]'
 const COUNT_LABEL = '[data-testid="filter-panel__count--label"]'
 const COUNT_NUMBER = '[data-testid="filter-panel__count--number"]'
 const CLEAR = '[data-testid="filter-panel__clear--button"]'
+const TOGGLE = '[data-testid="filter-panel__toggle--button"]'
 
 // Every state, as the BFF answers: 0 for the ones nobody is from. `all` is the two genders together.
 const facets: ICustomerFacets = {
@@ -65,6 +66,17 @@ function namesIn(wrapper: TWrapper, group: string) {
     .get(group)
     .findAll(NAME)
     .map((name) => name.text())
+}
+
+const isDimmed = (wrapper: TWrapper, slug: string) =>
+  wrapper
+    .get(`label:has(${STATE}[value="${slug}"])`)
+    .classes()
+    .some((name) => name.includes('Dimmed'))
+
+function focusOn(element: Element) {
+  if (!(element instanceof HTMLElement)) throw new Error('the element is not an HTML element')
+  element.focus()
 }
 
 // Both calling through: the router still navigates
@@ -186,6 +198,168 @@ describe('FilterPanel states', () => {
     await navigateTo('/customers?states=acre')
     await stateBox(wrapper, 'minas-gerais').setValue(true)
     await urlIs('/customers?states=acre,minas-gerais')
+  })
+})
+
+describe('FilterPanel list of all states', () => {
+  it('offers the 27 states, closed, and the list it controls holds the boxes', async () => {
+    const wrapper = await mountPanel()
+    const toggle = wrapper.get(TOGGLE)
+    const id = toggle.attributes('aria-controls')
+
+    expect(toggle.text()).toBe('Ver todos (27)')
+    expect(toggle.attributes('type')).toBe('button')
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(id).toMatch(/\S/)
+    expect(wrapper.get(`[id="${id ?? ''}"]`).findAll(STATE)).toHaveLength(5)
+  })
+
+  it('lists the other 22 after the five, in alphabetical order, once opened', async () => {
+    const wrapper = await mountPanel()
+
+    await wrapper.get(TOGGLE).trigger('click')
+    const names = namesIn(wrapper, STATES)
+    const others = names.slice(5)
+
+    expect(names.slice(0, 5)).toEqual(FIVE)
+    expect(others).toHaveLength(22)
+    expect(others.slice(0, 6)).toEqual([
+      'Acre',
+      'Alagoas',
+      'Amapá',
+      'Amazonas',
+      'Ceará',
+      'Distrito Federal',
+    ])
+    expect(others.at(-1)).toBe('Tocantins')
+    expect(others).toEqual([...others].sort((a, b) => a.localeCompare(b, 'pt-BR')))
+    const toggle = wrapper.get(TOGGLE)
+    expect(toggle.text()).toBe('Ver menos')
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    const id = toggle.attributes('aria-controls')
+    expect(wrapper.get(`[id="${id ?? ''}"]`).findAll(STATE)).toHaveLength(27)
+  })
+
+  it('goes back to the five with "Ver menos"', async () => {
+    const wrapper = await mountPanel()
+    await wrapper.get(TOGGLE).trigger('click')
+
+    await wrapper.get(TOGGLE).trigger('click')
+
+    expect(namesIn(wrapper, STATES)).toEqual(FIVE)
+    expect(wrapper.get(TOGGLE).text()).toBe('Ver todos (27)')
+    expect(wrapper.get(TOGGLE).attributes('aria-expanded')).toBe('false')
+  })
+
+  it('lists a picked state once, in its place, when opened', async () => {
+    const wrapper = await mountPanel('/customers?states=tocantins')
+    expect(namesIn(wrapper, STATES)).toEqual([...FIVE, 'Tocantins'])
+
+    await wrapper.get(TOGGLE).trigger('click')
+
+    expect(wrapper.findAll(STATE)).toHaveLength(27)
+    expect(pickedOf(wrapper, STATE)).toEqual(['tocantins'])
+    expect(namesIn(wrapper, STATES).at(-1)).toBe('Tocantins')
+  })
+
+  it('stays open while states are picked, and keeps what was picked when closed', async () => {
+    const wrapper = await mountPanel()
+    await wrapper.get(TOGGLE).trigger('click')
+
+    await stateBox(wrapper, 'acre').setValue(true)
+    await urlIs('/customers?states=acre')
+
+    expect(wrapper.findAll(STATE)).toHaveLength(27)
+    expect(wrapper.get(TOGGLE).text()).toBe('Ver menos')
+    await wrapper.get(TOGGLE).trigger('click')
+    expect(namesIn(wrapper, STATES)).toEqual([...FIVE, 'Acre'])
+  })
+})
+
+describe('FilterPanel dimmed states', () => {
+  it('dims a state nobody is from and no other', async () => {
+    const wrapper = await mountPanel()
+
+    expect(isDimmed(wrapper, 'minas-gerais')).toBe(true)
+    expect(isDimmed(wrapper, 'espirito-santo')).toBe(true)
+    expect(isDimmed(wrapper, 'sao-paulo')).toBe(false)
+    // One is still someone
+    expect(isDimmed(wrapper, 'rio-de-janeiro')).toBe(false)
+    expect(isDimmed(wrapper, 'bahia')).toBe(false)
+  })
+
+  it('dims the states nobody is from among all of them, once opened', async () => {
+    const wrapper = await mountPanel()
+
+    await wrapper.get(TOGGLE).trigger('click')
+
+    expect(isDimmed(wrapper, 'alagoas')).toBe(true)
+    expect(isDimmed(wrapper, 'acre')).toBe(false)
+  })
+
+  it('never dims a picked state, whatever its count', async () => {
+    const wrapper = await mountPanel('/customers?states=minas-gerais')
+
+    expect(isDimmed(wrapper, 'minas-gerais')).toBe(false)
+    // The count of a picked state is still there, and still zero
+    expect(wrapper.get(`label:has(${STATE}[value="minas-gerais"]) ${COUNT_NUMBER}`).text()).toBe(
+      '0',
+    )
+    expect(isDimmed(wrapper, 'espirito-santo')).toBe(true)
+  })
+
+  it('dims nothing without facets', async () => {
+    const wrapper = await mountPanel('/customers', { facets: undefined })
+
+    for (const slug of ['sao-paulo', 'minas-gerais', 'bahia']) {
+      expect(isDimmed(wrapper, slug)).toBe(false)
+    }
+  })
+
+  it('dims nothing the facets do not list', async () => {
+    const wrapper = await mountPanel('/customers', {
+      facets: { ...facets, states: { bahia: 5 } },
+    })
+
+    expect(isDimmed(wrapper, 'minas-gerais')).toBe(false)
+  })
+})
+
+// A state outside the five is in the short list only while it is picked. Unpicking it takes its row
+// away, and the focus would fall to the page: it goes to the toggle, which stays (ADR-0013).
+describe('FilterPanel focus', () => {
+  it('moves to the toggle when a picked state outside the five is unpicked', async () => {
+    const wrapper = await mountPanel('/customers?states=acre')
+    focusOn(stateBox(wrapper, 'acre').element)
+
+    await stateBox(wrapper, 'acre').setValue(false)
+    expect(document.activeElement).toBe(wrapper.get(TOGGLE).element)
+
+    await urlIs('/customers')
+    expect(wrapper.find(`${STATE}[value="acre"]`).exists()).toBe(false)
+    expect(document.activeElement).toBe(wrapper.get(TOGGLE).element)
+  })
+
+  it('stays on a state of the five that is unpicked', async () => {
+    const wrapper = await mountPanel('/customers?states=bahia')
+    focusOn(stateBox(wrapper, 'bahia').element)
+
+    await stateBox(wrapper, 'bahia').setValue(false)
+    await urlIs('/customers')
+
+    expect(document.activeElement).toBe(stateBox(wrapper, 'bahia').element)
+  })
+
+  it('stays on the state when the list is open, where its row stays', async () => {
+    const wrapper = await mountPanel('/customers?states=acre')
+    await wrapper.get(TOGGLE).trigger('click')
+    focusOn(stateBox(wrapper, 'acre').element)
+
+    await stateBox(wrapper, 'acre').setValue(false)
+    await urlIs('/customers')
+
+    expect(document.activeElement).toBe(stateBox(wrapper, 'acre').element)
+    expect(wrapper.findAll(STATE)).toHaveLength(27)
   })
 })
 

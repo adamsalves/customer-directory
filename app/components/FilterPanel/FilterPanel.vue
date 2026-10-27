@@ -16,29 +16,41 @@ const GENDERS = [
   { value: 'male', label: 'Masculino' },
 ] as const satisfies readonly { value: IListQuery['gender']; label: string }[]
 
+const isDefaultState = (slug: string) =>
+  DEFAULT_STATE_SLUGS.some((defaultSlug) => defaultSlug === slug)
+
 // The five the panel always lists, in their order, and the other 22 after them, in the table's
 // (alphabetical) order
 const DEFAULT_STATES = DEFAULT_STATE_SLUGS.flatMap((slug) =>
   BRAZILIAN_STATES.filter((state) => state.slug === slug),
 )
-const OTHER_STATES = BRAZILIAN_STATES.filter(
-  ({ slug }) => !DEFAULT_STATE_SLUGS.some((defaultSlug) => defaultSlug === slug),
-)
+const OTHER_STATES = BRAZILIAN_STATES.filter(({ slug }) => !isDefaultState(slug))
 
 const { query, setQuery } = useListQuery()
-// One name per instance: a second panel on the page (the sheet, #26) is a group of its own
+// Ids per instance: a second panel on the page (the sheet, #26) is a group of its own, and its list
+// of states is another element
 const genderName = useId()
+const statesListId = useId()
+// Whether "Ver todos" is open: a state of the screen, not of the list, so it stays local (ADR-0007)
+const expanded = ref(false)
+const toggleRef = useTemplateRef('toggle')
 
-// The states in the list: the five, then the others that are picked. `states` is in table order.
+// The states in the list: the five, then the picked ones, or all of them once "Ver todos" is open.
+// `states` is in table order, so the picked ones are as well. A state with nobody in it is dimmed
+// unless it is picked: a pick is never dimmed, it is what the list is filtered by (ADR-0013).
 const stateRows = computed(() =>
-  [...DEFAULT_STATES, ...OTHER_STATES.filter(({ slug }) => query.value.states.includes(slug))].map(
-    ({ slug, name }) => ({
-      slug,
-      name,
-      checked: query.value.states.includes(slug),
-      count: props.facets?.states[slug],
-    }),
-  ),
+  [
+    ...DEFAULT_STATES,
+    ...OTHER_STATES.filter(({ slug }) => expanded.value || query.value.states.includes(slug)),
+  ].map(({ slug, name }) => {
+    const checked = query.value.states.includes(slug)
+    const count = props.facets?.states[slug]
+    return { slug, name, checked, count, dimmed: count === 0 && !checked }
+  }),
+)
+
+const toggleLabel = computed(() =>
+  expanded.value ? 'Ver menos' : `Ver todos (${String(BRAZILIAN_STATES.length)})`,
 )
 
 const genderRows = computed(() =>
@@ -75,8 +87,16 @@ function pick(change: Partial<Pick<IListQuery, 'states' | 'gender'>>) {
   })
 }
 
+// In the short list a state outside the five is there only while it is picked, so unpicking it
+// takes its row off the page, and the focus with it. The toggle is what stays under the list.
+function focusToggle() {
+  const button = toggleRef.value
+  if (button instanceof HTMLButtonElement) button.focus()
+}
+
 function toggleState(slug: string) {
   const { states } = pending ?? query.value
+  if (!expanded.value && !isDefaultState(slug)) focusToggle()
   pick({
     states: states.includes(slug) ? states.filter((picked) => picked !== slug) : [...states, slug],
   })
@@ -87,8 +107,8 @@ function toggleState(slug: string) {
   <div :class="S.Panel" data-testid="filter-panel__root--div">
     <fieldset :class="S.Group" data-testid="filter-panel__states--fieldset">
       <legend :class="S.Legend">Por Estado</legend>
-      <div :class="S.Options">
-        <label v-for="row in stateRows" :key="row.slug" :class="S.Option">
+      <div :id="statesListId" :class="S.Options">
+        <label v-for="row in stateRows" :key="row.slug" :class="[S.Option, row.dimmed && S.Dimmed]">
           <input
             type="checkbox"
             :value="row.slug"
@@ -112,6 +132,17 @@ function toggleState(slug: string) {
           </span>
         </label>
       </div>
+      <button
+        ref="toggle"
+        type="button"
+        :aria-expanded="expanded"
+        :aria-controls="statesListId"
+        :class="S.Toggle"
+        data-testid="filter-panel__toggle--button"
+        @click="expanded = !expanded"
+      >
+        {{ toggleLabel }}
+      </button>
     </fieldset>
     <fieldset :class="S.Group" data-testid="filter-panel__gender--fieldset">
       <legend :class="S.Legend">Por Gênero</legend>
