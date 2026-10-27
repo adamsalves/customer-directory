@@ -72,6 +72,7 @@ for (const { width, shown } of [
 // The shortcut hint of the search field is in the HTML at any width, and CSS shows it from 960px
 // while the field is empty
 for (const { width, shown } of [
+  { width: 375, shown: false },
   { width: 959, shown: false },
   { width: 1280, shown: true },
 ]) {
