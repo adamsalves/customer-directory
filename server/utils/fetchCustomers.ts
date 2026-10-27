@@ -13,5 +13,7 @@ export const fetchCustomers = defineCachedFunction(
     // An arrow, not `.map(normalizeCustomer)`: the index would land in its `now` parameter
     return parseRawCustomers(payload).map((raw) => normalizeCustomer(raw))
   },
-  { name: 'customers', maxAge: 60 * 60, swr: true },
+  // Bump `integrity` when the shape of ICustomer changes: the entry on disk (dev) outlives a
+  // restart, and Nitro would serve the old shape for up to 1h (2: `stateSlug`, #23)
+  { name: 'customers', maxAge: 60 * 60, swr: true, integrity: 'customer-2' },
 )

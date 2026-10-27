@@ -71,7 +71,7 @@ export function queryCustomers(customers: ICustomer[], query: IListQuery): ICust
   const bySearch = searchByName(customers, query.search)
   const byGender = filterByGender(bySearch, query.gender)
   const byStates = filterByStates(bySearch, query.states)
-  const matches = filterByStates(byGender, query.states)
+  const matches = filterByGender(byStates, query.gender)
   const total = matches.length
   const totalPages = Math.max(1, Math.ceil(total / perPage))
   const page = Math.min(query.page, totalPages)

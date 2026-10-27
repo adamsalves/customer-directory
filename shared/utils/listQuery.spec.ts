@@ -315,6 +315,10 @@ describe('sameListState', () => {
     ).toBe(true)
   })
 
+  it('is true for the same states picked in another order', () => {
+    expect(sameListState({ ...query, states: ['sao-paulo', 'bahia', 'bahia'] }, query)).toBe(true)
+  })
+
   it.each<{ name: string; other: IListQuery }>([
     { name: 'page', other: { ...query, page: 3 } },
     { name: 'perPage', other: { ...query, perPage: 27 } },

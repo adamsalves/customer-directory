@@ -25,13 +25,16 @@ function parsePositiveInteger(value: unknown): number | undefined {
   return typeof value === 'string' && POSITIVE_INTEGER.test(value) ? Number(value) : undefined
 }
 
-// The states the value names, each once and in the order of the table, so the spellings of one
+// The known states among these, each once and in the order of the table, so the spellings of one
 // choice ("sao-paulo,bahia", "bahia,sao-paulo,bahia", "bahia,,sao-paulo") are one list state and the
-// list ends at 27. Not a string (a repeated key comes as an array): no state.
+// list ends at 27
+function inTableOrder(states: readonly string[]): string[] {
+  return BRAZILIAN_STATES.filter(({ slug }) => states.includes(slug)).map(({ slug }) => slug)
+}
+
+// Not a string (a repeated key comes as an array): no state
 function parseStates(value: unknown): string[] {
-  if (typeof value !== 'string') return []
-  const named = new Set(value.split(','))
-  return BRAZILIAN_STATES.filter(({ slug }) => named.has(slug)).map(({ slug }) => slug)
+  return typeof value === 'string' ? inTableOrder(value.split(',')) : []
 }
 
 function parseGender(value: unknown): IListQuery['gender'] {
@@ -59,11 +62,10 @@ export function parseListQuery(input: unknown): IListQuery {
   }
 }
 
-// Two parsed list states are the same list. The JSON works because parseListQuery builds every
-// IListQuery with its keys in one order, and its states in the order of the table: comparing the
-// list in order is comparing it as a set.
+// Two list states are the same list when they write the same URL, so states picked in any order
+// compare as a set. The JSON works because serializeListQuery writes its keys in one order.
 export function sameListState(a: IListQuery, b: IListQuery): boolean {
-  return JSON.stringify(a) === JSON.stringify(b)
+  return JSON.stringify(serializeListQuery(a)) === JSON.stringify(serializeListQuery(b))
 }
 
 // Inverse of parseListQuery, for links. Defaults stay out of the URL (ADR-0007). The states go
@@ -73,7 +75,7 @@ export function serializeListQuery(query: IListQuery): Record<string, string> {
   if (query.page !== DEFAULT_PAGE) params.page = String(query.page)
   if (query.perPage !== DEFAULT_PER_PAGE) params.perPage = String(query.perPage)
   if (query.search !== '') params.search = query.search
-  const states = parseStates(query.states.join(','))
+  const states = inTableOrder(query.states)
   if (states.length > 0) params.states = states.join(',')
   if (query.gender !== DEFAULT_GENDER) params.gender = query.gender
   return params

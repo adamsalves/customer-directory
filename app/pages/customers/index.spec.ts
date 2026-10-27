@@ -337,10 +337,10 @@ describe('customers page', () => {
 
   // The page size stays, the search and the page go: the list starts over from its first page. A
   // search written on the list replaces its history entry (ADR-0013).
-  it('clears the search, keeps the page size and replaces the history entry', async () => {
+  it('clears the search and the filters, keeps the page size and replaces the history entry', async () => {
     empty = true
     const wrapper = await mountSuspended(CustomersPage, {
-      route: '/customers?search=zzzz&page=3&perPage=18',
+      route: '/customers?search=zzzz&page=3&perPage=18&states=bahia&gender=female',
     })
     empty = false
     const router = useRouter()
