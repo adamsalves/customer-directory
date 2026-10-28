@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { PageRouteSymbol } from '#app/components/injections'
 import { MAX_SEARCH_LENGTH } from '#shared/utils/listQuery'
 import SearchField from './SearchField.vue'
 
@@ -18,9 +19,13 @@ afterEach(() => {
 
 // In the document, so the field can take focus. The route is the list state the field starts from.
 // Only the wait is faked (setTimeout and clearTimeout) and only after the mount, which the router
-// has to be able to finish.
-async function mountField(route = '/customers') {
-  const wrapper = await mountSuspended(SearchField, { route, attachTo: document.body })
+// has to be able to finish. `provide` is what the field gets injected, a route of its own included.
+async function mountField(route = '/customers', provide: Record<symbol, unknown> = {}) {
+  const wrapper = await mountSuspended(SearchField, {
+    route,
+    attachTo: document.body,
+    global: { provide },
+  })
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
   return wrapper
 }
@@ -449,6 +454,31 @@ describe('SearchField writing the URL', () => {
     await landOn('/customers?search=ana')
 
     expect(inputOf(wrapper).value).toBe('anab')
+  })
+
+  // From another page the route the field reads is Nuxt's global one, which catches up only when the
+  // new page has resolved: the write can be over by then. The route here is a stand-in that the test
+  // moves after the write has landed and settled, so all the field has to know its own search by is
+  // its mark.
+  it('keeps a key typed while its write is on the way, when the route arrives after the write is over', async () => {
+    const late = shallowReactive<{ path: string; query: Record<string, string> }>({
+      path: '/customers',
+      query: {},
+    })
+    const wrapper = await mountField('/customers', { [PageRouteSymbol]: late })
+    const { replace } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    vi.advanceTimersByTime(300)
+    await wrapper.get(INPUT).setValue('anab')
+    await landOn('/customers?search=ana')
+
+    late.query = { search: 'ana' }
+    await flushPromises()
+
+    expect(inputOf(wrapper).value).toBe('anab')
+    vi.advanceTimersByTime(300)
+    expect(replace).toHaveBeenLastCalledWith({ path: '/customers', query: { search: 'anab' } })
+    await urlIs('/customers?search=anab')
   })
 
   // The Enter takes the wait of the keys before it, even when the router refuses its write: nothing
