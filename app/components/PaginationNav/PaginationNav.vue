@@ -11,7 +11,7 @@ const props = defineProps<{
   loading: boolean
 }>()
 
-const { query, setQuery } = useListQuery()
+const { query, pending, setQuery } = useListQuery()
 const perPageId = useId()
 
 // Both lists are in the HTML and CSS shows one per width (ADR-0014)
@@ -22,12 +22,14 @@ const lists = computed(() =>
   })),
 )
 
-// The list state with another page: the page size stays, the defaults stay out of the URL.
+// The list state with another page: the page size stays, the defaults stay out of the URL. It is the
+// state of the write still on its way when there is one: a click on a link cancels that write, and
+// the page it lands on has to carry what the write was writing (ADR-0023).
 // RouterLink treats every link to this route as exact-active (it ignores the query), so each link
 // sets aria-current-value="false", and the current page is a span with a fixed aria-current. ARIA
 // 1.2 bars a name on a span, so what a screen reader says ("Página 4, atual") is hidden text.
 function pageLink(page: number) {
-  return { query: serializeListQuery({ ...query.value, page }) }
+  return { query: serializeListQuery({ ...(pending() ?? query.value), page }) }
 }
 
 // Where the select was when the page size changed, until the new list is in (not reactive). The list

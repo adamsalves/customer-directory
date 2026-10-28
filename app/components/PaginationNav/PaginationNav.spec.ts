@@ -64,6 +64,36 @@ describe('PaginationNav', () => {
     ])
   })
 
+  // The write still on its way is where the list state goes on from: a click on a link while it is
+  // on its way cancels it, and the page that lands has to carry what it was writing (#90)
+  it.each([
+    {
+      name: 'a state picked',
+      write: () => {
+        void useListQuery().setQuery({ states: ['bahia'], page: 1 })
+      },
+      landsOn: '/customers?states=bahia',
+      href: '/customers?page=2&states=bahia',
+    },
+    {
+      name: 'a page size chosen',
+      write: (wrapper: Awaited<ReturnType<typeof mountNav>>) => wrapper.get(SELECT).setValue('27'),
+      landsOn: '/customers?perPage=27',
+      href: '/customers?page=2&perPage=27',
+    },
+  ])('links page 2 with $name that the URL does not have yet', async ({ write, landsOn, href }) => {
+    const wrapper = await mountNav(1, 8)
+
+    await write(wrapper)
+    await nextTick()
+
+    expect(wrapper.get(`${FULL} ${PAGE_LINK}[aria-label="Página 2"]`).attributes('href')).toBe(href)
+    // Let the write land, so it is not on its way in the next test
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe(landsOn)
+    })
+  })
+
   it('leaves the default page size out too', async () => {
     const wrapper = await mountNav(3, 8, '/customers?page=3')
 
