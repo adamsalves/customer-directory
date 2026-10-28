@@ -48,6 +48,9 @@ function clearSearchAndFilters() {
         <FilterPanel :facets="data?.facets" @clear="clearSearchAndFilters" />
       </aside>
       <div data-testid="customers__column--div">
+        <!-- Outside the results, so the chips stay through the skeleton and the focus a removal leaves
+             on the next chip is not lost when the list reloads -->
+        <FilterChips />
         <!-- One element for the skeleton, the error, the empty state and the list, so the focus a page
              change, a retry or a clear leaves here is not lost when the skeleton goes -->
         <section

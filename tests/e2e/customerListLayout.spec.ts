@@ -131,6 +131,42 @@ for (const width of [320, 375]) {
   })
 }
 
+// The chips are 32px tall as in the prototype, and 44px below 960px, the target of the project
+// (ADR-0013). 959px is the edge.
+for (const { width, height } of [
+  { width: 375, height: 44 },
+  { width: 959, height: 44 },
+  { width: 960, height: 32 },
+  { width: 1280, height: 32 },
+]) {
+  test(`a filter chip is ${String(height)}px tall at ${String(width)}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/customers?states=minas-gerais')
+
+    const chip = page.getByTestId('filter-chips__chip--button')
+    await expect(chip).toBeVisible()
+    expect((await boxOf(chip)).height).toBeCloseTo(height, 1)
+  })
+}
+
+// The chip repeats the search, which can be 100 characters with no space (MAX_SEARCH_LENGTH), like an
+// email. Its label breaks inside the word and the chip grows with it, else the chip is wider than the
+// screen and the page scrolls sideways. The ✕ keeps its size beside the label.
+for (const width of [320, 375]) {
+  test(`a long search in a filter chip at ${String(width)}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto(`/customers?search=${'w'.repeat(100)}`)
+
+    const chip = page.getByTestId('filter-chips__chip--button')
+    await expect(chip).toBeVisible()
+    const box = await boxOf(chip)
+    expect(box.x + box.width).toBeLessThanOrEqual(width)
+    expect(box.height).toBeGreaterThan(44)
+    expect(await boxOf(chip.locator('svg'))).toMatchObject({ width: 14, height: 14 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+  })
+}
+
 // The theme is the cookie, which the server renders at once: nothing flips after the page loads
 async function openListIn(page: Page, context: BrowserContext, theme: string, width: number) {
   await context.addCookies([{ name: 'jsm-theme', value: theme, domain: 'localhost', path: '/' }])

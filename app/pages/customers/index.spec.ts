@@ -80,6 +80,9 @@ const EMPTY_HINT = '[data-testid="empty-state__hint--text"]'
 const CLEAR = '[data-testid="empty-state__clear--button"]'
 const SEARCH = '[data-testid="header__search--input"]'
 const PER_PAGE = '[data-testid="pagination__per-page--select"]'
+const CHIPS = '[data-testid="filter-chips__root--list"]'
+const CHIP = '[data-testid="filter-chips__chip--button"]'
+const GENDER = '[data-testid="filter-panel__gender--radio"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
 enableAutoUnmount(afterEach)
@@ -95,6 +98,26 @@ const isChecked = (element: Element) => element instanceof HTMLInputElement && e
 const PageWithSearch = defineComponent({
   render: () => h('div', [h(SearchField), h(CustomersPage)]),
 })
+
+// The route is in the history before the page mounts, so back has somewhere to go
+async function mountWithSearch(route: string) {
+  await navigateTo(route)
+  return mountSuspended(PageWithSearch, { route, attachTo: document.body })
+}
+
+type TWrapper = Awaited<ReturnType<typeof mountWithSearch>>
+
+function fieldValue(wrapper: TWrapper) {
+  const { element } = wrapper.get(SEARCH)
+  if (!(element instanceof HTMLInputElement)) throw new Error('the search field is not an input')
+  return element.value
+}
+
+const chipNames = (wrapper: TWrapper) =>
+  wrapper.findAll(CHIP).map((chip) => chip.attributes('aria-label'))
+
+const removeChip = (wrapper: TWrapper, name: string) =>
+  wrapper.get(`${CHIP}[aria-label="${name}"]`).trigger('click')
 
 // Every navigation waits a frame before it lands. This holds them until the returned function runs,
 // so a write is still on its way when the next one is made, as it is when two come within a frame.
@@ -569,6 +592,141 @@ describe('customers page', () => {
 
     await vi.waitFor(() => {
       expect(useRoute().fullPath).toBe('/customers?perPage=18')
+    })
+  })
+
+  // Outside the results, so the skeleton does not swap them out and the focus a removal gives the next
+  // chip stays on it while the list loads. Nor are they in the panel's aside.
+  it('puts the filter chips at the top of the results column, outside the results', async () => {
+    const wrapper = await mountSuspended(CustomersPage, {
+      route: '/customers?search=ana&states=bahia',
+    })
+    const chips = wrapper.get(CHIPS).element
+
+    expect(wrapper.get(COLUMN).element.firstElementChild).toBe(chips)
+    expect(wrapper.get(RESULTS).element.contains(chips)).toBe(false)
+    expect(wrapper.get(FILTERS).element.contains(chips)).toBe(false)
+  })
+
+  // The field follows the URL: a search the chip takes out is gone from it too, and back brings
+  // the search, the chip and the text of the field back
+  it('clears the search field with the chip of the search, and back undoes it', async () => {
+    const wrapper = await mountWithSearch('/customers?search=ana')
+    expect(fieldValue(wrapper)).toBe('ana')
+
+    await removeChip(wrapper, 'Remover busca ana')
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers')
+    })
+    await vi.waitFor(() => {
+      expect(fieldValue(wrapper)).toBe('')
+    })
+    expect(wrapper.find(CHIPS).exists()).toBe(false)
+
+    useRouter().back()
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?search=ana')
+    })
+    await vi.waitFor(() => {
+      expect(fieldValue(wrapper)).toBe('ana')
+    })
+    expect(chipNames(wrapper)).toEqual(['Remover busca ana'])
+  })
+
+  // The search waits 300ms after the last key, and the removal is made inside that wait, still on
+  // its way when the wait runs out. The removal is a push and the search then goes out as a push too,
+  // so the entry before the removal stays for back.
+  it('keeps a state removed while the search is waiting to be written, and its history entry', async () => {
+    const wrapper = await mountWithSearch('/customers?states=bahia')
+    const letGo = holdNavigations()
+    const router = useRouter()
+    const push = vi.spyOn(router, 'push')
+    const replace = vi.spyOn(router, 'replace')
+
+    await wrapper.get(SEARCH).setValue('ana')
+    await removeChip(wrapper, 'Remover filtro Bahia')
+    await vi.waitFor(() => {
+      expect(push).toHaveBeenCalledTimes(2)
+    })
+    letGo()
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?search=ana')
+    })
+    expect(push).toHaveBeenLastCalledWith({ path: '/customers', query: { search: 'ana' } })
+    expect(replace).not.toHaveBeenCalled()
+    expect(chipNames(wrapper)).toEqual(['Remover busca ana'])
+    router.back()
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?states=bahia')
+    })
+  })
+
+  // The panel and the chips write the same list, whichever goes first: the second builds on what the
+  // first has on its way, the controls of the panel end on what the URL has, and the focus goes to a
+  // chip that only the write on its way had drawn, or to the results (named Resultados)
+  it.each([
+    {
+      name: 'a state picked, then the gender removed',
+      first: (wrapper: TWrapper) => wrapper.get(`${STATE}[value="bahia"]`).setValue(true),
+      second: (wrapper: TWrapper) => removeChip(wrapper, 'Remover filtro Feminino'),
+      focused: 'Remover filtro Bahia',
+    },
+    {
+      name: 'the gender removed, then a state picked',
+      first: (wrapper: TWrapper) => removeChip(wrapper, 'Remover filtro Feminino'),
+      second: (wrapper: TWrapper) => wrapper.get(`${STATE}[value="bahia"]`).setValue(true),
+      focused: 'Resultados',
+    },
+  ])('keeps both writes of $name', async ({ first, second, focused }) => {
+    const wrapper = await mountWithSearch('/customers?gender=female')
+    const letGo = holdNavigations()
+
+    await first(wrapper)
+    await second(wrapper)
+    letGo()
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?states=bahia')
+    })
+    await vi.waitFor(() => {
+      expect(isChecked(wrapper.get(`${GENDER}[value="all"]`).element)).toBe(true)
+    })
+    expect(isChecked(wrapper.get(`${STATE}[value="bahia"]`).element)).toBe(true)
+    expect(chipNames(wrapper)).toEqual(['Remover filtro Bahia'])
+    expect(document.activeElement?.getAttribute('aria-label')).toBe(focused)
+    useRouter().back()
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?gender=female')
+    })
+  })
+
+  // The select and the links of the pagination are writers too: the removal is made on the page
+  // size the select asked for a moment before, and the links open the page with the removal
+  it('keeps the page size changed just before the removal, which the URL does not have yet', async () => {
+    const wrapper = await mountWithSearch('/customers?gender=female')
+    const letGo = holdNavigations()
+
+    await wrapper.get(PER_PAGE).setValue('18')
+    await removeChip(wrapper, 'Remover filtro Feminino')
+    letGo()
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=18')
+    })
+  })
+
+  it('links the other pages without the filter a chip is taking off', async () => {
+    const wrapper = await mountWithSearch('/customers?page=2&states=bahia')
+    const link = () =>
+      wrapper.get(`${NAV} [data-testid="pagination__page--link"][aria-label="Página 3"]`)
+    expect(link().attributes('href')).toBe('/customers?page=3&states=bahia')
+
+    await removeChip(wrapper, 'Remover filtro Bahia')
+
+    expect(link().attributes('href')).toBe('/customers?page=3')
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers')
     })
   })
 
