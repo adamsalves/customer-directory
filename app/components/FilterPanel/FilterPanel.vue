@@ -26,7 +26,7 @@ const DEFAULT_STATES = DEFAULT_STATE_SLUGS.flatMap((slug) =>
 )
 const OTHER_STATES = BRAZILIAN_STATES.filter(({ slug }) => !isDefaultState(slug))
 
-const { query, setQuery } = useListQuery()
+const { query, pending, setQuery } = useListQuery()
 // Ids per instance: a second panel on the page (the sheet, #26) is a group of its own, and its list
 // of states is another element
 const genderName = useId()
@@ -72,15 +72,9 @@ function countLabel(count: number) {
   return `${String(count)} ${count === 1 ? 'cliente' : 'clientes'}`
 }
 
-// The list state of the last pick the URL does not have yet (not reactive). A second pick in that
-// frame builds on it: made on the URL's state, it would take the first pick back.
-let pending: IListQuery | undefined
-
 const rootRef = useTemplateRef('root')
 
-// Vue writes `checked` only when a row's value changes. A pick cancelled on its way (back, a link,
-// the search) leaves the URL, and so the rows, as they were, and the control keeps the click: put
-// each one back on what the URL says.
+// Puts each control on what the URL says
 function syncControls() {
   const root = rootRef.value
   if (!(root instanceof HTMLElement)) return
@@ -90,20 +84,23 @@ function syncControls() {
   }
 }
 
-// Another filter starts over from page 1 and keeps the rest of the list state. Each pick is a
-// history entry, so back takes it back (ADR-0007).
+// Vue writes `checked` only when a row's value changes, so a pick that never reaches the URL leaves
+// its control with the click: the pick was cancelled by back or a link, or by a write (the clear of
+// the page) that lands with the states the URL already had. A write that carries the pick (the next
+// pick, the search) keeps it on its way until it lands, and the controls stay as clicked meanwhile.
+// Once nothing is on its way the URL is all there is: put the controls back on it, after the render.
+watch(
+  pending,
+  (inFlight) => {
+    if (inFlight === undefined) syncControls()
+  },
+  { flush: 'post' },
+)
+
+// Another filter starts over from page 1 and keeps the rest of the list state, the writes still on
+// their way included (useListQuery). Each pick is a history entry, so back takes it back (ADR-0007).
 function pick(change: Partial<Pick<IListQuery, 'states' | 'gender'>>) {
-  const next = { ...(pending ?? query.value), ...change, page: 1 }
-  pending = next
-  void setQuery(next)
-    .then((failure) => {
-      // A later pick of this panel that cancelled this one syncs when it settles
-      if (failure && pending === next) syncControls()
-    })
-    .finally(() => {
-      // Landed, or aborted or replaced by a later pick: either way this one is not on its way anymore
-      if (pending === next) pending = undefined
-    })
+  void setQuery({ ...change, page: 1 })
 }
 
 // In the short list a state outside the five is there only while it is picked, so unpicking it
@@ -114,7 +111,7 @@ function focusToggle() {
 }
 
 function toggleState(slug: string) {
-  const { states } = pending ?? query.value
+  const { states } = pending() ?? query.value
   if (!expanded.value && !isDefaultState(slug)) focusToggle()
   pick({
     states: states.includes(slug) ? states.filter((picked) => picked !== slug) : [...states, slug],

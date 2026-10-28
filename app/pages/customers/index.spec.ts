@@ -1,10 +1,12 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import type { ICustomerCard, ICustomerFacets, ICustomerListResponse } from '#shared/types/customer'
 import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
 import PaginationNav from '~/components/PaginationNav/PaginationNav.vue'
+import SearchField from '~/components/SearchField/SearchField.vue'
 import { RESULTS_ID } from '~/utils/resultsScroll'
 import CustomersPage from './index.vue'
 
@@ -76,6 +78,8 @@ const RETRY = '[data-testid="error-state__retry--button"]'
 const EMPTY_TITLE = '[data-testid="empty-state__title--heading"]'
 const EMPTY_HINT = '[data-testid="empty-state__hint--text"]'
 const CLEAR = '[data-testid="empty-state__clear--button"]'
+const SEARCH = '[data-testid="header__search--input"]'
+const PER_PAGE = '[data-testid="pagination__per-page--select"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
 enableAutoUnmount(afterEach)
@@ -86,6 +90,21 @@ function htmlElement(element: Element): HTMLElement {
 }
 
 const isChecked = (element: Element) => element instanceof HTMLInputElement && element.checked
+
+// The search field is in the header, not in the page: here it sits next to it, as the layout does
+const PageWithSearch = defineComponent({
+  render: () => h('div', [h(SearchField), h(CustomersPage)]),
+})
+
+// Every navigation waits a frame before it lands. This holds them until the returned function runs,
+// so a write is still on its way when the next one is made, as it is when two come within a frame.
+function holdNavigations() {
+  const { promise, resolve } = Promise.withResolvers<undefined>()
+  onTestFinished(useRouter().beforeEach(() => promise))
+  return () => {
+    resolve(undefined)
+  }
+}
 
 beforeEach(() => {
   requests = []
@@ -484,6 +503,57 @@ describe('customers page', () => {
     expect(wrapper.find(PANEL_CLEAR).exists()).toBe(false)
     expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
     expect(document.activeElement).toBe(results)
+  })
+
+  // Each writer builds the next list state: the one that lands last must not take back the other,
+  // which the URL does not have yet (#90). The search waits 300ms after the last key, and the pick
+  // is made inside that wait and is still on its way when the wait runs out. The pick is a push, and
+  // the search then goes out as a push too: as a replace it would take the place of the entry the
+  // pick is adding, and back would skip it.
+  it('keeps a state picked while the search is waiting to be written, and its history entry', async () => {
+    await navigateTo('/customers?search=an')
+    const wrapper = await mountSuspended(PageWithSearch, { route: '/customers?search=an' })
+    const letGo = holdNavigations()
+    const router = useRouter()
+    const push = vi.spyOn(router, 'push')
+    const replace = vi.spyOn(router, 'replace')
+
+    await wrapper.get(SEARCH).setValue('ana')
+    await wrapper.get(`${STATE}[value="bahia"]`).setValue(true)
+    await vi.waitFor(() => {
+      expect(push).toHaveBeenCalledTimes(2)
+    })
+    letGo()
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?search=ana&states=bahia')
+    })
+    expect(push).toHaveBeenLastCalledWith({
+      path: '/customers',
+      query: { search: 'ana', states: 'bahia' },
+    })
+    expect(replace).not.toHaveBeenCalled()
+    expect(isChecked(wrapper.get(`${STATE}[value="bahia"]`).element)).toBe(true)
+    // The entry before the pick is still there
+    router.back()
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?search=an')
+    })
+  })
+
+  // The select and the panel's button are different writers too: the clear is made on the page size
+  // the select asked for a moment before, not on the one the URL still has
+  it('keeps the page size changed just before the clear, which the URL does not have yet', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?states=bahia' })
+    const letGo = holdNavigations()
+
+    await wrapper.get(PER_PAGE).setValue('18')
+    await wrapper.get(PANEL_CLEAR).trigger('click')
+    letGo()
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=18')
+    })
   })
 
   it('refetches when the page in the URL changes', async () => {

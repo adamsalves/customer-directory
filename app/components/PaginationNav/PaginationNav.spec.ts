@@ -64,6 +64,36 @@ describe('PaginationNav', () => {
     ])
   })
 
+  // The write still on its way is where the list state goes on from: a click on a link while it is
+  // on its way cancels it, and the page that lands has to carry what it was writing (#90)
+  it.each([
+    {
+      name: 'a state picked',
+      write: () => {
+        void useListQuery().setQuery({ states: ['bahia'], page: 1 })
+      },
+      landsOn: '/customers?states=bahia',
+      href: '/customers?page=2&states=bahia',
+    },
+    {
+      name: 'a page size chosen',
+      write: (wrapper: Awaited<ReturnType<typeof mountNav>>) => wrapper.get(SELECT).setValue('27'),
+      landsOn: '/customers?perPage=27',
+      href: '/customers?page=2&perPage=27',
+    },
+  ])('links page 2 with $name that the URL does not have yet', async ({ write, landsOn, href }) => {
+    const wrapper = await mountNav(1, 8)
+
+    await write(wrapper)
+    await nextTick()
+
+    expect(wrapper.get(`${FULL} ${PAGE_LINK}[aria-label="Página 2"]`).attributes('href')).toBe(href)
+    // Let the write land, so it is not on its way in the next test
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe(landsOn)
+    })
+  })
+
   it('leaves the default page size out too', async () => {
     const wrapper = await mountNav(3, 8, '/customers?page=3')
 
@@ -149,6 +179,18 @@ describe('PaginationNav', () => {
 
     await vi.waitFor(() => {
       expect(useRoute().fullPath).toBe('/customers?perPage=27')
+    })
+  })
+
+  // The page size is a write like any other: it keeps what is still on its way to the URL (#90)
+  it('keeps a write that is on its way when the page size changes', async () => {
+    const wrapper = await mountNav(3, 8, '/customers?page=3')
+
+    void useListQuery().setQuery({ search: 'ana' }, { replace: true })
+    await wrapper.get(SELECT).setValue('27')
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=27&search=ana')
     })
   })
 
@@ -278,6 +320,26 @@ describe('PaginationNav select anchoring', () => {
     await loadAfterGrowing(await mountWithSelectAtTop())
 
     expect(scrollBy).not.toHaveBeenCalled()
+  })
+
+  // The clear of the page, made in the same frame as the page size, cancels the write of the select
+  // but builds on it: the list that loads is the one with the page size the select asked for
+  it('keeps the select when a write made in the same frame carries the page size', async () => {
+    const wrapper = await mountWithSelectAtTop()
+    await wrapper.get(SELECT).setValue('27')
+    void useListQuery().setQuery(
+      { search: '', states: [], gender: 'all', page: 1 },
+      { replace: true },
+    )
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=27')
+    })
+
+    top += 200
+    await wrapper.setProps({ loading: true })
+    await frame()
+
+    expect(scrollBy.mock.calls).toEqual([[0, 200]])
   })
 
   it('forgets the select when the navigation did not happen', async () => {
