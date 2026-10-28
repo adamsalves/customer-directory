@@ -54,8 +54,9 @@ async function changePerPage(event: Event) {
   for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const)
     window.addEventListener(type, forget, { once: true, passive: true })
   const failure = await setQuery({ page: 1, perPage })
-  // A navigation that did not happen has no loading to wait for
-  if (failure) anchor = undefined
+  // A navigation that did not happen has no loading to wait for. Unless another write that cancelled
+  // it carries the page size (the clear of the page, in the same frame): the list loads with that one.
+  if (failure && pending()?.perPage !== perPage) anchor = undefined
 }
 
 // The select goes back to where it was at each change of height: the skeleton, then the new list.

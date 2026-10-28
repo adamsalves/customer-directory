@@ -322,6 +322,26 @@ describe('PaginationNav select anchoring', () => {
     expect(scrollBy).not.toHaveBeenCalled()
   })
 
+  // The clear of the page, made in the same frame as the page size, cancels the write of the select
+  // but builds on it: the list that loads is the one with the page size the select asked for
+  it('keeps the select when a write made in the same frame carries the page size', async () => {
+    const wrapper = await mountWithSelectAtTop()
+    await wrapper.get(SELECT).setValue('27')
+    void useListQuery().setQuery(
+      { search: '', states: [], gender: 'all', page: 1 },
+      { replace: true },
+    )
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=27')
+    })
+
+    top += 200
+    await wrapper.setProps({ loading: true })
+    await frame()
+
+    expect(scrollBy.mock.calls).toEqual([[0, 200]])
+  })
+
   it('forgets the select when the navigation did not happen', async () => {
     const wrapper = await mountWithSelectAtTop()
     const removeGuard = useRouter().beforeEach(() => false)
