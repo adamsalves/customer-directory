@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import S from './EmptyState.module.scss'
 
-const props = defineProps<{ search: string }>()
+// `filtered` is a state or a gender picked: the search is not one, it has hints of its own
+const props = defineProps<{ search: string; filtered: boolean }>()
 
 defineEmits<{ clear: [] }>()
 
-// Only the search case so far: the filter cases come with the filters (#25)
-const hint = computed(
-  () =>
-    `Não encontramos ninguém chamado “${props.search}”. Confira a grafia ou busque só pelo sobrenome.`,
-)
+// The hint blames what narrowed the list: the search, the filters or both (the prototype's). With no
+// search only the filters can empty it: an empty source is an error, never an empty state.
+const hint = computed(() => {
+  if (props.search === '') return 'Nenhum cliente corresponde aos filtros selecionados.'
+  return props.filtered
+    ? 'Nenhum resultado para essa busca com os filtros atuais. Tente outro nome ou remova alguns filtros.'
+    : `Não encontramos ninguém chamado “${props.search}”. Confira a grafia ou busque só pelo sobrenome.`
+})
 </script>
 
 <template>

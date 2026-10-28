@@ -278,3 +278,20 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   Recusado 1: estado em voo vazando entre testes que terminam com uma gravação pendente. O estado se limpa quando a navegação termina, e as suítes rodaram 10 vezes sem falha.
 
 - **Pendente:** dois casos de um quadro, não alcançáveis à mão: duas trocas do seletor no mesmo quadro descartam a âncora da segunda; e o "Limpar" no mesmo quadro do commit do campo, com a URL sem busca, deixa o texto no campo. Chips e dicas do EmptyState (#25); sheet mobile (#26); E2E dos filtros (#27).
+
+### #92 · Dica do estado vazio por busca e filtro · [PR #93](https://github.com/adamsalves/customer-directory/pull/93)
+
+- **Decidido:** [#92](https://github.com/adamsalves/customer-directory/issues/92), sem ADR. Saiu da #25 (~540 linhas estimadas) para os chips caberem no teto, e entra antes da release do M5 para que a dica errada não fique na `main`: `?search=nunes&states=bahia&gender=female` mandava conferir a grafia de "nunes", que estava certa. Filtro é estado ou gênero; a busca não conta, e por isso o `hasFilter` do `FilterPanel`, que inclui a busca, não foi reaproveitado.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/92#issuecomment-6477106910) · estimativa ~110 linhas
+- **Como:** o `EmptyState` ganha a prop `filtered`, calculada na página, e escolhe a dica do protótipo (com "cliente" no lugar de "membro", ADR-0020): busca e filtro, só busca, só filtro. O botão "Limpar busca e filtros" não muda.
+- **Resultado:** +48 −13 sem este registro (antes do review, +62 −14). A regressão no `index.spec` (3 URLs: estado e gênero, só estado, só gênero) falha na `main`. Mutação: 22 de 22 antes do review. O implementer acrescentou as duas URLs isoladas porque, só com a URL de estado e gênero, trocar `||` por `&&` sobrevivia. Review (`/code-review`, 7 achados, 2 aplicados):
+  1. A 4ª dica, "Ainda não há clientes cadastrados.", nunca aparecia: com a fonte vazia, o `parseRawCustomers` lança erro e a tela mostra o erro. Eu a tinha posto no plano achando que corrigia o "ninguém chamado “”", e o registro da #21 já a dava como inalcançável. Agora, sem busca, a dica é sempre a de filtro.
+  2. O `trim()` no componente repetia o do `parseListQuery`, que é quem entrega a busca. Saiu, com as 3 linhas de teste de brancos.
+
+  Recusados 4:
+  - Com busca e filtro, a dica manda remover filtros mesmo quando a busca sozinha já zera a lista. O texto também diz "Tente outro nome", o protótipo faz igual, e separar os casos pediria ao BFF um total só da busca.
+  - Um acento solto como busca conta como busca aqui e o BFF o ignora. A entrada é artificial e o texto continua inofensivo.
+  - Passar a `query` inteira ao `EmptyState`: o componente continua só recebendo props.
+  - Extrair um `hasFilters(query)` para `shared/`: hoje são 2 cópias (painel e página), e os chips da #25 trazem a 3ª. Fica um `ponytail:` no `index.vue`, e a extração entra na #25.
+
+- **Pendente:** `hasFilters(query)` compartilhado com os chips (#25).
