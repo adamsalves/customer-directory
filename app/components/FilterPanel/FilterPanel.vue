@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { ICustomerFacets } from '#shared/types/customer'
 import { BRAZILIAN_STATES, DEFAULT_STATE_SLUGS } from '#shared/utils/brazilianStates'
-import type { IListQuery } from '#shared/utils/listQuery'
+import { hasFilters, type IListQuery } from '#shared/utils/listQuery'
+import { GENDERS } from '~/utils/genders'
 import S from './FilterPanel.module.scss'
 
 // The facets come from the BFF answer, never from the URL. There is none while no answer has come
@@ -9,12 +10,6 @@ import S from './FilterPanel.module.scss'
 const props = defineProps<{ facets: ICustomerFacets | undefined }>()
 
 defineEmits<{ clear: [] }>()
-
-const GENDERS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'female', label: 'Feminino' },
-  { value: 'male', label: 'Masculino' },
-] as const satisfies readonly { value: IListQuery['gender']; label: string }[]
 
 const isDefaultState = (slug: string) =>
   DEFAULT_STATE_SLUGS.some((defaultSlug) => defaultSlug === slug)
@@ -63,9 +58,7 @@ const genderRows = computed(() =>
 )
 
 // A search alone shows it too: the button clears the search as well (the prototype's)
-const hasFilter = computed(
-  () => query.value.search !== '' || query.value.states.length > 0 || query.value.gender !== 'all',
-)
+const hasFilter = computed(() => query.value.search !== '' || hasFilters(query.value))
 
 // What a screen reader says in place of the bare number (ADR-0013)
 function countLabel(count: number) {
