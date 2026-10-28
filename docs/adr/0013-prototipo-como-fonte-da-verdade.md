@@ -49,6 +49,9 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | "Ver todos" com `aria-expanded`                     | `aria-expanded` + `aria-controls`          | disclosure do APG: aponta a lista que abre      |
 | "Limpar filtros" não move o foco                    | o foco vai para os resultados (`#results`) | o botão sai e o foco cai no `body` (ADR-0022)   |
 | `replaceState` em todo filtro                       | `push` a cada filtro                       | voltar desfaz o filtro (ADR-0007)               |
+| remover um chip não move o foco                     | foco: chip seguinte, anterior, `#results`  | o chip sai e o foco cai no `body` (ADR-0022)    |
+| chip de 32px de altura em qualquer largura          | 44px abaixo de 960px                       | alvo de toque do projeto: 44px                  |
+| rótulo do chip sem limite de largura                | uma linha com reticências                  | uma busca longa sem espaço estoura a tela       |
 
 ## Consequências
 

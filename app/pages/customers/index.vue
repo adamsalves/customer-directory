@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DEFAULT_PER_PAGE, serializeListQuery } from '#shared/utils/listQuery'
+import { DEFAULT_PER_PAGE, hasFilters, serializeListQuery } from '#shared/utils/listQuery'
 import { RESULTS_ID, focusResults } from '~/utils/resultsScroll'
 import S from './index.module.scss'
 
@@ -17,9 +17,7 @@ const { data, status, refresh } = await useFetch('/api/customers', {
   retry: false,
 })
 // The empty state tells the filters from the search: states and gender count, the search does not.
-// ponytail: FilterPanel's hasFilter is this plus the search; extract hasFilters(query) to
-// shared/utils/listQuery.ts when the chips (#25) bring the third copy.
-const filtered = computed(() => query.value.states.length > 0 || query.value.gender !== 'all')
+const filtered = computed(() => hasFilters(query.value))
 
 // The button goes away when the skeleton comes in, and the focus it holds would fall to the page.
 // The results stay through the reload, so the focus goes there first (ADR-0022).
@@ -50,6 +48,9 @@ function clearSearchAndFilters() {
         <FilterPanel :facets="data?.facets" @clear="clearSearchAndFilters" />
       </aside>
       <div data-testid="customers__column--div">
+        <!-- Outside the results, so the chips stay through the skeleton and the focus a removal leaves
+             on the next chip is not lost when the list reloads -->
+        <FilterChips />
         <!-- One element for the skeleton, the error, the empty state and the list, so the focus a page
              change, a retry or a clear leaves here is not lost when the skeleton goes -->
         <section

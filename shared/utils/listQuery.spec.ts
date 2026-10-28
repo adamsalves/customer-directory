@@ -7,6 +7,7 @@ import {
   DEFAULT_PER_PAGE,
   MAX_SEARCH_LENGTH,
   PER_PAGE_OPTIONS,
+  hasFilters,
   parseListQuery,
   sameListState,
   serializeListQuery,
@@ -288,6 +289,28 @@ describe('parseListQuery', () => {
 
     expect(sizes).not.toBe('')
     expect([...PER_PAGE_OPTIONS]).toStrictEqual(sizes.split(',').map(Number))
+  })
+})
+
+// The panel's button and the empty state ask this apart from the search, which is no filter
+describe('hasFilters', () => {
+  it('is false with no state picked and every gender', () => {
+    expect(hasFilters(defaults)).toBe(false)
+  })
+
+  it('is false for the search, the page and the page size alone', () => {
+    const query: IListQuery = { ...defaults, page: 3, perPage: 18, search: 'ana' }
+
+    expect(hasFilters(query)).toBe(false)
+  })
+
+  it.each<{ name: string; query: IListQuery }>([
+    { name: 'a state', query: { ...defaults, states: ['bahia'] } },
+    { name: 'all 27 states', query: { ...defaults, states: SLUGS } },
+    { name: 'a gender', query: { ...defaults, gender: 'female' } },
+    { name: 'both', query: { ...defaults, states: ['bahia'], gender: 'male' } },
+  ])('is true with $name picked', ({ query }) => {
+    expect(hasFilters(query)).toBe(true)
   })
 })
 

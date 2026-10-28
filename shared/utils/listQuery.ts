@@ -62,6 +62,12 @@ export function parseListQuery(input: unknown): IListQuery {
   }
 }
 
+// A state or a gender is picked. The search is not one: it has its own field, and where the answer
+// matters (the hint of the empty state, the button of the panel) it is asked apart.
+export function hasFilters({ states, gender }: Pick<IListQuery, 'states' | 'gender'>): boolean {
+  return states.length > 0 || gender !== DEFAULT_GENDER
+}
+
 // Two list states are the same list when they write the same URL, so states picked in any order
 // compare as a set. The JSON works because serializeListQuery writes its keys in one order.
 export function sameListState(a: IListQuery, b: IListQuery): boolean {

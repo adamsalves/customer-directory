@@ -131,6 +131,80 @@ for (const width of [320, 375]) {
   })
 }
 
+// The chips are 32px tall as in the prototype, and 44px below 960px, the target of the project
+// (ADR-0013). 959px is the edge. The radius is half the height at both: the pill of the prototype.
+for (const { width, height } of [
+  { width: 375, height: 44 },
+  { width: 959, height: 44 },
+  { width: 960, height: 32 },
+  { width: 1280, height: 32 },
+]) {
+  test(`a filter chip is ${String(height)}px tall at ${String(width)}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/customers?states=minas-gerais')
+
+    const chip = page.getByTestId('filter-chips__chip--button')
+    await expect(chip).toBeVisible()
+    expect((await boxOf(chip)).height).toBeCloseTo(height, 1)
+    await expect(chip).toHaveCSS('border-top-left-radius', `${String(height / 2)}px`)
+  })
+}
+
+// The chip repeats the search, which can be 100 characters with no space (MAX_SEARCH_LENGTH), like an
+// email, or words that would break into lines. The label ends in an ellipsis on one line, else the
+// chip is wider than the screen and the page scrolls sideways, or taller than the target. The chip
+// keeps its height, the ✕ its size, and the name the whole search.
+for (const width of [320, 375]) {
+  test(`a long search in a filter chip at ${String(width)}px`, async ({ page }) => {
+    const search = `${'w'.repeat(60)} ${'w'.repeat(39)}`
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto(`/customers?search=${encodeURIComponent(search)}`)
+
+    const chip = page.getByTestId('filter-chips__chip--button')
+    await expect(chip).toBeVisible()
+    const box = await boxOf(chip)
+    expect(box.x + box.width).toBeLessThanOrEqual(width)
+    expect(box.height).toBeCloseTo(44, 1)
+    const label = chip.getByTestId('filter-chips__label--text')
+    await expect(label).toHaveCSS('text-overflow', 'ellipsis')
+    expect(await label.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
+    expect(await boxOf(chip.getByTestId('filter-chips__icon--svg'))).toMatchObject({
+      width: 14,
+      height: 14,
+    })
+    await expect(chip).toHaveAccessibleName(`Remover busca ${search}`)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+  })
+}
+
+// Four chips do not fit a row at 375px: they wrap onto the next one, 8px apart both ways, instead of
+// running off the page, and the results start 16px under them. The first two fit together. The chips
+// come in with a lift (jsm-in) that moves what is measured: reduced motion leaves them in place.
+test('the filter chips wrap onto another row, 8px apart, 16px above the results', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 375, height: 800 })
+  await page.goto('/customers?search=ana&states=minas-gerais,sao-paulo&gender=female')
+  const chips = page.getByTestId('filter-chips__chip--button')
+  await expect(chips).toHaveCount(4)
+
+  const first = await boxOf(chips.nth(0))
+  const second = await boxOf(chips.nth(1))
+  const third = await boxOf(chips.nth(2))
+  const list = await boxOf(page.getByTestId('filter-chips__root--list'))
+  const results = await boxOf(page.getByTestId('customers__results--section'))
+  const column = await boxOf(page.getByTestId('customers__column--div'))
+  await expect(page.getByTestId('filter-chips__root--list')).toHaveCSS('list-style-type', 'none')
+  expect(first.x).toBeCloseTo(column.x, 1)
+  expect(first.y).toBeCloseTo(column.y, 1)
+  expect(second.y).toBeCloseTo(first.y, 1)
+  expect(second.x - (first.x + first.width)).toBeCloseTo(8, 1)
+  expect(third.y - (first.y + first.height)).toBeCloseTo(8, 1)
+  expect(results.y - (list.y + list.height)).toBeCloseTo(16, 1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375)
+})
+
 // The theme is the cookie, which the server renders at once: nothing flips after the page loads
 async function openListIn(page: Page, context: BrowserContext, theme: string, width: number) {
   await context.addCookies([{ name: 'jsm-theme', value: theme, domain: 'localhost', path: '/' }])
@@ -416,6 +490,59 @@ test('the buttons of the filter panel react to hover only with a mouse', async (
 
   await toggle.hover()
   await expect(toggle).toHaveCSS('color', isMobile ? strong : await colorOfToken(page, '--link'))
+})
+
+// The same for the chips: a touch screen does not match (hover: hover), so a tap leaves them alone
+test('a filter chip reacts to hover only with a mouse', async ({ page, isMobile }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/customers?states=minas-gerais')
+  const chip = page.getByTestId('filter-chips__chip--button')
+
+  await chip.hover()
+
+  await expect(chip).toHaveCSS(
+    'border-top-color',
+    await colorOfToken(page, isMobile ? '--border-strong' : '--text-strong'),
+  )
+  await expect(chip).toHaveCSS(
+    'background-color',
+    await colorOfToken(page, isMobile ? '--surface-alt' : '--surface'),
+  )
+})
+
+// The prototype's chip, read where it shows: 14px of padding before the label and 10px after the ✕
+// inside 1px of border, the ✕ 6px from the label and centered on the line, then the pill, the type
+// of the page at 14px, the tokens of the theme, the pointer and the entrance of the card
+test('the geometry and the style of a filter chip', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/customers?states=minas-gerais')
+  const chip = page.getByTestId('filter-chips__chip--button')
+  // The entrance lifts the chip while it plays, and each box is read at its own moment
+  await chip.evaluate((el) => Promise.allSettled(el.getAnimations().map((a) => a.finished)))
+  const box = await boxOf(chip)
+  const label = await boxOf(chip.getByTestId('filter-chips__label--text'))
+  const icon = await boxOf(chip.getByTestId('filter-chips__icon--svg'))
+  const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
+
+  expect(label.x - box.x).toBeCloseTo(1 + 14, 1)
+  expect(icon.x - (label.x + label.width)).toBeCloseTo(6, 1)
+  expect(box.x + box.width - (icon.x + icon.width)).toBeCloseTo(10 + 1, 1)
+  expect(icon.y + icon.height / 2).toBeCloseTo(box.y + box.height / 2, 1)
+  const looks: Record<string, string> = {
+    'padding-top': '0px',
+    'border-top-width': '1px',
+    'border-top-left-radius': '16px',
+    'font-size': '14px',
+    'font-family': font,
+    cursor: 'pointer',
+    'animation-name': 'jsm-in',
+    'border-top-color': await colorOfToken(page, '--border-strong'),
+    'background-color': await colorOfToken(page, '--surface-alt'),
+    color: await colorOfToken(page, '--text-strong'),
+  }
+  for (const [property, value] of Object.entries(looks)) {
+    await expect(chip).toHaveCSS(property, value)
+  }
 })
 
 // The card lifts on hover only from 640px and only where a pointer can hover (ADR-0013). The mobile

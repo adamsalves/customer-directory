@@ -1,7 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import type { ICustomerFacets } from '#shared/types/customer'
 import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import FilterPanel from './FilterPanel.vue'
@@ -215,6 +215,21 @@ describe('FilterPanel states', () => {
     await urlIs('/customers?search=ana&states=bahia')
 
     expect(pickedOf(wrapper, STATE)).toEqual(['bahia'])
+  })
+
+  // Another writer (a chip) takes a filter off: the boxes and the clear button go with it at once, as
+  // the chips do, and a click on the box meanwhile picks the state again instead of being undone
+  it('shows the write another component made, before the URL has it', async () => {
+    const wrapper = await mountPanel('/customers?states=bahia')
+
+    void useListQuery().setQuery({ states: [], page: 1 })
+    await nextTick()
+    expect(useRoute().fullPath).toBe('/customers?states=bahia')
+    expect(pickedOf(wrapper, STATE)).toEqual([])
+    expect(wrapper.find(CLEAR).exists()).toBe(false)
+
+    await urlIs('/customers')
+    expect(pickedOf(wrapper, STATE)).toEqual([])
   })
 
   // What the pick waited for is over: the next one is made on the URL, which may have moved meanwhile
