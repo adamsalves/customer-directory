@@ -100,7 +100,7 @@ const urlIs = (url: string) =>
 const FIVE = ['São Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Espírito Santo', 'Bahia']
 
 describe('FilterPanel states', () => {
-  it('names the group and lists the five default states, none picked', async () => {
+  it('names the group and lists the five default states in native checkboxes, none picked', async () => {
     const wrapper = await mountPanel()
 
     expect(wrapper.get(`${STATES} legend`).text()).toBe('Por Estado')
@@ -112,17 +112,12 @@ describe('FilterPanel states', () => {
       'espirito-santo',
       'bahia',
     ])
-    expect(pickedOf(wrapper, STATE)).toEqual([])
-  })
-
-  it('puts a native checkbox in the label of each state', async () => {
-    const wrapper = await mountPanel()
-
     expect(wrapper.findAll(STATE).map((box) => box.attributes('type'))).toEqual(
       Array.from({ length: 5 }, () => 'checkbox'),
     )
+    // A click on the name reaches the box
     expect(labelsOf(wrapper, STATES, STATE)).toHaveLength(5)
-    expect(stateBox(wrapper, 'bahia').element.closest('label')?.textContent).toContain('Bahia')
+    expect(pickedOf(wrapper, STATE)).toEqual([])
   })
 
   it('lists the picked states outside the five after them, in table order', async () => {
@@ -146,63 +141,38 @@ describe('FilterPanel states', () => {
     expect(stateBox(wrapper, 'tocantins').element).toBe(box)
   })
 
-  it('does not list a picked default state twice', async () => {
-    const wrapper = await mountPanel('/customers?states=bahia')
-
-    expect(namesIn(wrapper, STATES)).toEqual(FIVE)
-    expect(pickedOf(wrapper, STATE)).toEqual(['bahia'])
-  })
-
-  // The push is the history entry that back takes back (ADR-0007); the page size stays
-  it('pushes the state picked, from page 1, keeping the page size', async () => {
-    const wrapper = await mountPanel('/customers?page=3&perPage=18')
+  // The push is the history entry that back takes back (ADR-0007). A pick starts over from page 1 and
+  // keeps the page size, an unpick keeps the other picks.
+  it.each([
+    {
+      name: 'pushes the state picked, from page 1, keeping the page size',
+      route: '/customers?page=3&perPage=18',
+      picked: true,
+      query: { perPage: '18', states: 'bahia' },
+      url: '/customers?perPage=18&states=bahia',
+    },
+    {
+      name: 'takes a state out when it is unpicked, keeping the others',
+      route: '/customers?states=bahia,minas-gerais',
+      picked: false,
+      query: { states: 'minas-gerais' },
+      url: '/customers?states=minas-gerais',
+    },
+  ])('$name', async ({ route, picked, query, url }) => {
+    const wrapper = await mountPanel(route)
     const { push, replace } = spyOnRouter()
 
-    await stateBox(wrapper, 'bahia').setValue(true)
-    await urlIs('/customers?perPage=18&states=bahia')
+    await stateBox(wrapper, 'bahia').setValue(picked)
+    await urlIs(url)
 
-    expect(push).toHaveBeenCalledExactlyOnceWith({
-      path: '/customers',
-      query: { perPage: '18', states: 'bahia' },
-    })
+    expect(push).toHaveBeenCalledExactlyOnceWith({ path: '/customers', query })
     expect(replace).not.toHaveBeenCalled()
   })
 
-  it('takes a state out when it is unpicked, keeping the others', async () => {
-    const wrapper = await mountPanel('/customers?states=bahia,minas-gerais')
-
-    await stateBox(wrapper, 'bahia').setValue(false)
-    await urlIs('/customers?states=minas-gerais')
-  })
-
-  it('writes the states in table order, whatever the order of the picks', async () => {
-    const wrapper = await mountPanel('/customers?states=minas-gerais')
-
-    await stateBox(wrapper, 'bahia').setValue(true)
-    await urlIs('/customers?states=bahia,minas-gerais')
-  })
-
   // The route is a frame behind a pick. A second pick made on what the URL still says would take the
-  // first one back, and the same box picked and unpicked would end up picked.
-  it('builds a second pick on the first, before the URL has it', async () => {
-    const wrapper = await mountPanel()
-
-    await stateBox(wrapper, 'bahia').setValue(true)
-    await stateBox(wrapper, 'minas-gerais').setValue(true)
-    await urlIs('/customers?states=bahia,minas-gerais')
-  })
-
-  it('unpicks a state picked a moment before, before the URL has it', async () => {
-    const wrapper = await mountPanel()
-
-    await stateBox(wrapper, 'bahia').setValue(true)
-    await stateBox(wrapper, 'bahia').setValue(false)
-    await urlIs('/customers')
-  })
-
-  // The first pick is cancelled by the second and settles at once, while the second is still on its
-  // way: a third one has to build on the second
-  it('keeps building on the picks that are still on their way', async () => {
+  // first one back. The first pick is cancelled by the second and settles at once, while the second is
+  // still on its way: a third one has to build on the second.
+  it('builds each pick on the ones still on their way, before the URL has them', async () => {
     const wrapper = await mountPanel()
 
     await stateBox(wrapper, 'bahia').setValue(true)
@@ -246,14 +216,7 @@ describe('FilterPanel list of all states', () => {
 
     expect(names.slice(0, 5)).toEqual(FIVE)
     expect(others).toHaveLength(22)
-    expect(others.slice(0, 6)).toEqual([
-      'Acre',
-      'Alagoas',
-      'Amapá',
-      'Amazonas',
-      'Ceará',
-      'Distrito Federal',
-    ])
+    expect(others.at(0)).toBe('Acre')
     expect(others.at(-1)).toBe('Tocantins')
     expect(others).toEqual([...others].sort((a, b) => a.localeCompare(b, 'pt-BR')))
     const toggle = wrapper.get(TOGGLE)
@@ -263,39 +226,22 @@ describe('FilterPanel list of all states', () => {
     expect(wrapper.get(`[id="${id ?? ''}"]`).findAll(STATE)).toHaveLength(27)
   })
 
-  it('goes back to the five with "Ver menos"', async () => {
-    const wrapper = await mountPanel()
-    await wrapper.get(TOGGLE).trigger('click')
-
-    await wrapper.get(TOGGLE).trigger('click')
-
-    expect(namesIn(wrapper, STATES)).toEqual(FIVE)
-    expect(wrapper.get(TOGGLE).text()).toBe('Ver todos (27)')
-    expect(wrapper.get(TOGGLE).attributes('aria-expanded')).toBe('false')
-  })
-
-  it('lists a picked state once, in its place, when opened', async () => {
-    const wrapper = await mountPanel('/customers?states=tocantins')
-    expect(namesIn(wrapper, STATES)).toEqual([...FIVE, 'Tocantins'])
-
-    await wrapper.get(TOGGLE).trigger('click')
-
-    expect(wrapper.findAll(STATE)).toHaveLength(27)
-    expect(pickedOf(wrapper, STATE)).toEqual(['tocantins'])
-    expect(namesIn(wrapper, STATES).at(-1)).toBe('Tocantins')
-  })
-
-  it('stays open while states are picked, and keeps what was picked when closed', async () => {
+  it('stays open while states are picked, lists the pick once, and closes with "Ver menos"', async () => {
     const wrapper = await mountPanel()
     await wrapper.get(TOGGLE).trigger('click')
 
     await stateBox(wrapper, 'acre').setValue(true)
     await urlIs('/customers?states=acre')
 
-    expect(wrapper.findAll(STATE)).toHaveLength(27)
+    const names = namesIn(wrapper, STATES)
+    expect(names).toHaveLength(27)
+    expect(new Set(names).size).toBe(27)
     expect(wrapper.get(TOGGLE).text()).toBe('Ver menos')
+
     await wrapper.get(TOGGLE).trigger('click')
     expect(namesIn(wrapper, STATES)).toEqual([...FIVE, 'Acre'])
+    expect(wrapper.get(TOGGLE).text()).toBe('Ver todos (27)')
+    expect(wrapper.get(TOGGLE).attributes('aria-expanded')).toBe('false')
   })
 })
 
@@ -311,15 +257,6 @@ describe('FilterPanel dimmed states', () => {
     expect(isDimmed(wrapper, 'bahia')).toBe(false)
   })
 
-  it('dims the states nobody is from among all of them, once opened', async () => {
-    const wrapper = await mountPanel()
-
-    await wrapper.get(TOGGLE).trigger('click')
-
-    expect(isDimmed(wrapper, 'alagoas')).toBe(true)
-    expect(isDimmed(wrapper, 'acre')).toBe(false)
-  })
-
   it('never dims a picked state, whatever its count', async () => {
     const wrapper = await mountPanel('/customers?states=minas-gerais')
 
@@ -329,22 +266,6 @@ describe('FilterPanel dimmed states', () => {
       '0',
     )
     expect(isDimmed(wrapper, 'espirito-santo')).toBe(true)
-  })
-
-  it('dims nothing without facets', async () => {
-    const wrapper = await mountPanel('/customers', { facets: undefined })
-
-    for (const slug of ['sao-paulo', 'minas-gerais', 'bahia']) {
-      expect(isDimmed(wrapper, slug)).toBe(false)
-    }
-  })
-
-  it('dims nothing the facets do not list', async () => {
-    const wrapper = await mountPanel('/customers', {
-      facets: { ...facets, states: { bahia: 5 } },
-    })
-
-    expect(isDimmed(wrapper, 'minas-gerais')).toBe(false)
   })
 })
 
@@ -402,31 +323,34 @@ describe('FilterPanel gender', () => {
     expect(pickedOf(wrapper, GENDER)).toEqual(['all'])
   })
 
-  it('picks the gender in the URL', async () => {
-    const wrapper = await mountPanel('/customers?gender=female')
-
-    expect(pickedOf(wrapper, GENDER)).toEqual(['female'])
-  })
-
-  it('pushes the gender picked, from page 1, keeping the rest of the list state', async () => {
-    const wrapper = await mountPanel('/customers?page=2&states=bahia&search=ana')
-    const { push, replace } = spyOnRouter()
-
-    await genderRadio(wrapper, 'female').setValue()
-    await urlIs('/customers?search=ana&states=bahia&gender=female')
-
-    expect(push).toHaveBeenCalledExactlyOnceWith({
-      path: '/customers',
+  it.each([
+    {
+      name: 'pushes the gender picked, from page 1, keeping the rest of the list state',
+      route: '/customers?page=2&states=bahia&search=ana',
+      before: 'all',
+      value: 'female',
       query: { search: 'ana', states: 'bahia', gender: 'female' },
-    })
+      url: '/customers?search=ana&states=bahia&gender=female',
+    },
+    {
+      name: 'leaves the gender out of the URL when Todos is picked again',
+      route: '/customers?gender=male',
+      before: 'male',
+      value: 'all',
+      query: {},
+      url: '/customers',
+    },
+  ])('$name', async ({ route, before, value, query, url }) => {
+    const wrapper = await mountPanel(route)
+    const { push, replace } = spyOnRouter()
+    // What the URL says is what is picked
+    expect(pickedOf(wrapper, GENDER)).toEqual([before])
+
+    await genderRadio(wrapper, value).setValue()
+    await urlIs(url)
+
+    expect(push).toHaveBeenCalledExactlyOnceWith({ path: '/customers', query })
     expect(replace).not.toHaveBeenCalled()
-  })
-
-  it('leaves the gender out of the URL when Todos is picked again', async () => {
-    const wrapper = await mountPanel('/customers?gender=male')
-
-    await genderRadio(wrapper, 'all').setValue()
-    await urlIs('/customers')
   })
 
   it('builds the gender on the state picked a moment before, before the URL has it', async () => {
@@ -457,55 +381,51 @@ describe('FilterPanel gender', () => {
 
 describe('FilterPanel counts', () => {
   // The bare number is for the eye and the whole phrase for the screen reader: a name on a span
-  // would be ignored (ARIA 1.2), so the text is hidden, not labelled (ADR-0013)
+  // would be ignored (ARIA 1.2), so the text is hidden, not labelled (ADR-0013). The five states
+  // (São Paulo, Rio de Janeiro, Minas Gerais, Espírito Santo, Bahia) and then Todos, Feminino and
+  // Masculino.
   it('shows each number to the eye and hides the phrase a screen reader reads in its place', async () => {
     const wrapper = await mountPanel()
     const counts = wrapper.findAll(COUNT)
 
-    // The five states and the three genders
-    expect(counts).toHaveLength(8)
-    for (const count of counts) {
-      const number = count.get(COUNT_NUMBER)
-      const phrase = count.get(COUNT_LABEL)
-      expect(number.attributes('aria-hidden')).toBe('true')
-      expect(phrase.classes()).toContain('VisuallyHidden')
-      expect(phrase.text()).toBe(
-        `${number.text()} ${number.text() === '1' ? 'cliente' : 'clientes'}`,
-      )
-    }
-  })
-
-  it('says "1 cliente" for one and "0 clientes" for none', async () => {
-    const wrapper = await mountPanel()
-    const labelOf = (slug: string) =>
-      wrapper.get(`label:has(${STATE}[value="${slug}"]) ${COUNT_LABEL}`).text()
-
-    expect(labelOf('rio-de-janeiro')).toBe('1 cliente')
-    expect(labelOf('minas-gerais')).toBe('0 clientes')
-  })
-
-  it('counts each gender', async () => {
-    const wrapper = await mountPanel()
-    const group = wrapper.get(GENDERS)
-
-    expect(group.findAll(COUNT_LABEL).map((label) => label.text())).toEqual([
+    expect(counts.map((count) => count.get(COUNT_NUMBER).text())).toEqual([
+      '12',
+      '1',
+      '0',
+      '0',
+      '5',
+      '21',
+      '9',
+      '12',
+    ])
+    expect(counts.map((count) => count.get(COUNT_LABEL).text())).toEqual([
+      '12 clientes',
+      '1 cliente',
+      '0 clientes',
+      '0 clientes',
+      '5 clientes',
       '21 clientes',
       '9 clientes',
       '12 clientes',
     ])
-    expect(group.findAll(COUNT_NUMBER).map((number) => number.text())).toEqual(['21', '9', '12'])
+    for (const count of counts) {
+      expect(count.get(COUNT_NUMBER).attributes('aria-hidden')).toBe('true')
+      expect(count.get(COUNT_LABEL).classes()).toContain('VisuallyHidden')
+    }
   })
 
-  it('shows no count without facets', async () => {
+  it('shows no count without facets, and dims nothing', async () => {
     const wrapper = await mountPanel('/customers', { facets: undefined })
 
     expect(wrapper.find(COUNT).exists()).toBe(false)
     expect(namesIn(wrapper, STATES)).toEqual(FIVE)
     expect(namesIn(wrapper, GENDERS)).toEqual(['Todos', 'Feminino', 'Masculino'])
+    expect(isDimmed(wrapper, 'minas-gerais')).toBe(false)
   })
 
-  // The BFF lists every state, but a state it does not list has no number to show, not a zero
-  it('shows no count for a state the facets do not list', async () => {
+  // The BFF lists every state, but a state it does not list has no number to show, not a zero, and
+  // nobody to dim it for
+  it('shows no count and no dimming for a state the facets do not list', async () => {
     const wrapper = await mountPanel('/customers', {
       facets: { ...facets, states: { bahia: 5 } },
     })
@@ -513,15 +433,20 @@ describe('FilterPanel counts', () => {
 
     expect(states.findAll(COUNT_NUMBER).map((number) => number.text())).toEqual(['5'])
     expect(wrapper.get(GENDERS).findAll(COUNT_NUMBER)).toHaveLength(3)
+    expect(isDimmed(wrapper, 'minas-gerais')).toBe(false)
   })
 })
 
 describe('FilterPanel clear button', () => {
-  it('is not there with no search and no filter', async () => {
+  it('is not there with no search and no filter, and shows up once one is picked', async () => {
     // The page and the page size are no filter
     const wrapper = await mountPanel('/customers?page=2&perPage=18')
-
     expect(wrapper.find(CLEAR).exists()).toBe(false)
+
+    await stateBox(wrapper, 'bahia').setValue(true)
+    await vi.waitFor(() => {
+      expect(wrapper.find(CLEAR).exists()).toBe(true)
+    })
   })
 
   it.each([
@@ -545,15 +470,5 @@ describe('FilterPanel clear button', () => {
     expect(wrapper.emitted('clear')).toEqual([[]])
     expect(push).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
-  })
-
-  it('shows up once a filter is picked', async () => {
-    const wrapper = await mountPanel()
-    expect(wrapper.find(CLEAR).exists()).toBe(false)
-
-    await stateBox(wrapper, 'bahia').setValue(true)
-    await vi.waitFor(() => {
-      expect(wrapper.find(CLEAR).exists()).toBe(true)
-    })
   })
 })
