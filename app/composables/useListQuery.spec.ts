@@ -1,4 +1,5 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { NavigationFailureType, isNavigationFailure } from 'vue-router'
 import type { IListQuery } from '#shared/utils/listQuery'
 
 // The list state with nothing set; each test overrides what it exercises
@@ -127,5 +128,115 @@ describe('useListQuery', () => {
     await useListQuery().setQuery({ ...defaults, page: 2, search: 'ana' })
 
     expect(useRoute().fullPath).toBe('/customers?page=2&search=ana')
+  })
+})
+
+// The route is a frame behind a write. A change made on the URL while another write is on its way
+// would leave that one out, and its navigation cancels the first: the write in flight is where every
+// writer builds the next list state (#90, ADR-0023)
+describe('useListQuery write in flight', () => {
+  it('is the list state written, until the URL has it', async () => {
+    await navigateTo('/customers')
+    const { pending, setQuery } = useListQuery()
+    expect(pending()).toBeUndefined()
+
+    const write = setQuery({ page: 2 })
+    expect(pending()).toStrictEqual({ ...defaults, page: 2 })
+
+    await write
+    expect(pending()).toBeUndefined()
+    expect(useRoute().fullPath).toBe('/customers?page=2')
+  })
+
+  it('builds a change on the write still on its way, not on the URL', async () => {
+    await navigateTo('/customers?search=ana&page=3')
+    const { pending, setQuery } = useListQuery()
+
+    void setQuery({ states: ['bahia'], page: 1 })
+    await setQuery({ gender: 'male' })
+
+    expect(pending()).toBeUndefined()
+    expect(useRoute().fullPath).toBe('/customers?search=ana&states=bahia&gender=male')
+  })
+
+  it('builds the next change on the URL again once the write has landed', async () => {
+    await navigateTo('/customers')
+    const { setQuery } = useListQuery()
+    await setQuery({ states: ['bahia'] })
+    // The URL moves on without a write of the list
+    await navigateTo('/customers?states=acre')
+
+    await setQuery({ gender: 'male' })
+
+    expect(useRoute().fullPath).toBe('/customers?states=acre&gender=male')
+  })
+
+  // The first write is cancelled by the second and settles while the second is still on its way
+  it('keeps the newer write in flight when an older one settles', async () => {
+    await navigateTo('/customers')
+    const { pending, setQuery } = useListQuery()
+
+    const first = setQuery({ states: ['bahia'] })
+    const second = setQuery({ gender: 'male' })
+    const failure = await first
+
+    expect(isNavigationFailure(failure, NavigationFailureType.cancelled)).toBe(true)
+    expect(pending()).toStrictEqual({ ...defaults, states: ['bahia'], gender: 'male' })
+    await second
+    expect(pending()).toBeUndefined()
+  })
+
+  // Whoever waits for the write finds the state clear, whatever came of it
+  it('is not in flight anymore when another navigation cancels the write', async () => {
+    await navigateTo('/customers')
+    const { pending, setQuery } = useListQuery()
+
+    const write = setQuery({ page: 2 })
+    await useRouter().push('/customers?page=5')
+    const failure = await write
+
+    expect(isNavigationFailure(failure, NavigationFailureType.cancelled)).toBe(true)
+    expect(pending()).toBeUndefined()
+  })
+
+  it('is not in flight anymore when a guard aborts the write', async () => {
+    await navigateTo('/customers')
+    const { pending, setQuery } = useListQuery()
+    onTestFinished(useRouter().beforeEach(() => false))
+
+    const failure = await setQuery({ page: 2 })
+
+    expect(isNavigationFailure(failure, NavigationFailureType.aborted)).toBe(true)
+    expect(pending()).toBeUndefined()
+    expect(useRoute().fullPath).toBe('/customers')
+  })
+
+  it('is not in flight anymore when the navigation of the write throws', async () => {
+    await navigateTo('/customers')
+    const { pending, setQuery } = useListQuery()
+    onTestFinished(
+      useRouter().beforeEach(() => {
+        throw new Error('a guard that fails')
+      }),
+    )
+
+    await expect(setQuery({ page: 2 })).rejects.toThrow('a guard that fails')
+
+    expect(pending()).toBeUndefined()
+  })
+
+  // The sheet (#26) puts a second panel on the page, and the header has the search: all of them are
+  // uses of the composable
+  it('is the same for every use of the composable', async () => {
+    await navigateTo('/customers')
+    const first = useListQuery()
+    const second = useListQuery()
+
+    const write = first.setQuery({ states: ['bahia'] })
+    expect(second.pending()).toStrictEqual({ ...defaults, states: ['bahia'] })
+    await second.setQuery({ gender: 'male' })
+    await write
+
+    expect(useRoute().fullPath).toBe('/customers?states=bahia&gender=male')
   })
 })
