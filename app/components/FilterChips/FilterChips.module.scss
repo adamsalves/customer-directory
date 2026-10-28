@@ -10,10 +10,16 @@
   list-style: none;
 }
 
-// 32px tall, and 44px below 960px (ADR-0013). A minimum, not a height: the search can be 100
-// characters, and its label breaks into lines (below), so the chip grows with it.
+// A chip as wide as the row at most: a long search gets an ellipsis instead of running off the page
+// (below). The item is capped too: a flex item does not shrink under its content by default.
+.Item {
+  max-inline-size: 100%;
+}
+
+// 32px tall, and 44px below 960px (ADR-0013)
 .Chip {
   display: flex;
+  max-inline-size: 100%;
   gap: 6px;
   align-items: center;
   min-block-size: 32px;
@@ -29,13 +35,15 @@
   animation: global(jsm-in) 0.18s ease-out;
 }
 
-// The search is a label that can be one 100-character word, like an email: break it rather than
-// overflow the page
+// The search can be one 100-character word, like an email: one line ending in an ellipsis. The whole
+// search stays in the field and in the chip's accessible name.
 .Label {
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-// The label gives way, the ✕ does not: it would shrink to a dot beside a label of several lines
+// The label gives way, the ✕ does not: it would shrink to a dot beside a long label
 .Icon {
   flex: 0 0 auto;
 }

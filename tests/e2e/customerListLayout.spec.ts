@@ -150,19 +150,25 @@ for (const { width, height } of [
 }
 
 // The chip repeats the search, which can be 100 characters with no space (MAX_SEARCH_LENGTH), like an
-// email. Its label breaks inside the word and the chip grows with it, else the chip is wider than the
-// screen and the page scrolls sideways. The ✕ keeps its size beside the label.
+// email, or words that would break into lines. The label ends in an ellipsis on one line, else the
+// chip is wider than the screen and the page scrolls sideways, or taller than the target. The chip
+// keeps its height, the ✕ its size, and the name the whole search.
 for (const width of [320, 375]) {
   test(`a long search in a filter chip at ${String(width)}px`, async ({ page }) => {
+    const search = `${'w'.repeat(60)} ${'w'.repeat(39)}`
     await page.setViewportSize({ width, height: 800 })
-    await page.goto(`/customers?search=${'w'.repeat(100)}`)
+    await page.goto(`/customers?search=${encodeURIComponent(search)}`)
 
     const chip = page.getByTestId('filter-chips__chip--button')
     await expect(chip).toBeVisible()
     const box = await boxOf(chip)
     expect(box.x + box.width).toBeLessThanOrEqual(width)
-    expect(box.height).toBeGreaterThan(44)
+    expect(box.height).toBeCloseTo(44, 1)
+    const label = chip.locator('span')
+    await expect(label).toHaveCSS('text-overflow', 'ellipsis')
+    expect(await label.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
     expect(await boxOf(chip.locator('svg'))).toMatchObject({ width: 14, height: 14 })
+    await expect(chip).toHaveAccessibleName(`Remover busca ${search}`)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
   })
 }

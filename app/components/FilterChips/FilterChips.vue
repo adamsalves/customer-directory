@@ -73,7 +73,7 @@ function remove(chip: TChip, event: MouseEvent) {
     :class="S.Chips"
     data-testid="filter-chips__root--list"
   >
-    <li v-for="chip in chips" :key="chip.key">
+    <li v-for="chip in chips" :key="chip.key" :class="S.Item">
       <button
         type="button"
         :aria-label="chip.ariaLabel"
