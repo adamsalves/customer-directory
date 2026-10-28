@@ -43,6 +43,12 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `replaceState` em toda busca                        | `replace` na lista, `push` vindo de fora   | voltar não percorre cada termo e volta à origem |
 | link de 272px a partir de 960px, com pílula e foco  | coluna do grid; pílula e foco só na imagem | a pílula é do logo (dono); protótipo no M9      |
 | "Limpar busca e filtros" não move o foco            | o foco vai para os resultados (`#results`) | o botão sai e o foco cai no `body` (ADR-0022)   |
+| esmaecido com `opacity: .45` (2,58:1)               | `color: var(--text-muted)` (5,83:1)        | contraste mínimo de 4,5:1 num controle ativo    |
+| contagem com `aria-label` num `span`                | texto oculto "N clientes" ("1 cliente")    | ARIA 1.2 proíbe nome em `generic`               |
+| desmarcar um estado fora dos 5 não move o foco      | o foco vai para o botão "Ver todos"        | o item sai da lista e o foco cai no `body`      |
+| "Ver todos" com `aria-expanded`                     | `aria-expanded` + `aria-controls`          | disclosure do APG: aponta a lista que abre      |
+| "Limpar filtros" não move o foco                    | o foco vai para os resultados (`#results`) | o botão sai e o foco cai no `body` (ADR-0022)   |
+| `replaceState` em todo filtro                       | `push` a cada filtro                       | voltar desfaz o filtro (ADR-0007)               |
 
 ## Consequências
 

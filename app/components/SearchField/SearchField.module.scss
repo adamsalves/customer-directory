@@ -8,19 +8,6 @@
   margin: 0;
 }
 
-// Read by screen readers, invisible to everyone else
-.VisuallyHidden {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .Icon {
   position: absolute;
   inset-block-start: 50%;

@@ -132,7 +132,7 @@ onBeforeUnmount(() => {
 
 <template>
   <form role="search" :class="S.Search" data-testid="header__search--form" @submit.prevent="commit">
-    <label :for="inputId" :class="S.VisuallyHidden">Buscar clientes por nome ou sobrenome</label>
+    <label :for="inputId" class="VisuallyHidden">Buscar clientes por nome ou sobrenome</label>
     <svg
       aria-hidden="true"
       width="22"

@@ -97,6 +97,20 @@
     color: var(--text-muted);
     font-family: inherit;
   }
+
+  // Read by screen readers, invisible to everyone else. A global class, written as a plain string in
+  // a template (the pattern is PascalCase like the module classes, which Vue hashes).
+  .VisuallyHidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 // CSS Modules rename keyframe names they don't own: inside a .module.scss write

@@ -118,7 +118,7 @@ watch(
             :class="[S.Item, S.Current]"
             data-testid="pagination__current--text"
           >
-            <span :class="S.VisuallyHidden" data-testid="pagination__current--label">
+            <span class="VisuallyHidden" data-testid="pagination__current--label">
               Página {{ item }}, atual
             </span>
             <span aria-hidden="true" data-testid="pagination__current--number">{{ item }}</span>

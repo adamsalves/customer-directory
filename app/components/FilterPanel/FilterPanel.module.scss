@@ -1,0 +1,95 @@
+// Measures of the prototype's side panel (v2, ADR-0013). It has no width and no frame of its own: the
+// page gives it a column and the card around it, and the sheet (#26) another frame.
+.Panel {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.Group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.Legend {
+  margin-block-end: 12px;
+  padding: 0;
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.Option {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-block-size: 36px;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+
+// Nobody to find and not picked: still there to pick, in the muted text color instead of the
+// prototype's opacity of .45, which gives 2.58:1 on a control that works (ADR-0013)
+.Dimmed {
+  color: var(--text-muted);
+}
+
+.Input {
+  inline-size: 18px;
+  block-size: 18px;
+  margin-inline: 2px 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.Name {
+  flex: 1;
+}
+
+.Count {
+  color: var(--text-count);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.Toggle {
+  margin-block-start: 8px;
+  padding-block: 4px;
+  padding-inline: 0;
+  border: 0;
+  background: none;
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.Clear {
+  align-self: flex-start;
+  block-size: 40px;
+  padding-inline: 16px;
+  border: 1px solid var(--text-strong);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave a button in that state (ADR-0013)
+@media (hover: hover) {
+  .Toggle:hover {
+    color: var(--link);
+  }
+
+  .Clear:hover {
+    background: var(--inverse-bg);
+    color: var(--inverse-text);
+  }
+}

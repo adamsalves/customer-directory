@@ -46,12 +46,7 @@ describe('PaginationNav', () => {
       // ARIA 1.2 bars a name on a span: the reader gets hidden text, and not the number twice
       expect(current.attributes('aria-label')).toBeUndefined()
       expect(current.get(CURRENT_LABEL).text()).toBe('Página 3, atual')
-      expect(
-        current
-          .get(CURRENT_LABEL)
-          .classes()
-          .some((name) => name.includes('VisuallyHidden')),
-      ).toBe(true)
+      expect(current.get(CURRENT_LABEL).classes()).toContain('VisuallyHidden')
       expect(current.get(CURRENT_NUMBER).text()).toBe('3')
       expect(current.get(CURRENT_NUMBER).attributes('aria-hidden')).toBe('true')
     }
