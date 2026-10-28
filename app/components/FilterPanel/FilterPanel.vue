@@ -74,9 +74,7 @@ function countLabel(count: number) {
 
 const rootRef = useTemplateRef('root')
 
-// Vue writes `checked` only when a row's value changes. A pick cancelled on its way (back, a link)
-// leaves the URL, and so the rows, as they were, and the control keeps the click: put each one back
-// on what the URL says.
+// Puts each control on what the URL says
 function syncControls() {
   const root = rootRef.value
   if (!(root instanceof HTMLElement)) return
@@ -86,15 +84,23 @@ function syncControls() {
   }
 }
 
+// Vue writes `checked` only when a row's value changes, so a pick that never reaches the URL leaves
+// its control with the click: the pick was cancelled by back or a link, or by a write (the clear of
+// the page) that lands with the states the URL already had. A write that carries the pick (the next
+// pick, the search) keeps it on its way until it lands, and the controls stay as clicked meanwhile.
+// Once nothing is on its way the URL is all there is: put the controls back on it, after the render.
+watch(
+  pending,
+  (inFlight) => {
+    if (inFlight === undefined) syncControls()
+  },
+  { flush: 'post' },
+)
+
 // Another filter starts over from page 1 and keeps the rest of the list state, the writes still on
 // their way included (useListQuery). Each pick is a history entry, so back takes it back (ADR-0007).
 function pick(change: Partial<Pick<IListQuery, 'states' | 'gender'>>) {
-  void setQuery({ ...change, page: 1 }).then((failure) => {
-    // A later write that cancelled this one is still on its way and carries the pick; a later pick
-    // of the panel syncs when it settles. With none on its way, something else cancelled it (back,
-    // a link) and the URL did not change.
-    if (failure && pending() === undefined) syncControls()
-  })
+  void setQuery({ ...change, page: 1 })
 }
 
 // In the short list a state outside the five is there only while it is picked, so unpicking it

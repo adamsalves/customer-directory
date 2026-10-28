@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import type { ICustomerFacets } from '#shared/types/customer'
 import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
@@ -96,6 +96,27 @@ const urlIs = (url: string) =>
   vi.waitFor(() => {
     expect(useRoute().fullPath).toBe(url)
   })
+
+// Every navigation waits at a guard until `letOneGo` lets the oldest one go, and `held` counts the ones
+// that got there. Each write waits for a frame of its own in the browser, so one settles while the
+// next is still on its way.
+function holdNavigationsOneByOne() {
+  const gates: (() => void)[] = []
+  onTestFinished(
+    useRouter().beforeEach(
+      () =>
+        new Promise<void>((resolve) => {
+          gates.push(resolve)
+        }),
+    ),
+  )
+  return {
+    held: () => gates.length,
+    letOneGo: () => {
+      gates.shift()?.()
+    },
+  }
+}
 
 const FIVE = ['São Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Espírito Santo', 'Bahia']
 
@@ -231,6 +252,49 @@ describe('FilterPanel cancelled pick', () => {
 
     expect(useRoute().fullPath).toBe('/customers?gender=female')
     expect(pickedOf(wrapper, GENDER)).toEqual(['female'])
+  })
+
+  // The clear of the page, made in the same frame, cancels the pick and has no states: the URL ends
+  // with the states it had, so Vue has no `checked` to write and the box keeps the click
+  it('unticks a state picked in the same frame as a clear, once the clear has landed', async () => {
+    const wrapper = await mountPanel('/customers?search=ana')
+
+    await stateBox(wrapper, 'bahia').setValue(true)
+    void useListQuery().setQuery(
+      { search: '', states: [], gender: 'all', page: 1 },
+      { replace: true },
+    )
+    await urlIs('/customers')
+    await flushPromises()
+
+    expect(pickedOf(wrapper, STATE)).toEqual([])
+  })
+
+  // The search fires after the pick and builds on it: the pick is carried by that write, which back or
+  // a link then cancels. While that write is on its way the pick is still on its way with it; once
+  // nothing is, the URL does not have the pick.
+  it('unticks a state when the write that carried it is cancelled too', async () => {
+    const wrapper = await mountPanel()
+    const { held, letOneGo } = holdNavigationsOneByOne()
+
+    await stateBox(wrapper, 'bahia').setValue(true)
+    await vi.waitFor(() => {
+      expect(held()).toBe(1)
+    })
+    void useListQuery().setQuery({ search: 'ana' }, { replace: true })
+    await vi.waitFor(() => {
+      expect(held()).toBe(2)
+    })
+    await useRouter().push('/customers')
+
+    letOneGo()
+    await flushPromises()
+    expect(pickedOf(wrapper, STATE)).toEqual(['bahia'])
+
+    letOneGo()
+    await flushPromises()
+    expect(pickedOf(wrapper, STATE)).toEqual([])
+    expect(useRoute().fullPath).toBe('/customers')
   })
 })
 
