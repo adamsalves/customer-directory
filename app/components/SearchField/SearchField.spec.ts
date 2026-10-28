@@ -261,6 +261,21 @@ describe('SearchField writing the URL', () => {
     },
   )
 
+  // The clear buttons of the page write the list state without this field, and the search is among
+  // what they clear. That write has the search the field sees coming (an empty one) but no keys
+  // behind it, so it is not the field's own write coming back, even after the field wrote before.
+  it('follows the search that another writer cleared, after the field wrote one', async () => {
+    const wrapper = await mountField()
+    await wrapper.get(INPUT).setValue('ana')
+    vi.advanceTimersByTime(300)
+    await urlIs('/customers?search=ana')
+
+    void useListQuery().setQuery({ search: '', page: 1 }, { replace: true })
+    await landOn('/customers')
+
+    expect(inputOf(wrapper).value).toBe('')
+  })
+
   it('drops the write it was waiting to do when the field goes away', async () => {
     const wrapper = await mountField()
     const { replace } = spyOnRouter()
@@ -403,6 +418,21 @@ describe('SearchField writing the URL', () => {
     pressEnter(wrapper)
 
     expect(replace).toHaveBeenCalledOnce()
+    await landOn('/customers?search=ana')
+  })
+
+  // Off the list nothing but the write on its way says the search was sent: a second push would be
+  // the same location again
+  it('sends one navigation when Enter comes after the wait wrote the same search, from another page', async () => {
+    addPageOutsideTheList()
+    const wrapper = await mountField('/elsewhere')
+    const { push } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    vi.advanceTimersByTime(300)
+
+    pressEnter(wrapper)
+
+    expect(push).toHaveBeenCalledOnce()
     await landOn('/customers?search=ana')
   })
 

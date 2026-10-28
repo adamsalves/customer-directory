@@ -1,10 +1,12 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import type { ICustomerCard, ICustomerFacets, ICustomerListResponse } from '#shared/types/customer'
 import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import { DEFAULT_PER_PAGE } from '#shared/utils/listQuery'
 import PaginationNav from '~/components/PaginationNav/PaginationNav.vue'
+import SearchField from '~/components/SearchField/SearchField.vue'
 import { RESULTS_ID } from '~/utils/resultsScroll'
 import CustomersPage from './index.vue'
 
@@ -76,6 +78,7 @@ const RETRY = '[data-testid="error-state__retry--button"]'
 const EMPTY_TITLE = '[data-testid="empty-state__title--heading"]'
 const EMPTY_HINT = '[data-testid="empty-state__hint--text"]'
 const CLEAR = '[data-testid="empty-state__clear--button"]'
+const SEARCH = '[data-testid="header__search--input"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
 enableAutoUnmount(afterEach)
@@ -86,6 +89,21 @@ function htmlElement(element: Element): HTMLElement {
 }
 
 const isChecked = (element: Element) => element instanceof HTMLInputElement && element.checked
+
+// The search field is in the header, not in the page: here it sits next to it, as the layout does
+const PageWithSearch = defineComponent({
+  render: () => h('div', [h(SearchField), h(CustomersPage)]),
+})
+
+// Every navigation waits a frame before it lands. This holds them until the returned function runs,
+// so a write is still on its way when the next one is made, as it is when two come within a frame.
+function holdNavigations() {
+  const { promise, resolve } = Promise.withResolvers<undefined>()
+  onTestFinished(useRouter().beforeEach(() => promise))
+  return () => {
+    resolve(undefined)
+  }
+}
 
 beforeEach(() => {
   requests = []
@@ -484,6 +502,27 @@ describe('customers page', () => {
     expect(wrapper.find(PANEL_CLEAR).exists()).toBe(false)
     expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
     expect(document.activeElement).toBe(results)
+  })
+
+  // Each writer builds the next list state: the one that lands last must not take back the other,
+  // which the URL does not have yet (#90). The search waits 300ms after the last key, and the pick
+  // is made inside that wait and is still on its way when the wait runs out.
+  it('keeps a state picked while the search is waiting to be written', async () => {
+    const wrapper = await mountSuspended(PageWithSearch, { route: '/customers' })
+    const letGo = holdNavigations()
+    const replace = vi.spyOn(useRouter(), 'replace')
+
+    await wrapper.get(SEARCH).setValue('ana')
+    await wrapper.get(`${STATE}[value="bahia"]`).setValue(true)
+    await vi.waitFor(() => {
+      expect(replace).toHaveBeenCalledOnce()
+    })
+    letGo()
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?search=ana&states=bahia')
+    })
+    expect(isChecked(wrapper.get(`${STATE}[value="bahia"]`).element)).toBe(true)
   })
 
   it('refetches when the page in the URL changes', async () => {
