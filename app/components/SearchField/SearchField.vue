@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MAX_SEARCH_LENGTH, sameListState } from '#shared/utils/listQuery'
+import { MAX_SEARCH_LENGTH } from '#shared/utils/listQuery'
 import S from './SearchField.module.scss'
 
 // The wait after the last key before the search reaches the URL: each write asks the BFF again
@@ -35,11 +35,12 @@ function commit() {
   cancel()
   const search = draft.value.trim()
   const onList = route.path === LIST_PATH
-  const base = pending() ?? query.value
-  if ((!onList && search === '') || search === pending()?.search) return
-  const next = { ...base, search, page: search === base.search ? base.page : 1 }
-  if (onList && sameListState(next, base)) return
-  void setQuery(next, { replace: onList })
+  const inFlight = pending()
+  const base = inFlight ?? query.value
+  if ((!onList && search === '') || search === inFlight?.search) return
+  const same = search === base.search
+  if (onList && same) return
+  void setQuery({ search, page: same ? base.page : 1 }, { replace: onList })
 }
 
 function clear() {
