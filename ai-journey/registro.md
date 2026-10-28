@@ -316,4 +316,4 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 
   Conferido no preview, nos dois temas a 375, 768 e 1280px: o roteiro de 4 passos, a busca longa, o Voltar depois de remover a busca e o duplo clique.
 
-- **Pendente:** clicar no chip da busca no mesmo quadro em que o próprio campo grava cancela essa gravação, e o campo fica com o texto. Não é alcançável à mão, e a correção é no `SearchField`. Leitura única do estado em voo no `useListQuery` (sem issue ainda). Sheet mobile (#26); E2E dos filtros (#27). Leitor de tela e Safari não conferidos.
+- **Pendente:** clicar no chip da busca no mesmo quadro em que o próprio campo grava cancela essa gravação, e o campo fica com o texto. Não é alcançável à mão, e a correção é no `SearchField`. Leitura única do estado em voo no `useListQuery` ([#95](https://github.com/adamsalves/customer-directory/issues/95)). Sheet mobile (#26); E2E dos filtros (#27). Leitor de tela e Safari não conferidos.
