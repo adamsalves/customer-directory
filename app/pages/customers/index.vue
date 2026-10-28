@@ -16,7 +16,9 @@ const { data, status, refresh } = await useFetch('/api/customers', {
   query: apiQuery,
   retry: false,
 })
-// The empty state tells the filters from the search: states and gender count, the search does not
+// The empty state tells the filters from the search: states and gender count, the search does not.
+// ponytail: FilterPanel's hasFilter is this plus the search; extract hasFilters(query) to
+// shared/utils/listQuery.ts when the chips (#25) bring the third copy.
 const filtered = computed(() => query.value.states.length > 0 || query.value.gender !== 'all')
 
 // The button goes away when the skeleton comes in, and the focus it holds would fall to the page.

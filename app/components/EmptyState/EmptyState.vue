@@ -6,18 +6,13 @@ const props = defineProps<{ search: string; filtered: boolean }>()
 
 defineEmits<{ clear: [] }>()
 
-// The hint blames what narrowed the list: the search, the filters or both (the prototype's). Blanks
-// are no search: the prop is any string.
+// The hint blames what narrowed the list: the search, the filters or both (the prototype's). With no
+// search only the filters can empty it: an empty source is an error, never an empty state.
 const hint = computed(() => {
-  const search = props.search.trim()
-  if (search === '') {
-    return props.filtered
-      ? 'Nenhum cliente corresponde aos filtros selecionados.'
-      : 'Ainda não há clientes cadastrados.'
-  }
+  if (props.search === '') return 'Nenhum cliente corresponde aos filtros selecionados.'
   return props.filtered
     ? 'Nenhum resultado para essa busca com os filtros atuais. Tente outro nome ou remova alguns filtros.'
-    : `Não encontramos ninguém chamado “${search}”. Confira a grafia ou busque só pelo sobrenome.`
+    : `Não encontramos ninguém chamado “${props.search}”. Confira a grafia ou busque só pelo sobrenome.`
 })
 </script>
 
