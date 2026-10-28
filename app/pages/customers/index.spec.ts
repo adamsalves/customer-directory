@@ -116,8 +116,12 @@ function fieldValue(wrapper: TWrapper) {
 const chipNames = (wrapper: TWrapper) =>
   wrapper.findAll(CHIP).map((chip) => chip.attributes('aria-label'))
 
-const removeChip = (wrapper: TWrapper, name: string) =>
-  wrapper.get(`${CHIP}[aria-label="${name}"]`).trigger('click')
+// A click focuses the chip first, as in Chrome: the focus then moves on as the chip goes
+function removeChip(wrapper: TWrapper, name: string) {
+  const chip = wrapper.get(`${CHIP}[aria-label="${name}"]`)
+  if (chip.element instanceof HTMLElement) chip.element.focus()
+  return chip.trigger('click')
+}
 
 // Every navigation waits a frame before it lands. This holds them until the returned function runs,
 // so a write is still on its way when the next one is made, as it is when two come within a frame.
@@ -608,11 +612,15 @@ describe('customers page', () => {
     expect(wrapper.get(FILTERS).element.contains(chips)).toBe(false)
   })
 
-  // The field follows the URL: a search the chip takes out is gone from it too, and back brings
-  // the search, the chip and the text of the field back
-  it('clears the search field with the chip of the search, and back undoes it', async () => {
-    const wrapper = await mountWithSearch('/customers?search=ana')
-    expect(fieldValue(wrapper)).toBe('ana')
+  // The field follows the URL: a search the chip takes out is gone from it too. Like any search
+  // written on the list the removal replaces the entry (ADR-0013), so back skips the search and goes
+  // to the entry before it.
+  it('clears the search field with the chip of the search, and back skips the search', async () => {
+    const wrapper = await mountWithSearch('/customers?states=bahia')
+    await useRouter().push('/customers?search=ana')
+    await vi.waitFor(() => {
+      expect(fieldValue(wrapper)).toBe('ana')
+    })
 
     await removeChip(wrapper, 'Remover busca ana')
     await vi.waitFor(() => {
@@ -625,12 +633,10 @@ describe('customers page', () => {
 
     useRouter().back()
     await vi.waitFor(() => {
-      expect(useRoute().fullPath).toBe('/customers?search=ana')
+      expect(useRoute().fullPath).toBe('/customers?states=bahia')
     })
-    await vi.waitFor(() => {
-      expect(fieldValue(wrapper)).toBe('ana')
-    })
-    expect(chipNames(wrapper)).toEqual(['Remover busca ana'])
+    expect(fieldValue(wrapper)).toBe('')
+    expect(chipNames(wrapper)).toEqual(['Remover filtro Bahia'])
   })
 
   // The search waits 300ms after the last key, and the removal is made inside that wait, still on

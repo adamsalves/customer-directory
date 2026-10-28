@@ -22,6 +22,9 @@ const DEFAULT_STATES = DEFAULT_STATE_SLUGS.flatMap((slug) =>
 const OTHER_STATES = BRAZILIAN_STATES.filter(({ slug }) => !isDefaultState(slug))
 
 const { query, pending, setQuery } = useListQuery()
+// The list state the panel shows: the write still on its way, if there is one, so the boxes, the
+// clear button and the chips (FilterChips) agree from the click on (ADR-0023)
+const current = computed(() => pending() ?? query.value)
 // Ids per instance: a second panel on the page (the sheet, #26) is a group of its own, and its list
 // of states is another element
 const genderName = useId()
@@ -36,9 +39,9 @@ const toggleRef = useTemplateRef('toggle')
 const stateRows = computed(() =>
   [
     ...DEFAULT_STATES,
-    ...OTHER_STATES.filter(({ slug }) => expanded.value || query.value.states.includes(slug)),
+    ...OTHER_STATES.filter(({ slug }) => expanded.value || current.value.states.includes(slug)),
   ].map(({ slug, name }) => {
-    const checked = query.value.states.includes(slug)
+    const checked = current.value.states.includes(slug)
     const count = props.facets?.states[slug]
     return { slug, name, checked, count, dimmed: count === 0 && !checked }
   }),
@@ -52,13 +55,13 @@ const genderRows = computed(() =>
   GENDERS.map(({ value, label }) => ({
     value,
     label,
-    checked: query.value.gender === value,
+    checked: current.value.gender === value,
     count: props.facets?.gender[value],
   })),
 )
 
 // A search alone shows it too: the button clears the search as well (the prototype's)
-const hasFilter = computed(() => query.value.search !== '' || hasFilters(query.value))
+const hasFilter = computed(() => current.value.search !== '' || hasFilters(current.value))
 
 // What a screen reader says in place of the bare number (ADR-0013)
 function countLabel(count: number) {
@@ -104,7 +107,7 @@ function focusToggle() {
 }
 
 function toggleState(slug: string) {
-  const { states } = pending() ?? query.value
+  const { states } = current.value
   if (!expanded.value && !isDefaultState(slug)) focusToggle()
   pick({
     states: states.includes(slug) ? states.filter((picked) => picked !== slug) : [...states, slug],

@@ -7,6 +7,8 @@ import FilterChips from './FilterChips.vue'
 
 const LIST = '[data-testid="filter-chips__root--list"]'
 const CHIP = '[data-testid="filter-chips__chip--button"]'
+const ITEM = '[data-testid="filter-chips__item--li"]'
+const ICON = '[data-testid="filter-chips__icon--svg"]'
 
 enableAutoUnmount(afterEach)
 
@@ -74,26 +76,20 @@ describe('FilterChips', () => {
     ])
     expect(list.element.tagName).toBe('UL')
     expect(list.attributes('aria-label')).toBe('Filtros ativos')
-    expect(list.findAll('li')).toHaveLength(4)
+    expect(list.findAll(ITEM)).toHaveLength(4)
     for (const chip of wrapper.findAll(CHIP)) {
       expect(chip.element.tagName).toBe('BUTTON')
       expect(chip.element.parentElement?.tagName).toBe('LI')
       expect(chip.attributes('type')).toBe('button')
-      expect(chip.get('svg').attributes('aria-hidden')).toBe('true')
+      expect(chip.get(ICON).attributes('aria-hidden')).toBe('true')
     }
   })
 })
 
 describe('FilterChips removal', () => {
   // The removal starts over from page 1 and keeps the rest of the list state, the page size included.
-  // It is a push: that history entry is what back takes back (ADR-0007).
+  // A filter's is a push: that history entry is what back takes back (ADR-0007).
   it.each([
-    {
-      name: 'the search',
-      route: '/customers?page=3&perPage=18&search=ana&states=bahia&gender=female',
-      chip: 'Remover busca ana',
-      url: '/customers?perPage=18&states=bahia&gender=female',
-    },
     {
       name: 'a state, keeping the others',
       route: '/customers?page=3&search=ana&states=bahia,sao-paulo&gender=female',
@@ -117,6 +113,36 @@ describe('FilterChips removal', () => {
 
     expect(push).toHaveBeenCalledOnce()
     expect(replace).not.toHaveBeenCalled()
+  })
+
+  // Like the field and both clear buttons: back does not pass through the search again (ADR-0013)
+  it('writes the list without the search, from page 1, as a replace', async () => {
+    const wrapper = await mountChips(
+      '/customers?page=3&perPage=18&search=ana&states=bahia&gender=female',
+    )
+    const router = useRouter()
+    const push = vi.spyOn(router, 'push')
+    const replace = vi.spyOn(router, 'replace')
+
+    await chipNamed(wrapper, 'Remover busca ana').trigger('click')
+    await urlIs('/customers?perPage=18&states=bahia&gender=female')
+
+    expect(replace).toHaveBeenCalledOnce()
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  // The first click takes the chip off and the next one slides under the pointer: the second click of
+  // a double click lands on it, and must not remove it as well
+  it('ignores the second click of a double click', async () => {
+    const wrapper = await mountChips('/customers?states=bahia,sao-paulo')
+    const push = vi.spyOn(useRouter(), 'push')
+
+    await chipNamed(wrapper, 'Remover filtro Bahia').trigger('click', { detail: 1 })
+    await chipNamed(wrapper, 'Remover filtro São Paulo').trigger('click', { detail: 2 })
+    await urlIs('/customers?states=sao-paulo')
+
+    expect(push).toHaveBeenCalledOnce()
+    expect(removalsOf(wrapper)).toEqual(['Remover filtro São Paulo'])
   })
 
   // The route is a frame behind a click. The chip goes with it, and the next removal builds on the
@@ -184,7 +210,7 @@ describe('FilterChips focus', () => {
     htmlElement(chip.element).focus()
     expect(focusedName()).toBe(removed)
 
-    await chip.get('svg').trigger('click')
+    await chip.get(ICON).trigger('click')
     expect(focusedName()).toBe(focused)
 
     // The chips that stay are the same elements: the focus is on the one it went to, not on a chip
@@ -209,5 +235,19 @@ describe('FilterChips focus', () => {
     await urlIs('/customers')
     expect(wrapper.find(LIST).exists()).toBe(false)
     expect(document.activeElement).toBe(results)
+  })
+
+  // A mouse click in Safari does not focus a button: the focus is not the chip's, and stays put
+  it('stays where it is when the chip does not hold it', async () => {
+    const wrapper = await mountChips('/customers?states=bahia,sao-paulo')
+    const results = htmlElement(wrapper.get(`#${RESULTS_ID}`).element)
+    const focus = vi.spyOn(results, 'focus')
+    const before = document.activeElement
+
+    await chipNamed(wrapper, 'Remover filtro Bahia').trigger('click')
+    await urlIs('/customers?states=sao-paulo')
+
+    expect(document.activeElement).toBe(before)
+    expect(focus).not.toHaveBeenCalled()
   })
 })

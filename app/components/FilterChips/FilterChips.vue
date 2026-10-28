@@ -46,23 +46,32 @@ const chips = computed(() => {
   return [
     ...(search === '' ? [] : [searchChip(search)]),
     ...BRAZILIAN_STATES.filter(({ slug }) => states.includes(slug)).map(stateChip),
-    ...GENDERS.filter(({ value }) => value !== 'all' && value === gender).map(genderChip),
+    ...(gender === 'all' ? [] : GENDERS.filter(({ value }) => value === gender).map(genderChip)),
   ]
 })
 
-// The chip goes away and the focus it holds would fall to the page, so it moves first, to the next
-// chip, else the previous one, else the results (ADR-0022). The removal is made on the list state
-// still on its way, so two in a row add up. Like any other filter it starts over from page 1 and is
-// a history entry, so back takes it back (ADR-0007).
+// The chip goes away, and the next one slides under the pointer: the second click of a double click
+// would remove it too, so only the first counts (a key press is a click of detail 0). If the chip holds
+// the focus, which would fall to the page, the focus moves first, to the next chip, else the previous
+// one, else the results (ADR-0022); a click that left it elsewhere (Safari) leaves it there. The
+// removal is made on the list state still on its way, so two in a row add up. Like any other filter it
+// starts over from page 1 and is a history entry, so back takes it back (ADR-0007), except the search:
+// like any search written on the list it replaces the entry (ADR-0013).
 function remove(chip: TChip, event: MouseEvent) {
+  if (event.detail > 1) return
   const { currentTarget } = event
-  const item = currentTarget instanceof HTMLElement ? currentTarget.closest('li') : null
-  const neighbour = (item?.nextElementSibling ?? item?.previousElementSibling)?.querySelector(
-    'button',
+  if (currentTarget instanceof HTMLElement && currentTarget === document.activeElement) {
+    const item = currentTarget.closest('li')
+    const neighbour = (item?.nextElementSibling ?? item?.previousElementSibling)?.querySelector(
+      'button',
+    )
+    if (neighbour) neighbour.focus()
+    else focusResults()
+  }
+  void setQuery(
+    { ...chip.without(pending() ?? query.value), page: 1 },
+    { replace: chip.key === 'search' },
   )
-  if (neighbour) neighbour.focus()
-  else focusResults()
-  void setQuery({ ...chip.without(pending() ?? query.value), page: 1 })
 }
 </script>
 
@@ -73,7 +82,7 @@ function remove(chip: TChip, event: MouseEvent) {
     :class="S.Chips"
     data-testid="filter-chips__root--list"
   >
-    <li v-for="chip in chips" :key="chip.key" :class="S.Item">
+    <li v-for="chip in chips" :key="chip.key" :class="S.Item" data-testid="filter-chips__item--li">
       <button
         type="button"
         :aria-label="chip.ariaLabel"
@@ -81,10 +90,11 @@ function remove(chip: TChip, event: MouseEvent) {
         data-testid="filter-chips__chip--button"
         @click="remove(chip, $event)"
       >
-        <span :class="S.Label">{{ chip.label }}</span>
+        <span :class="S.Label" data-testid="filter-chips__label--text">{{ chip.label }}</span>
         <svg
           aria-hidden="true"
           :class="S.Icon"
+          data-testid="filter-chips__icon--svg"
           width="14"
           height="14"
           viewBox="0 0 24 24"

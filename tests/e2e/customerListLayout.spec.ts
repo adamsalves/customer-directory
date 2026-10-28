@@ -132,7 +132,7 @@ for (const width of [320, 375]) {
 }
 
 // The chips are 32px tall as in the prototype, and 44px below 960px, the target of the project
-// (ADR-0013). 959px is the edge.
+// (ADR-0013). 959px is the edge. The radius is half the height at both: the pill of the prototype.
 for (const { width, height } of [
   { width: 375, height: 44 },
   { width: 959, height: 44 },
@@ -146,6 +146,7 @@ for (const { width, height } of [
     const chip = page.getByTestId('filter-chips__chip--button')
     await expect(chip).toBeVisible()
     expect((await boxOf(chip)).height).toBeCloseTo(height, 1)
+    await expect(chip).toHaveCSS('border-top-left-radius', `${String(height / 2)}px`)
   })
 }
 
@@ -164,10 +165,13 @@ for (const width of [320, 375]) {
     const box = await boxOf(chip)
     expect(box.x + box.width).toBeLessThanOrEqual(width)
     expect(box.height).toBeCloseTo(44, 1)
-    const label = chip.locator('span')
+    const label = chip.getByTestId('filter-chips__label--text')
     await expect(label).toHaveCSS('text-overflow', 'ellipsis')
     expect(await label.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
-    expect(await boxOf(chip.locator('svg'))).toMatchObject({ width: 14, height: 14 })
+    expect(await boxOf(chip.getByTestId('filter-chips__icon--svg'))).toMatchObject({
+      width: 14,
+      height: 14,
+    })
     await expect(chip).toHaveAccessibleName(`Remover busca ${search}`)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
   })
@@ -516,8 +520,8 @@ test('the geometry and the style of a filter chip', async ({ page }) => {
   // The entrance lifts the chip while it plays, and each box is read at its own moment
   await chip.evaluate((el) => Promise.allSettled(el.getAnimations().map((a) => a.finished)))
   const box = await boxOf(chip)
-  const label = await boxOf(chip.locator('span'))
-  const icon = await boxOf(chip.locator('svg'))
+  const label = await boxOf(chip.getByTestId('filter-chips__label--text'))
+  const icon = await boxOf(chip.getByTestId('filter-chips__icon--svg'))
   const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
 
   expect(label.x - box.x).toBeCloseTo(1 + 14, 1)
