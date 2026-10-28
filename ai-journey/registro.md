@@ -295,3 +295,25 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - Extrair um `hasFilters(query)` para `shared/`: hoje são 2 cópias (painel e página), e os chips da #25 trazem a 3ª. Fica um `ponytail:` no `index.vue`, e a extração entra na #25.
 
 - **Pendente:** `hasFilters(query)` compartilhado com os chips (#25).
+
+### #25 · Chips removíveis dos filtros ativos · [PR #94](https://github.com/adamsalves/customer-directory/pull/94)
+
+- **Decidido:** [#25](https://github.com/adamsalves/customer-directory/issues/25) · ADR-0013 (3 linhas novas: foco ao remover um chip, alvo de 44px abaixo de 960px, busca longa numa linha com reticências), ADR-0023. As dicas do EmptyState saíram para a #92 para os chips caberem no teto. O dono decidiu que o foco vai para o chip seguinte, senão para o anterior, senão para os resultados, e que os chips desenham a partir do estado em voo (`pending() ?? query.value`). No lugar da quebra de linha do protótipo, a busca longa termina em reticências. O dono aprovou passar do teto de ~400 linhas e manter os E2E de estilo.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/25#issuecomment-6477107348) e [adendo do `hasFilters`](https://github.com/adamsalves/customer-directory/issues/25#issuecomment-6477729855) · estimativa ~430 linhas
+- **Como:** o `FilterChips` é uma `<ul aria-label="Filtros ativos">` acima dos resultados, fora deles e do painel, com um botão por busca, estado (na ordem da tabela) e gênero. Gênero "Todos" não gera chip. Cada chip calcula no clique o que tira do estado em voo, para que duas remoções seguidas se somem, e volta sozinho se a navegação for cancelada. A remoção grava com `page: 1`. O `hasFilters(query)` foi para `shared/utils/listQuery.ts` (estado ou gênero, sem a busca) e o usam a dica do estado vazio e o `FilterPanel`. O `GENDERS` foi para `app/utils/genders.ts`. O visual repete as medidas e os tokens do protótipo, com hover só com mouse.
+- **Resultado:** +791 −19 sem este registro (estimativa ~430; antes do review, +707 −14). Specs +583, 127 delas de E2E, com uma asserção por declaração CSS. Mutação: `hasFilters` 11 de 11. No componente, 35 de 36: o vivo é mover o foco antes ou depois do `setQuery`, que dá o mesmo resultado. Colocação na página 5 de 5, CSS todo morto, e 4 de 4 nas correções do review. Review (`/code-review`, 10 achados, 7 aplicados):
+  1. Um duplo clique removia dois chips: o chip some no clique, o seguinte desliza para baixo do ponteiro e recebe o segundo clique. Agora o clique com `event.detail > 1` é ignorado.
+  2. Abaixo de 960px o chip de 44px tinha raio de 16px e deixava de ser pílula. Agora o raio é 22px, e o E2E de altura confere o raio em cada largura.
+  3. Durante uma remoção em voo, as caixas e o "Limpar filtros" do painel seguiam a URL, e os chips seguiam o estado em voo. Desmarcar a caixa nesse intervalo devolvia o filtro. O painel passou a ler a mesma fonte dos chips.
+  4. O chip da busca gravava com `push`, e o campo e os botões de limpar gravam com `replace` (ADR-0013). Agora usa `replace`, e Voltar pula a busca.
+  5. O foco se movia mesmo quando o chip não estava focado (clique de mouse no Safari). Agora só se move se o chip tiver o foco.
+  6. Os specs selecionavam por tag (`svg`, `span`, `li`). Agora usam `data-testid`.
+  7. O filtro de `GENDERS` com dupla condição virou um ternário.
+
+  Recusados 2:
+  - Uma leitura única do estado em voo no `useListQuery`, já que o `pending() ?? query` aparece em 5 lugares. A refatoração passa por 4 componentes e o PR já estava acima do teto. O painel ganhou um `computed` local.
+  - Este registro, que já estava previsto.
+
+  Conferido no preview, nos dois temas a 375, 768 e 1280px: o roteiro de 4 passos, a busca longa, o Voltar depois de remover a busca e o duplo clique.
+
+- **Pendente:** clicar no chip da busca no mesmo quadro em que o próprio campo grava cancela essa gravação, e o campo fica com o texto. Não é alcançável à mão, e a correção é no `SearchField`. Leitura única do estado em voo no `useListQuery` (sem issue ainda). Sheet mobile (#26); E2E dos filtros (#27). Leitor de tela e Safari não conferidos.
