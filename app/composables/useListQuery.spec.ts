@@ -1,9 +1,13 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { NavigationFailureType, isNavigationFailure } from 'vue-router'
 import type { IListQuery } from '#shared/utils/listQuery'
 
 // The list state with nothing set; each test overrides what it exercises
 const defaults: IListQuery = { page: 1, perPage: 9, search: '', states: [], gender: 'all' }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('useListQuery', () => {
   it('reads the page and the page size from the URL', async () => {
@@ -252,5 +256,58 @@ describe('useListQuery write in flight', () => {
     await write
 
     expect(useRoute().fullPath).toBe('/customers?states=bahia&gender=male')
+  })
+})
+
+// A push on its way is a history entry. A replace made on it would take that entry's place instead of
+// adding to it, and back would skip what the push was going to add (ADR-0023)
+describe('useListQuery history entry of a write in flight', () => {
+  function spyOnRouter() {
+    const router = useRouter()
+    return { router, push: vi.spyOn(router, 'push'), replace: vi.spyOn(router, 'replace') }
+  }
+
+  it('sends a replace made on a push still on its way as a push, so its entry stays', async () => {
+    await navigateTo('/customers?search=an')
+    const { router, push, replace } = spyOnRouter()
+    const { setQuery } = useListQuery()
+
+    void setQuery({ states: ['bahia'] })
+    await setQuery({ search: 'ana' }, { replace: true })
+
+    expect(push).toHaveBeenLastCalledWith({
+      path: '/customers',
+      query: { search: 'ana', states: 'bahia' },
+    })
+    expect(replace).not.toHaveBeenCalled()
+    router.back()
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?search=an')
+    })
+  })
+
+  it('keeps a replace a replace while only replaces are on their way', async () => {
+    await navigateTo('/customers?search=an')
+    const { push, replace } = spyOnRouter()
+    const { setQuery } = useListQuery()
+
+    void setQuery({ search: 'ana' }, { replace: true })
+    await setQuery({ search: 'anab' }, { replace: true })
+
+    expect(replace).toHaveBeenCalledTimes(2)
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  // The entry is that of a write that is on its way: once it is over, a replace replaces again
+  it('sends a replace as a replace again once the push is over', async () => {
+    await navigateTo('/customers?search=an')
+    const { push, replace } = spyOnRouter()
+    const { setQuery } = useListQuery()
+
+    await setQuery({ states: ['bahia'] })
+    await setQuery({ search: 'ana' }, { replace: true })
+
+    expect(push).toHaveBeenCalledOnce()
+    expect(replace).toHaveBeenCalledOnce()
   })
 })

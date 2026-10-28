@@ -507,23 +507,38 @@ describe('customers page', () => {
 
   // Each writer builds the next list state: the one that lands last must not take back the other,
   // which the URL does not have yet (#90). The search waits 300ms after the last key, and the pick
-  // is made inside that wait and is still on its way when the wait runs out.
-  it('keeps a state picked while the search is waiting to be written', async () => {
-    const wrapper = await mountSuspended(PageWithSearch, { route: '/customers' })
+  // is made inside that wait and is still on its way when the wait runs out. The pick is a push, and
+  // the search then goes out as a push too: as a replace it would take the place of the entry the
+  // pick is adding, and back would skip it.
+  it('keeps a state picked while the search is waiting to be written, and its history entry', async () => {
+    await navigateTo('/customers?search=an')
+    const wrapper = await mountSuspended(PageWithSearch, { route: '/customers?search=an' })
     const letGo = holdNavigations()
-    const replace = vi.spyOn(useRouter(), 'replace')
+    const router = useRouter()
+    const push = vi.spyOn(router, 'push')
+    const replace = vi.spyOn(router, 'replace')
 
     await wrapper.get(SEARCH).setValue('ana')
     await wrapper.get(`${STATE}[value="bahia"]`).setValue(true)
     await vi.waitFor(() => {
-      expect(replace).toHaveBeenCalledOnce()
+      expect(push).toHaveBeenCalledTimes(2)
     })
     letGo()
 
     await vi.waitFor(() => {
       expect(useRoute().fullPath).toBe('/customers?search=ana&states=bahia')
     })
+    expect(push).toHaveBeenLastCalledWith({
+      path: '/customers',
+      query: { search: 'ana', states: 'bahia' },
+    })
+    expect(replace).not.toHaveBeenCalled()
     expect(isChecked(wrapper.get(`${STATE}[value="bahia"]`).element)).toBe(true)
+    // The entry before the pick is still there
+    router.back()
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?search=an')
+    })
   })
 
   // The select and the panel's button are different writers too: the clear is made on the page size
