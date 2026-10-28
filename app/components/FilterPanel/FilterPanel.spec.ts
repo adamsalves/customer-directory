@@ -184,6 +184,18 @@ describe('FilterPanel states', () => {
     await urlIs('/customers?states=bahia,espirito-santo,minas-gerais')
   })
 
+  // The search is another writer, and its write is on its way too (#90): a pick made on the URL's
+  // state would cancel it
+  it('builds a pick on a write another component made, before the URL has it', async () => {
+    const wrapper = await mountPanel()
+
+    void useListQuery().setQuery({ search: 'ana' }, { replace: true })
+    await stateBox(wrapper, 'bahia').setValue(true)
+    await urlIs('/customers?search=ana&states=bahia')
+
+    expect(pickedOf(wrapper, STATE)).toEqual(['bahia'])
+  })
+
   // What the pick waited for is over: the next one is made on the URL, which may have moved meanwhile
   it('builds on the URL again once a pick has landed', async () => {
     const wrapper = await mountPanel()
@@ -196,8 +208,8 @@ describe('FilterPanel states', () => {
   })
 })
 
-// A navigation started while the pick is on its way (the breadcrumb, back, the search) cancels it:
-// the URL stays as it was, and so must the controls
+// A navigation started while the pick is on its way (the breadcrumb, back) cancels it: the URL
+// stays as it was, and so must the controls
 describe('FilterPanel cancelled pick', () => {
   it('unticks the state again', async () => {
     const wrapper = await mountPanel()
