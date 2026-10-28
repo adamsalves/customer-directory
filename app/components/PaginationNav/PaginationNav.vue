@@ -51,7 +51,7 @@ async function changePerPage(event: Event) {
   anchor = { el: target, top: target.getBoundingClientRect().top }
   for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const)
     window.addEventListener(type, forget, { once: true, passive: true })
-  const failure = await setQuery({ ...query.value, page: 1, perPage })
+  const failure = await setQuery({ page: 1, perPage })
   // A navigation that did not happen has no loading to wait for
   if (failure) anchor = undefined
 }

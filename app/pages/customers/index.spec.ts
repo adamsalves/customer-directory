@@ -79,6 +79,7 @@ const EMPTY_TITLE = '[data-testid="empty-state__title--heading"]'
 const EMPTY_HINT = '[data-testid="empty-state__hint--text"]'
 const CLEAR = '[data-testid="empty-state__clear--button"]'
 const SEARCH = '[data-testid="header__search--input"]'
+const PER_PAGE = '[data-testid="pagination__per-page--select"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
 enableAutoUnmount(afterEach)
@@ -523,6 +524,21 @@ describe('customers page', () => {
       expect(useRoute().fullPath).toBe('/customers?search=ana&states=bahia')
     })
     expect(isChecked(wrapper.get(`${STATE}[value="bahia"]`).element)).toBe(true)
+  })
+
+  // The select and the panel's button are different writers too: the clear is made on the page size
+  // the select asked for a moment before, not on the one the URL still has
+  it('keeps the page size changed just before the clear, which the URL does not have yet', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?states=bahia' })
+    const letGo = holdNavigations()
+
+    await wrapper.get(PER_PAGE).setValue('18')
+    await wrapper.get(PANEL_CLEAR).trigger('click')
+    letGo()
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=18')
+    })
   })
 
   it('refetches when the page in the URL changes', async () => {

@@ -27,13 +27,11 @@ function retry() {
 // The same for the clear buttons, the empty state's and the filter panel's: the first goes away with
 // the skeleton, the second with the filters, and the focus they hold would fall to the page
 // (ADR-0022). Like any search written on the list, it replaces the history entry (ADR-0013). It
-// clears the filters too: a link with states or gender alone can also find no one.
+// clears the filters too: a link with states or gender alone can also find no one. The rest of the
+// list state stays, the page size just chosen included, though the URL may not have it yet.
 function clearSearchAndFilters() {
   focusResults()
-  void setQuery(
-    { ...query.value, search: '', states: [], gender: 'all', page: 1 },
-    { replace: true },
-  )
+  void setQuery({ search: '', states: [], gender: 'all', page: 1 }, { replace: true })
 }
 </script>
 

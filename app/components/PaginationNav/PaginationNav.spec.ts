@@ -152,6 +152,18 @@ describe('PaginationNav', () => {
     })
   })
 
+  // The page size is a write like any other: it keeps what is still on its way to the URL (#90)
+  it('keeps a write that is on its way when the page size changes', async () => {
+    const wrapper = await mountNav(3, 8, '/customers?page=3')
+
+    void useListQuery().setQuery({ search: 'ana' }, { replace: true })
+    await wrapper.get(SELECT).setValue('27')
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=27&search=ana')
+    })
+  })
+
   // A change event only reaches the handler from an option when something dispatches it there.
   // The handler pushes at once, so the spy sees it; the second trigger shows the handler is wired.
   it('ignores a change that does not come from the select itself', async () => {
