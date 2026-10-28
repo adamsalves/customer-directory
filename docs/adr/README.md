@@ -26,3 +26,4 @@ Formato de Michael Nygard, em pt-BR: **Status · Contexto · Decisão · Consequ
 | [0020](0020-clientes-em-vez-de-membros.md)         | "Clientes" em vez de "membros"                               | Aceita |
 | [0021](0021-url-publica-em-ingles.md)              | URL pública em inglês                                        | Aceita |
 | [0022](0022-rolagem-ate-os-resultados.md)          | Rolagem até os resultados por hook do router                 | Aceita |
+| [0023](0023-gravacoes-da-lista-em-voo.md)          | Gravações da lista em voo, por router, no `useListQuery`     | Aceita |
