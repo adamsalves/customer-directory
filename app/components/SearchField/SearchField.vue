@@ -18,6 +18,10 @@ const inputRef = useTemplateRef('input')
 // What the field shows. The URL gets it trimmed and the field keeps what was typed, so "ana " stays
 const draft = ref(query.value.search)
 let timer: ReturnType<typeof setTimeout> | undefined
+// The search this field wrote, until it comes back through the route or its write fails. The write
+// in flight (useListQuery) says what is on its way, not who wrote it, and the watcher below has to
+// tell this field's write from another one that arrives with the same search (ADR-0023).
+let written: string | undefined
 
 function cancel() {
   clearTimeout(timer)
@@ -40,7 +44,11 @@ function commit() {
   if ((!onList && search === '') || search === inFlight?.search) return
   const same = search === base.search
   if (onList && same) return
-  void setQuery({ search, page: same ? base.page : 1 }, { replace: onList })
+  written = search
+  void setQuery({ search, page: same ? base.page : 1 }, { replace: onList }).then((failure) => {
+    // A write that failed brings nothing back, unless the write that cancelled it carries its search
+    if (failure && pending()?.search !== written) written = undefined
+  })
 }
 
 function clear() {
@@ -76,14 +84,17 @@ function onClear() {
 
 // Back, forward, a link or a clear button moved the search: the field follows it. Its own write
 // coming back is not that: the draft is ahead of it by the keys typed meanwhile, and so is the wait
-// they started, still running. That wait also tells it from a clear button's write: both are on
-// their way with the search that arrives, but only the field's has keys behind it. The trimmed draft
-// coming back stays as typed.
+// they started, still running. The mark tells it from a clear button's write, which arrives with the
+// same search (an empty one) and has no keys behind it. The trimmed draft coming back stays as typed.
+// Any arrival puts the mark away: it was that write, or something else brought another search. A
+// write that lands without changing the search never arrives, and the next change of it clears the
+// mark.
 watch(
   () => query.value.search,
   (search) => {
-    if (timer !== undefined && pending()?.search === search) return
-    if (search === draft.value.trim()) return
+    const own = search === written
+    written = undefined
+    if (own || search === draft.value.trim()) return
     cancel()
     draft.value = search
   },

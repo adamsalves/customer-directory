@@ -276,6 +276,75 @@ describe('SearchField writing the URL', () => {
     expect(inputOf(wrapper).value).toBe('')
   })
 
+  // The clear of the page cancels the keys the reader has typed and not sent yet: the field wrote
+  // nothing, so what arrives is not its own, whatever the wait still running says
+  it('follows the clear of the page while the reader is still typing, and drops the wait', async () => {
+    const wrapper = await mountField('/customers?search=ana')
+    await wrapper.get(INPUT).setValue('anab')
+
+    void useListQuery().setQuery({ search: '', page: 1 }, { replace: true })
+    await landOn('/customers')
+    expect(inputOf(wrapper).value).toBe('')
+
+    const { replace, push } = spyOnRouter()
+    vi.advanceTimersByTime(300)
+    expect(replace).not.toHaveBeenCalled()
+    expect(push).not.toHaveBeenCalled()
+    expect(useRoute().fullPath).toBe('/customers')
+  })
+
+  // A pick of the panel, made in the same frame, builds on the search the field wrote and cancels that
+  // write: what arrives is the field's search all the same, and the key typed meanwhile is not the
+  // route's to take back
+  it('keeps a key typed while a write that carries its search lands, after its own was cancelled', async () => {
+    const wrapper = await mountField()
+    await wrapper.get(INPUT).setValue('ana')
+    vi.advanceTimersByTime(300)
+    await wrapper.get(INPUT).setValue('anab')
+
+    void useListQuery().setQuery({ states: ['bahia'], page: 1 })
+    await landOn('/customers?search=ana&states=bahia')
+
+    expect(inputOf(wrapper).value).toBe('anab')
+  })
+
+  // The clear of the page cancels the search the field had written, and that search is not the field's
+  // to wait for anymore: it arriving from elsewhere later is a change like any other
+  it('follows the clear that cancelled its write, and the search it had written when it comes again', async () => {
+    const wrapper = await mountField('/customers?search=a')
+    await wrapper.get(INPUT).setValue('ana')
+    vi.advanceTimersByTime(300)
+
+    void useListQuery().setQuery({ search: '', page: 1 }, { replace: true })
+    await landOn('/customers')
+    expect(inputOf(wrapper).value).toBe('')
+
+    await arriveAt('/customers?search=ana')
+    await flushPromises()
+
+    expect(inputOf(wrapper).value).toBe('ana')
+  })
+
+  // The write can land with the search the URL already has (only the page changes): the search does
+  // not arrive, so the mark of the write has to go with the next one that does. Left there, it would
+  // take for its own the next time that search came back (back, a link).
+  it('follows a search that comes back after the one it wrote landed without arriving', async () => {
+    const wrapper = await mountField('/customers?search=a&page=2')
+    await wrapper.get(INPUT).setValue('an')
+    vi.advanceTimersByTime(300)
+    await wrapper.get(INPUT).setValue('a')
+    vi.advanceTimersByTime(300)
+    await landOn('/customers?search=a')
+
+    await arriveAt('/customers?search=x')
+    await flushPromises()
+    expect(inputOf(wrapper).value).toBe('x')
+
+    await arriveAt('/customers?search=a')
+    await flushPromises()
+    expect(inputOf(wrapper).value).toBe('a')
+  })
+
   it('drops the write it was waiting to do when the field goes away', async () => {
     const wrapper = await mountField()
     const { replace } = spyOnRouter()
@@ -408,7 +477,7 @@ describe('SearchField writing the URL', () => {
     expect(inputOf(wrapper).value).toBe('ana ')
   })
 
-  // The URL does not have the search yet, so what says it is on its way is the field
+  // The URL does not have the search yet, so what says it is on its way is the write in flight
   it('sends one navigation when Enter comes after the wait wrote the same search', async () => {
     const wrapper = await mountField()
     const { replace } = spyOnRouter()
