@@ -1,0 +1,55 @@
+// Measures of the prototype's chips (v2, ADR-0013). The page puts them above the results; the 16px
+// under them is the gap of the prototype's column.
+.Chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  margin-block-end: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+// 32px tall, and 44px below 960px (ADR-0013). A minimum, not a height: the search can be 100
+// characters, and its label breaks into lines (below), so the chip grows with it.
+.Chip {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-block-size: 32px;
+  padding-block: 0;
+  padding-inline: 14px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  background: var(--surface-alt);
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  animation: global(jsm-in) 0.18s ease-out;
+}
+
+// The search is a label that can be one 100-character word, like an email: break it rather than
+// overflow the page
+.Label {
+  overflow-wrap: anywhere;
+}
+
+// The label gives way, the ✕ does not: it would shrink to a dot beside a label of several lines
+.Icon {
+  flex: 0 0 auto;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave a chip in that state (ADR-0013)
+@media (hover: hover) {
+  .Chip:hover {
+    border-color: var(--text-strong);
+    background: var(--surface);
+  }
+}
+
+@media (width < 960px) {
+  .Chip {
+    min-block-size: 44px;
+  }
+}
