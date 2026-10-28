@@ -178,6 +178,8 @@ describe('FilterPanel states', () => {
     await stateBox(wrapper, 'bahia').setValue(true)
     await stateBox(wrapper, 'minas-gerais').setValue(true)
     await flushPromises()
+    // The first one, cancelled by the second, leaves the boxes as they are
+    expect(pickedOf(wrapper, STATE)).toEqual(['minas-gerais', 'bahia'])
     await stateBox(wrapper, 'espirito-santo').setValue(true)
     await urlIs('/customers?states=bahia,espirito-santo,minas-gerais')
   })
@@ -191,6 +193,32 @@ describe('FilterPanel states', () => {
     await navigateTo('/customers?states=acre')
     await stateBox(wrapper, 'minas-gerais').setValue(true)
     await urlIs('/customers?states=acre,minas-gerais')
+  })
+})
+
+// A navigation started while the pick is on its way (the breadcrumb, back, the search) cancels it:
+// the URL stays as it was, and so must the controls
+describe('FilterPanel cancelled pick', () => {
+  it('unticks the state again', async () => {
+    const wrapper = await mountPanel()
+
+    await stateBox(wrapper, 'bahia').setValue(true)
+    await useRouter().push('/customers')
+    await flushPromises()
+
+    expect(useRoute().fullPath).toBe('/customers')
+    expect(pickedOf(wrapper, STATE)).toEqual([])
+  })
+
+  it('picks the gender of the URL again', async () => {
+    const wrapper = await mountPanel('/customers?gender=female')
+
+    await genderRadio(wrapper, 'male').setValue()
+    await useRouter().push('/customers?gender=female')
+    await flushPromises()
+
+    expect(useRoute().fullPath).toBe('/customers?gender=female')
+    expect(pickedOf(wrapper, GENDER)).toEqual(['female'])
   })
 })
 

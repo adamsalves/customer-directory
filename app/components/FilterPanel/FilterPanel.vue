@@ -76,15 +76,34 @@ function countLabel(count: number) {
 // frame builds on it: made on the URL's state, it would take the first pick back.
 let pending: IListQuery | undefined
 
+const rootRef = useTemplateRef('root')
+
+// Vue writes `checked` only when a row's value changes. A pick cancelled on its way (back, a link,
+// the search) leaves the URL, and so the rows, as they were, and the control keeps the click: put
+// each one back on what the URL says.
+function syncControls() {
+  const root = rootRef.value
+  if (!(root instanceof HTMLElement)) return
+  const { states, gender } = query.value
+  for (const input of root.querySelectorAll('input')) {
+    input.checked = input.type === 'radio' ? input.value === gender : states.includes(input.value)
+  }
+}
+
 // Another filter starts over from page 1 and keeps the rest of the list state. Each pick is a
 // history entry, so back takes it back (ADR-0007).
 function pick(change: Partial<Pick<IListQuery, 'states' | 'gender'>>) {
   const next = { ...(pending ?? query.value), ...change, page: 1 }
   pending = next
-  void setQuery(next).finally(() => {
-    // Landed, or aborted or replaced by a later pick: either way this one is not on its way anymore
-    if (pending === next) pending = undefined
-  })
+  void setQuery(next)
+    .then((failure) => {
+      // A later pick of this panel that cancelled this one syncs when it settles
+      if (failure && pending === next) syncControls()
+    })
+    .finally(() => {
+      // Landed, or aborted or replaced by a later pick: either way this one is not on its way anymore
+      if (pending === next) pending = undefined
+    })
 }
 
 // In the short list a state outside the five is there only while it is picked, so unpicking it
@@ -104,7 +123,7 @@ function toggleState(slug: string) {
 </script>
 
 <template>
-  <div :class="S.Panel" data-testid="filter-panel__root--div">
+  <div ref="root" :class="S.Panel" data-testid="filter-panel__root--div">
     <fieldset :class="S.Group" data-testid="filter-panel__states--fieldset">
       <legend :class="S.Legend">Por Estado</legend>
       <div :id="statesListId">
