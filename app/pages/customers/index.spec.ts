@@ -414,6 +414,22 @@ describe('customers page', () => {
     expect(wrapper.get(EMPTY_HINT).text()).toContain('chamado “zzzz”')
   })
 
+  // A search and a filter narrow the list together: "check the spelling" would blame the search for
+  // what the filters took out (#92). States alone and gender alone each make a filter, so each has its
+  // own row.
+  it.each([
+    '?search=nunes&states=bahia&gender=female',
+    '?search=nunes&states=bahia',
+    '?search=nunes&gender=female',
+  ])('says the search met the filters in the empty state of %s', async (query) => {
+    empty = true
+    const wrapper = await mountSuspended(CustomersPage, { route: `/customers${query}` })
+
+    expect(wrapper.get(EMPTY_HINT).text()).toBe(
+      'Nenhum resultado para essa busca com os filtros atuais. Tente outro nome ou remova alguns filtros.',
+    )
+  })
+
   // The page size stays, the search and the page go: the list starts over from its first page. A
   // search written on the list replaces its history entry (ADR-0013).
   it('clears the search and the filters, keeps the page size and replaces the history entry', async () => {
