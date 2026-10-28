@@ -148,6 +148,20 @@ describe('useListQuery write in flight', () => {
     expect(useRoute().fullPath).toBe('/customers?page=2')
   })
 
+  // The links of the pagination are built on it, so whatever reads it has to be told when it changes
+  it('is reactive: it tells when a write starts and when it is over', async () => {
+    await navigateTo('/customers')
+    const { pending, setQuery } = useListQuery()
+    const page = computed(() => pending()?.page)
+    expect(page.value).toBeUndefined()
+
+    const write = setQuery({ page: 2 })
+    expect(page.value).toBe(2)
+
+    await write
+    expect(page.value).toBeUndefined()
+  })
+
   it('builds a change on the write still on its way, not on the URL', async () => {
     await navigateTo('/customers?search=ana&page=3')
     const { pending, setQuery } = useListQuery()

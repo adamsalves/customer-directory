@@ -1,3 +1,4 @@
+import type { ShallowRef } from 'vue'
 import type { Router } from 'vue-router'
 import {
   parseListQuery,
@@ -9,17 +10,16 @@ import {
 // Where the list lives: a list state is only ever written there
 export const LIST_PATH = '/customers'
 
-type TInFlight = { value: IListQuery | undefined }
-
 // The list state of the last write the URL does not have yet, one per router: one for each request on
-// the server and one in the browser, so what a request writes never reaches another. Not reactive:
-// nothing renders from it (ADR-0023).
-const inFlightByRouter = new WeakMap<Router, TInFlight>()
+// the server and one in the browser, so what a request writes never reaches another. Reactive, since
+// what is built on it (the links of the pagination) renders again when it changes, and shallow: a
+// write replaces it whole, nothing edits it (ADR-0023).
+const inFlightByRouter = new WeakMap<Router, ShallowRef<IListQuery | undefined>>()
 
 function inFlightOf(router: Router) {
   const known = inFlightByRouter.get(router)
   if (known) return known
-  const created: TInFlight = { value: undefined }
+  const created = shallowRef<IListQuery>()
   inFlightByRouter.set(router, created)
   return created
 }
