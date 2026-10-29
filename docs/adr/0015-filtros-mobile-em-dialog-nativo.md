@@ -15,4 +15,4 @@ Usar `<dialog>` com `showModal()`. O conteúdo é o mesmo `FilterPanel` do paine
 
 - O navegador faz o focus trap, fecha com `Esc`, deixa o fundo inerte e devolve o foco ao botão que abriu.
 - Menos código e menos risco de bug de acessibilidade.
-- A animação de entrada (`jsmUp`) é feita em CSS e desligada com `prefers-reduced-motion`.
+- A animação de entrada (`jsm-up`, o nome do keyframe em `base.scss`) é feita em CSS e desligada com `prefers-reduced-motion`. O fundo tem a sua (`jsm-fade`), e a regra do movimento reduzido nomeia o `::backdrop` para desligá-la: o `*` não o alcança.
