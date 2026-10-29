@@ -30,6 +30,36 @@ async function boxOf(locator: Locator) {
   return box
 }
 
+// The resolved value of a token in the theme of the page, as the color or the shadow it stands for
+const resolved = (page: Page, property: 'color' | 'boxShadow', token: string) =>
+  page.evaluate(
+    ({ property, token }) => {
+      const probe = document.body.appendChild(document.createElement('i'))
+      probe.style[property] = `var(${token})`
+      const value = getComputedStyle(probe)[property]
+      probe.remove()
+      return value
+    },
+    { property, token },
+  )
+
+async function expectStyle(target: Locator, style: Record<string, string>) {
+  for (const [property, value] of Object.entries(style)) {
+    await expect(target, property).toHaveCSS(property, value)
+  }
+}
+
+// The pressed color of a button, read with the pointer held down on it. The pointer lets go on
+// another piece of the same frame, so no click is made on the button.
+async function pressedColor(page: Page, target: Locator, elsewhere: Locator) {
+  await target.hover()
+  await page.mouse.down()
+  const color = await target.evaluate((el) => getComputedStyle(el).backgroundColor)
+  await elsewhere.hover()
+  await page.mouse.up()
+  return color
+}
+
 // The fixture has 20 customers, 2 of them from Minas Gerais and 1 from Acre, which is not one of the
 // five states of the short list
 async function openList(page: Page, { path = '/customers', width = 375 } = {}) {
@@ -102,6 +132,8 @@ test('a state picked in the sheet is in the URL at once, and the button names th
   await openSheet(page)
   await expect(apply(page)).toHaveText('Ver 20 clientes')
   await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
+  // The class that the styles of the sheet variant start from (#96), as the build exports it
+  await expect(sheet(page).getByTestId('filter-panel__root--div')).toHaveClass(/Sheet/)
 
   // A state outside the five: the sheet lists them all
   await stateBox(page, 'acre').check()
@@ -194,9 +226,254 @@ for (const { width, sheetWidth } of [
   })
 }
 
+// What the prototype writes in the style of the bar and of the sheet, read where it shows: the sizes
+// and the gaps by their boxes (the bar is 61px; the sheet is 12px of grip, 61px of header, the body
+// and 73px of footer), the rest by what the browser computes, with the tokens of the dark theme.
+// Reduced motion leaves the sheet where it stops.
+test('the geometry and the style of the bar and of the sheet', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openList(page, { path: '/customers?states=minas-gerais' })
+  const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
+  const color = (token: string) => resolved(page, 'color', token)
+  const [strong, surface, subtle, alt] = await Promise.all([
+    color('--text-strong'),
+    color('--surface'),
+    color('--border-subtle'),
+    color('--surface-alt'),
+  ])
+  const badge = page.getByTestId('filter-sheet__badge--text')
+
+  await expectStyle(bar(page), {
+    position: 'sticky',
+    top: '69px',
+    'z-index': '15',
+    display: 'flex',
+    'column-gap': '8px',
+    'align-items': 'center',
+    'margin-left': '-16px',
+    'margin-bottom': '16px',
+    'padding-top': '8px',
+    'padding-left': '16px',
+    'border-bottom-width': '1px',
+    'border-bottom-style': 'solid',
+    'border-bottom-color': subtle,
+    'background-color': await color('--toolbar-bg'),
+    'backdrop-filter': 'saturate(1.4) blur(6px)',
+  })
+  await expectStyle(trigger(page), {
+    display: 'flex',
+    'flex-shrink': '0',
+    'column-gap': '8px',
+    'align-items': 'center',
+    height: '44px',
+    'padding-top': '0px',
+    'padding-left': '14px',
+    'padding-right': '16px',
+    'border-top-width': '1px',
+    'border-top-style': 'solid',
+    'border-top-color': strong,
+    'border-top-left-radius': '22px',
+    'background-color': surface,
+    color: strong,
+    'font-family': font,
+    'font-size': '15px',
+    'font-weight': '500',
+    cursor: 'pointer',
+  })
+  await expectStyle(badge, {
+    display: 'flex',
+    'align-items': 'center',
+    'justify-content': 'center',
+    'min-width': '22px',
+    height: '22px',
+    'padding-left': '6px',
+    'border-top-left-radius': '11px',
+    'background-color': await color('--inverse-bg'),
+    color: await color('--inverse-text'),
+    'font-size': '12px',
+    'font-weight': '700',
+  })
+  // The icon, the label and the badge are in the padding of the button, 8px apart, the badge 22px
+  const button = await boxOf(trigger(page))
+  const icon = await boxOf(trigger(page).locator('svg'))
+  const label = await boxOf(trigger(page).getByText('Filtros', { exact: true }))
+  const count = await boxOf(badge)
+  expect(button.height).toBeCloseTo(44, 1)
+  expect(icon.x - button.x).toBeCloseTo(1 + 14, 1)
+  expect(icon.width).toBeCloseTo(18, 1)
+  expect(icon.height).toBeCloseTo(18, 1)
+  expect(label.x - (icon.x + icon.width)).toBeCloseTo(8, 1)
+  expect(count.x - (label.x + label.width)).toBeCloseTo(8, 1)
+  expect(button.x + button.width - (count.x + count.width)).toBeCloseTo(16 + 1, 1)
+  expect(count.width).toBeCloseTo(22, 1)
+  expect(count.height).toBeCloseTo(22, 1)
+  expect(await pressedColor(page, trigger(page), bar(page))).toBe(alt)
+
+  await trigger(page).click()
+  await expect(sheet(page)).toBeVisible()
+  const grip = page.getByTestId('filter-sheet__grip--div')
+  const header = page.getByTestId('filter-sheet__header--div')
+  const body = page.getByTestId('filter-sheet__body--div')
+  const footer = page.getByTestId('filter-sheet__footer--div')
+  const title = page.getByTestId('filter-sheet__title--heading')
+  const closeButton = page.getByTestId('filter-sheet__close--button')
+  await expectStyle(sheet(page), {
+    display: 'flex',
+    'flex-direction': 'column',
+    'padding-top': '0px',
+    'border-top-width': '0px',
+    'background-color': surface,
+    color: await color('--text'),
+    'box-shadow': await resolved(page, 'boxShadow', '--shadow-sheet'),
+    overflow: 'hidden',
+  })
+  await expectStyle(grip, { 'flex-shrink': '0', 'padding-top': '8px' })
+  const handle = await grip.evaluate((el) => {
+    const style = getComputedStyle(el, '::before')
+    return {
+      content: style.content,
+      display: style.display,
+      width: style.width,
+      height: style.height,
+      marginLeft: style.marginLeft,
+      radius: style.borderTopLeftRadius,
+      background: style.backgroundColor,
+    }
+  })
+  expect(handle).toEqual({
+    content: '""',
+    display: 'block',
+    width: '40px',
+    height: '4px',
+    marginLeft: `${String((375 - 40) / 2)}px`,
+    radius: '2px',
+    background: await color('--border-strong'),
+  })
+  await expectStyle(header, {
+    display: 'flex',
+    'flex-shrink': '0',
+    'align-items': 'center',
+    'justify-content': 'space-between',
+    'padding-top': '8px',
+    'padding-left': '20px',
+    'padding-right': '8px',
+    'border-bottom-width': '1px',
+    'border-bottom-color': subtle,
+  })
+  await expectStyle(title, {
+    'margin-top': '0px',
+    color: strong,
+    'font-size': '20px',
+    'font-weight': '700',
+  })
+  await expectStyle(closeButton, {
+    display: 'flex',
+    'align-items': 'center',
+    'justify-content': 'center',
+    'padding-top': '0px',
+    'border-top-width': '0px',
+    'border-top-left-radius': '50%',
+    'background-color': 'rgba(0, 0, 0, 0)',
+    color: strong,
+    cursor: 'pointer',
+  })
+  await expectStyle(body, {
+    'flex-grow': '1',
+    'padding-top': '20px',
+    'padding-bottom': '24px',
+    'padding-left': '20px',
+    'overflow-y': 'auto',
+    'overscroll-behavior-y': 'contain',
+  })
+  await expectStyle(footer, {
+    display: 'flex',
+    'flex-shrink': '0',
+    'column-gap': '8px',
+    'padding-top': '12px',
+    'padding-bottom': '12px',
+    'padding-left': '20px',
+    'border-top-width': '1px',
+    'border-top-color': subtle,
+  })
+  const buttons = {
+    'padding-top': '0px',
+    'padding-left': '20px',
+    height: '48px',
+    'border-top-left-radius': '24px',
+    'font-family': font,
+    'font-size': '15px',
+    'font-weight': '500',
+    cursor: 'pointer',
+  }
+  await expectStyle(clearButton(page), {
+    ...buttons,
+    'flex-shrink': '0',
+    'border-top-width': '1px',
+    'border-top-style': 'solid',
+    'border-top-color': strong,
+    'background-color': surface,
+    color: strong,
+    opacity: '1',
+  })
+  await expectStyle(apply(page), {
+    ...buttons,
+    'flex-grow': '1',
+    'border-top-width': '0px',
+    'background-color': await color('--primary-bg'),
+    color: await color('--primary-text'),
+  })
+
+  // The boxes: the frame is filled by the grip, the header, the body and the footer, top to bottom
+  const frame = await boxOf(sheet(page))
+  const gripBox = await boxOf(grip)
+  const headerBox = await boxOf(header)
+  const bodyBox = await boxOf(body)
+  const footerBox = await boxOf(footer)
+  expect(gripBox.y).toBeCloseTo(frame.y, 1)
+  expect(gripBox.height).toBeCloseTo(12, 1)
+  expect(headerBox.y).toBeCloseTo(gripBox.y + gripBox.height, 1)
+  expect(headerBox.height).toBeCloseTo(61, 1)
+  expect(bodyBox.y).toBeCloseTo(headerBox.y + headerBox.height, 1)
+  expect(bodyBox.y + bodyBox.height).toBeCloseTo(footerBox.y, 1)
+  expect(footerBox.height).toBeCloseTo(73, 1)
+  expect(footerBox.y + footerBox.height).toBeCloseTo(frame.y + frame.height, 1)
+  // The title is in the padding of the header, the close button at the other end, both on its middle
+  const titleBox = await boxOf(title)
+  const closeBox = await boxOf(closeButton)
+  const closeIcon = await boxOf(closeButton.locator('svg'))
+  expect(titleBox.x - frame.x).toBeCloseTo(20, 1)
+  expect(titleBox.y + titleBox.height / 2).toBeCloseTo(headerBox.y + 8 + 22, 1)
+  expect(closeBox.width).toBeCloseTo(44, 1)
+  expect(closeBox.height).toBeCloseTo(44, 1)
+  expect(frame.x + frame.width - (closeBox.x + closeBox.width)).toBeCloseTo(8, 1)
+  expect(closeBox.y - headerBox.y).toBeCloseTo(8, 1)
+  expect(closeIcon.width).toBeCloseTo(20, 1)
+  expect(closeIcon.x + closeIcon.width / 2).toBeCloseTo(closeBox.x + closeBox.width / 2, 1)
+  expect(closeIcon.y + closeIcon.height / 2).toBeCloseTo(closeBox.y + closeBox.height / 2, 1)
+  // The buttons of the footer: 20px in, 8px apart, the action button to the other 20px
+  const clearBox = await boxOf(clearButton(page))
+  const applyBox = await boxOf(apply(page))
+  expect(clearBox.x - frame.x).toBeCloseTo(20, 1)
+  expect(clearBox.y - footerBox.y).toBeCloseTo(1 + 12, 1)
+  expect(clearBox.height).toBeCloseTo(48, 1)
+  expect(applyBox.x - (clearBox.x + clearBox.width)).toBeCloseTo(8, 1)
+  expect(frame.x + frame.width - (applyBox.x + applyBox.width)).toBeCloseTo(20, 1)
+  expect(applyBox.y).toBeCloseTo(clearBox.y, 1)
+  expect(applyBox.height).toBeCloseTo(48, 1)
+
+  expect(await pressedColor(page, closeButton, title)).toBe(alt)
+  expect(await pressedColor(page, apply(page), clearButton(page))).toBe(
+    await color('--primary-bg-hover'),
+  )
+  // With nothing to clear it is dimmed
+  await clearButton(page).click()
+  await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
+  await expect(clearButton(page)).toHaveCSS('opacity', '0.4')
+})
+
 // Under the header, as the first thing in the column, edge to edge: the padding of <main> (16px, 24px
-// from 640px) is where the button sits. The page scrolls under it, which is why the padding of the
-// fragments counts its 61px (customerListLayout.spec.ts).
+// from 640px) is where the button sits. The page scrolls under it, which is why the scroll padding of
+// the page counts its 61px (customerListLayout.spec.ts).
 for (const { width, inset } of [
   { width: 375, inset: 16 },
   { width: 768, inset: 24 },
