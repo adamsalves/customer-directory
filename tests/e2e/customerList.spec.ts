@@ -31,18 +31,21 @@ const pageTwoLink = (page: Page) =>
   page.getByTestId('pagination__page--link').filter({ hasText: /^\s*2\s*$/, visible: true })
 
 // toBeInViewport would also pass for a card under the sticky header, so the top of the list is
-// measured against the header: it settles 24px below it (the scroll is smooth)
+// measured against the header, and below 960px the bar of the sheet under it (#26): it settles 24px
+// below them (the scroll is smooth)
 test('changing page brings the top of the list back under the header', async ({ page }) => {
   await page.goto('/customers')
   await pageTwoLink(page).click()
   await expect(page).toHaveURL(/page=2/)
 
   const header = await page.getByRole('banner').boundingBox()
+  const bar = page.getByTestId('filter-sheet__bar--div')
+  const barHeight = (await bar.isVisible()) ? ((await bar.boundingBox())?.height ?? 0) : 0
   const list = page.getByTestId('customers__list--list')
   await expect
     .poll(async () => {
       const box = await list.boundingBox()
-      return box && header ? Math.round(box.y - (header.y + header.height)) : undefined
+      return box && header ? Math.round(box.y - (header.y + header.height + barHeight)) : undefined
     })
     .toBe(24)
 })

@@ -45,15 +45,33 @@
 }
 
 @layer base {
-  // Fragment and focus scrolling stop below the sticky AppHeader (prototype headerH, ADR-0013)
+  // What sticks to the top of the page: the AppHeader (prototype headerH, ADR-0013) and, below 960px,
+  // the filter bar under it (#26). Fragment and focus scrolling stop below both, 130px, 158px and 97px
+  // at 375px, 768px and 1280px (ADR-0022). The header is as tall as its content makes it, and the
+  // bar 8px, 44px, 8px and its border: the E2E measures both against these numbers.
   html {
-    scroll-padding-block-start: 97px;
+    --header-size: 97px;
+    --toolbar-size: 61px;
+
+    scroll-padding-block-start: calc(var(--header-size) + var(--toolbar-size));
   }
 
   @media (width < 640px) {
     html {
-      scroll-padding-block-start: 69px;
+      --header-size: 69px;
     }
+  }
+
+  @media (width >= 960px) {
+    html {
+      --toolbar-size: 0px;
+    }
+  }
+
+  // The page behind a sheet does not scroll (#26). The dialog makes it inert, which stops neither the
+  // wheel nor the touch.
+  html:has(dialog[open]) {
+    overflow: hidden;
   }
 
   html,
@@ -162,7 +180,8 @@
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
-  *::after {
+  *::after,
+  *::backdrop {
     animation: none !important;
     transition: none !important;
   }
