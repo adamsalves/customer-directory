@@ -60,10 +60,11 @@ async function openSheet(wrapper: TWrapper) {
   await flushPromises()
 }
 
-// A click on the backdrop as the browser makes it: the press and the click, both on the dialog
-// itself, since the backdrop is part of its box
+// A click on the backdrop as the browser makes it: the press, the release and the click, all on the
+// dialog itself, since the backdrop is part of its box
 async function clickBackdrop(wrapper: TWrapper) {
   await wrapper.get(DIALOG).trigger('pointerdown')
+  await wrapper.get(DIALOG).trigger('pointerup')
   await wrapper.get(DIALOG).trigger('click', { detail: 1 })
 }
 
@@ -246,9 +247,33 @@ describe('FilterSheet dialog', () => {
 
     for (const inside of [BODY, TITLE, PANEL, STATE]) {
       await wrapper.get(DIALOG).get(inside).trigger('pointerdown')
+      await wrapper.get(DIALOG).trigger('pointerup')
       await wrapper.get(DIALOG).trigger('click', { detail: 1 })
       await flushPromises()
       expect(dialogOf(wrapper).open, `the press began on ${inside}`).toBe(true)
+    }
+    expect(wrapper.find(PANEL).exists()).toBe(true)
+
+    await clickBackdrop(wrapper)
+    await flushPromises()
+
+    expect(dialogOf(wrapper).open).toBe(false)
+  })
+
+  // The other way: a drag that begins on the backdrop and lets go inside the sheet clicks the dialog
+  // too. The release says where it ended, and each release says it anew: one on the backdrop that
+  // never gets its click is not the next one.
+  it('stays open when a drag from the backdrop ends inside the sheet', async () => {
+    const wrapper = await mountSheet()
+    await openSheet(wrapper)
+    await wrapper.get(DIALOG).trigger('pointerup')
+
+    for (const inside of [BODY, TITLE, PANEL, STATE]) {
+      await wrapper.get(DIALOG).trigger('pointerdown')
+      await wrapper.get(DIALOG).get(inside).trigger('pointerup')
+      await wrapper.get(DIALOG).trigger('click', { detail: 1 })
+      await flushPromises()
+      expect(dialogOf(wrapper).open, `the release was on ${inside}`).toBe(true)
     }
     expect(wrapper.find(PANEL).exists()).toBe(true)
 

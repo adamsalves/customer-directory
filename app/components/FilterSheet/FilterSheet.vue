@@ -55,16 +55,23 @@ function close() {
 
 // A click on the backdrop lands on the dialog itself, a click in the sheet on what is inside it. The
 // grip, the header, the body and the footer cover the whole box, so no click inside lands on the bare
-// dialog. A drag that begins inside and lets go on the backdrop also clicks the dialog, the closest
-// element that holds both, so the press must have begun on the backdrop too.
+// dialog. A drag that crosses the edge of the sheet, from inside to the backdrop or the other way, also
+// clicks the dialog, the closest element that holds both ends: the press and the release must both be
+// on the backdrop. The close stays on the click, since closed on the release the click would go to the
+// page behind.
 let pressedOnBackdrop = false
+let releasedOnBackdrop = false
 
 function trackPress({ target }: PointerEvent) {
   pressedOnBackdrop = target === dialogRef.value
 }
 
+function trackRelease({ target }: PointerEvent) {
+  releasedOnBackdrop = target === dialogRef.value
+}
+
 function closeOnBackdrop({ target }: MouseEvent) {
-  if (pressedOnBackdrop && target === dialogRef.value) close()
+  if (pressedOnBackdrop && releasedOnBackdrop && target === dialogRef.value) close()
 }
 
 // The second click of a double click on "Filtros" lands on the sheet that the first one has just
@@ -129,6 +136,7 @@ function clear() {
     :class="S.Sheet"
     data-testid="filter-sheet__root--dialog"
     @pointerdown="trackPress"
+    @pointerup="trackRelease"
     @click.capture="ignoreRepeatedClick"
     @click="closeOnBackdrop"
     @close="open = false"
