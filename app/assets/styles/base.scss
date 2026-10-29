@@ -54,6 +54,10 @@
     --toolbar-size: 61px;
 
     scroll-padding-block-start: calc(var(--header-size) + var(--toolbar-size));
+
+    // The room of the scrollbar is the page's whether it is there or not: the lock below takes the
+    // scrollbar away, and nothing in the page moves
+    scrollbar-gutter: stable;
   }
 
   @media (width < 640px) {
@@ -69,8 +73,8 @@
   }
 
   // The page behind a sheet does not scroll (#26). The dialog makes it inert, which stops neither the
-  // wheel nor the touch.
-  html:has(dialog[open]) {
+  // wheel nor the touch. Only a modal dialog locks the page: one opened with show() is a box in it.
+  html:has(dialog:modal) {
     overflow: hidden;
   }
 

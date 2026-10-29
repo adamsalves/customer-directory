@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { layoutWidth } from './layoutWidth'
 
 // The sheet is a native <dialog> opened with showModal(): the top layer, the page behind it made
 // inert, Esc and the focus on the way in and out are the browser's, and happy-dom has none of them
@@ -236,6 +237,35 @@ test('the page behind does not scroll while the sheet is open', async ({ page })
   await expect(page.locator('html')).toHaveCSS('overflow', 'visible')
 })
 
+// Only a modal dialog takes the page out of reach: one opened with show() is a box in the page like
+// any other, and the wheel still scrolls it
+test('a dialog that is not modal does not lock the page', async ({ page }) => {
+  await openList(page)
+
+  await page.evaluate(() => {
+    document.body.appendChild(document.createElement('dialog')).show()
+  })
+
+  await expect(page.locator('dialog[open]')).toHaveCount(1)
+  await expect(page.locator('html')).toHaveCSS('overflow', 'visible')
+  await page.mouse.move(187, 400)
+  await page.mouse.wheel(0, 300)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+})
+
+// The lock takes the scrollbar of the page away. The room it took stays, so that nothing in the page
+// moves: the declaration is what is read here, and filterSheetScrollbar.spec.ts reads the page itself.
+test('the page keeps the room of its scrollbar while the sheet locks it', async ({ page }) => {
+  await openList(page)
+  await expect(page.locator('html')).toHaveCSS('scrollbar-gutter', 'stable')
+
+  await trigger(page).click()
+  await expect(sheet(page)).toBeVisible()
+
+  await expect(page.locator('html')).toHaveCSS('overflow', 'hidden')
+  await expect(page.locator('html')).toHaveCSS('scrollbar-gutter', 'stable')
+})
+
 // The prototype's animations, jsm-up for the sheet and jsm-fade for the backdrop. Reduced motion
 // takes both away: the backdrop is not an element, so the rule of the page has to name it.
 test('the sheet and its backdrop animate, and reduced motion takes the animations away', async ({
@@ -270,9 +300,12 @@ for (const { width, sheetWidth } of [
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await openSheet(page, { width })
 
+    // As wide as the layout, which is the screen less the room of the scrollbar (layoutWidth.ts)
+    const layout = await layoutWidth(page)
+    const wide = Math.min(sheetWidth, layout)
     const box = await boxOf(sheet(page))
-    expect(box.width).toBeCloseTo(sheetWidth, 1)
-    expect(box.x).toBeCloseTo((width - sheetWidth) / 2, 1)
+    expect(box.width).toBeCloseTo(wide, 1)
+    expect(box.x).toBeCloseTo((layout - wide) / 2, 1)
     expect(box.y + box.height).toBeCloseTo(812, 1)
     expect(box.height).toBeLessThanOrEqual(812 * 0.88 + 1)
     await expect(sheet(page)).toHaveCSS('border-top-left-radius', '16px')
@@ -404,7 +437,7 @@ test('the geometry and the style of the bar and of the sheet', async ({ page }) 
     display: 'block',
     width: '40px',
     height: '4px',
-    marginLeft: `${String((375 - 40) / 2)}px`,
+    marginLeft: `${String(((await layoutWidth(page)) - 40) / 2)}px`,
     radius: '2px',
     background: await color('--border-strong'),
   })
@@ -556,7 +589,7 @@ for (const { width, inset } of [
     const after = await boxOf(bar(page))
     expect(after.y).toBeCloseTo(header.y + header.height, 1)
     expect(after.x).toBeCloseTo(0, 1)
-    expect(after.width).toBeCloseTo(width, 1)
+    expect(after.width).toBeCloseTo(await layoutWidth(page), 1)
     expect((await boxOf(trigger(page))).x).toBeCloseTo(inset, 1)
   })
 }

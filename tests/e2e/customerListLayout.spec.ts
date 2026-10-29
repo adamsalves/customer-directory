@@ -1,5 +1,6 @@
 import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { layoutWidth } from './layoutWidth'
 
 // ADR-0014: the layout changes in CSS, at 640px and at 960px. happy-dom applies no media query,
 // so the component specs cannot see any of it and these are the tests that do.
@@ -127,7 +128,7 @@ for (const width of [320, 375]) {
     expect(box.right).toBeGreaterThanOrEqual(0)
     expect(box.overflow).toBe(0)
     const scroll = await page.evaluate(() => document.documentElement.scrollWidth)
-    expect(scroll).toBe(width)
+    expect(scroll).toBe(await layoutWidth(page))
   })
 }
 
@@ -176,7 +177,9 @@ for (const width of [320, 375]) {
       height: 14,
     })
     await expect(chip).toHaveAccessibleName(`Remover busca ${search}`)
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+      await layoutWidth(page),
+    )
   })
 }
 
@@ -208,7 +211,9 @@ test('the filter chips wrap onto another row, 8px apart, 16px above the results'
   expect(second.x - (first.x + first.width)).toBeCloseTo(8, 1)
   expect(third.y - (first.y + first.height)).toBeCloseTo(8, 1)
   expect(results.y - (list.y + list.height)).toBeCloseTo(16, 1)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    await layoutWidth(page),
+  )
 })
 
 // The theme is the cookie, which the server renders at once: nothing flips after the page loads
@@ -308,7 +313,7 @@ test('the filter panel is a column of 272px at 960px', async ({ page }) => {
   expect(panel.width).toBeCloseTo(272, 1)
   expect(column.x - (panel.x + panel.width)).toBeCloseTo(16, 1)
   // The page is 24px in from each edge
-  expect(column.width).toBeCloseTo(960 - 48 - 272 - 16, 1)
+  expect(column.width).toBeCloseTo((await layoutWidth(page)) - 48 - 272 - 16, 1)
   expect(panel.y).toBeCloseTo(column.y, 1)
   expect(panel.height).toBeLessThan(column.height / 2)
 })
