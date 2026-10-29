@@ -50,6 +50,21 @@ async function expectStyle(target: Locator, style: Record<string, string>) {
   }
 }
 
+// The value a stylesheet declares for a property of the element, as it is written: the computed one
+// is a length in pixels, whatever unit it was written in
+const declared = (target: Locator, property: string) =>
+  target.evaluate((el, name) => {
+    for (const sheet of document.styleSheets) {
+      for (const rule of sheet.cssRules) {
+        if (rule instanceof CSSStyleRule && el.matches(rule.selectorText)) {
+          const value = rule.style.getPropertyValue(name)
+          if (value !== '') return value
+        }
+      }
+    }
+    return undefined
+  }, property)
+
 // The pressed color of a button, read with the pointer held down on it. The pointer lets go on
 // another piece of the same frame, so no click is made on the button.
 async function pressedColor(page: Page, target: Locator, elsewhere: Locator) {
@@ -317,6 +332,15 @@ for (const { width, sheetWidth } of [
     expect(backdrop).toBe('rgba(0, 0, 0, 0.6)')
   })
 }
+
+// The cap is 88dvh, the screen as it is now. 88vh counts the screen of a phone with its URL bar pulled
+// in, so while the bar shows, a sheet that tall can have its top cut off. The Chromium here has no URL
+// bar: vh and dvh are the same length and the box cannot tell them apart, so the declaration is read.
+test('the height of the sheet is capped in dvh', async ({ page }) => {
+  await openSheet(page)
+
+  expect(await declared(sheet(page), 'max-block-size')).toBe('88dvh')
+})
 
 // What the prototype writes in the style of the bar and of the sheet, read where it shows: the sizes
 // and the gaps by their boxes (the bar is 61px; the sheet is 12px of grip, 61px of header, the body
