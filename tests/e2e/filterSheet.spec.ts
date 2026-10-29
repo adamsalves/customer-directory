@@ -62,8 +62,8 @@ async function pressedColor(page: Page, target: Locator, elsewhere: Locator) {
 
 // The fixture has 20 customers, 2 of them from Minas Gerais and 1 from Acre, which is not one of the
 // five states of the short list
-async function openList(page: Page, { path = '/customers', width = 375 } = {}) {
-  await page.setViewportSize({ width, height: 812 })
+async function openList(page: Page, { path = '/customers', width = 375, height = 812 } = {}) {
+  await page.setViewportSize({ width, height })
   await page.goto(path)
   await waitForHydration(page)
 }
@@ -141,6 +141,47 @@ test('a drag from inside the sheet to the backdrop does not close it', async ({ 
   await settle(page)
 
   await expect(sheet(page)).toBeVisible()
+})
+
+// The second click of a double click on "Filtros" lands where the first one has just opened the sheet.
+// With the bar stuck under the header and a screen taller than 825px that is the backdrop above the
+// sheet, and a click there closes it (at 812px it is the grip, and nothing shows).
+test('a double click on "Filtros" opens the sheet and leaves it open', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openList(page, { height: 900 })
+  await page.evaluate(() => {
+    window.scrollTo(0, 500)
+  })
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500)
+  const button = await boxOf(trigger(page))
+
+  await trigger(page).dblclick()
+  await settle(page)
+
+  await expect(sheet(page)).toBeVisible()
+  await expect(page).toHaveURL('/customers')
+  // That the second click was on the backdrop, which is the dialog itself, and not on the sheet
+  const hit = { x: button.x + button.width / 2, y: button.y + button.height / 2 }
+  expect(
+    await sheet(page).evaluate((el, { x, y }) => document.elementFromPoint(x, y) === el, hit),
+  ).toBe(true)
+})
+
+// The label of a state sends its click to the box, and the box ticks itself: the browser acts on a
+// click before anyone listens to it. The first click of a double click picks the state and the second
+// leaves it picked, on the name and on the box alike.
+test('a double click on a state in the sheet picks it once', async ({ page }) => {
+  await openSheet(page)
+  const name = (state: string) =>
+    sheet(page).getByTestId('filter-panel__name--text').filter({ hasText: state })
+
+  await name('Acre').dblclick()
+  await expect(stateBox(page, 'acre')).toBeChecked()
+  await expect(page).toHaveURL('/customers?states=acre')
+
+  await stateBox(page, 'bahia').dblclick()
+  await expect(stateBox(page, 'bahia')).toBeChecked()
+  await expect(page).toHaveURL('/customers?states=acre,bahia')
 })
 
 // The filters apply at each click, so the button of the sheet is a count of the list as it is

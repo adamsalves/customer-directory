@@ -17,6 +17,7 @@ const CLEAR = '[data-testid="filter-sheet__clear--button"]'
 const APPLY = '[data-testid="filter-sheet__apply--button"]'
 const PANEL = '[data-testid="filter-panel__root--div"]'
 const STATE = '[data-testid="filter-panel__state--checkbox"]'
+const NAME = '[data-testid="filter-panel__name--text"]'
 const COUNT = '[data-testid="filter-panel__count--number"]'
 const PANEL_TOGGLE = '[data-testid="filter-panel__toggle--button"]'
 const PANEL_CLEAR = '[data-testid="filter-panel__clear--button"]'
@@ -50,6 +51,8 @@ function dialogOf(wrapper: TWrapper) {
   if (!(element instanceof HTMLDialogElement)) throw new Error('the sheet is not a dialog')
   return element
 }
+
+const isChecked = (element: Element) => element instanceof HTMLInputElement && element.checked
 
 // The click, and the frame the sheet waits for before it shows
 async function openSheet(wrapper: TWrapper) {
@@ -253,6 +256,69 @@ describe('FilterSheet dialog', () => {
     await flushPromises()
 
     expect(dialogOf(wrapper).open).toBe(false)
+  })
+})
+
+// The second click of a double click on "Filtros" lands on the sheet that the first one has just
+// opened: on its backdrop, on a state, on a button. Only the first click counts. The click of a
+// pointer has a detail of 1 and a key press one of 0, so neither is the second of anything.
+describe('FilterSheet repeated clicks', () => {
+  it.each([2, 3])('stays open for a click of detail %i on the backdrop', async (detail) => {
+    const wrapper = await mountSheet()
+    await openSheet(wrapper)
+
+    await wrapper.get(DIALOG).trigger('pointerdown')
+    await wrapper.get(DIALOG).trigger('click', { detail })
+    await flushPromises()
+
+    expect(dialogOf(wrapper).open).toBe(true)
+  })
+
+  // The label sends a click to its box, and the box ticks itself before anyone is told: the click has
+  // to be cancelled and kept from the handlers, not just one of them
+  it.each([2, 3])(
+    'picks no state with a click of detail %i, on its name or on its box',
+    async (detail) => {
+      const wrapper = await mountSheet()
+      await openSheet(wrapper)
+      const { push } = spyOnRouter()
+      const box = wrapper.get(`${STATE}[value="acre"]`)
+
+      await wrapper.get(`label:has(${STATE}[value="acre"]) ${NAME}`).trigger('click', { detail })
+      expect(isChecked(box.element), 'the name').toBe(false)
+      await box.trigger('click', { detail })
+      expect(isChecked(box.element), 'the box').toBe(false)
+      await flushPromises()
+
+      expect(push).not.toHaveBeenCalled()
+      expect(useRoute().fullPath).toBe('/customers')
+    },
+  )
+
+  it('does not clear the filters with a click of detail 2', async () => {
+    const wrapper = await mountSheet('/customers?states=bahia&gender=female')
+    await openSheet(wrapper)
+    const { push } = spyOnRouter()
+
+    await wrapper.get(CLEAR).trigger('click', { detail: 2 })
+    await flushPromises()
+
+    expect(push).not.toHaveBeenCalled()
+    expect(useRoute().fullPath).toBe('/customers?states=bahia&gender=female')
+  })
+
+  it('picks a state for the click of a pointer and for a key press', async () => {
+    const wrapper = await mountSheet()
+    await openSheet(wrapper)
+    const box = wrapper.get(`${STATE}[value="acre"]`)
+
+    await wrapper.get(`label:has(${STATE}[value="acre"]) ${NAME}`).trigger('click', { detail: 1 })
+    await urlIs('/customers?states=acre')
+    expect(isChecked(box.element)).toBe(true)
+
+    await box.trigger('click', { detail: 0 })
+    await urlIs('/customers')
+    expect(isChecked(box.element)).toBe(false)
   })
 })
 

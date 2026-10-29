@@ -67,6 +67,16 @@ function closeOnBackdrop({ target }: MouseEvent) {
   if (pressedOnBackdrop && target === dialogRef.value) close()
 }
 
+// The second click of a double click on "Filtros" lands on the sheet that the first one has just
+// opened, on its backdrop or on a state under the button. Only the first click counts: this one is
+// cancelled, since a label and a box act on a click by themselves, and kept from every handler
+// below. A click of a pointer has a detail of 1 and a key press one of 0, so they go through.
+function ignoreRepeatedClick(event: MouseEvent) {
+  if (event.detail < 2) return
+  event.preventDefault()
+  event.stopPropagation()
+}
+
 // Only the states and the gender, the search stays (the prototype's). With none picked the button is
 // kept in the tab order and does nothing: `aria-disabled` and not `disabled`, which would drop the
 // focus the click leaves on it.
@@ -119,6 +129,7 @@ function clear() {
     :class="S.Sheet"
     data-testid="filter-sheet__root--dialog"
     @pointerdown="trackPress"
+    @click.capture="ignoreRepeatedClick"
     @click="closeOnBackdrop"
     @close="open = false"
   >
