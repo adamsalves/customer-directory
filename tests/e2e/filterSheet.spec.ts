@@ -1,0 +1,258 @@
+import { expect, test, type Locator, type Page } from '@playwright/test'
+import { waitForHydration } from './hydration'
+
+// The sheet is a native <dialog> opened with showModal(): the top layer, the page behind it made
+// inert, Esc and the focus on the way in and out are the browser's, and happy-dom has none of them
+// (FilterSheet.spec.ts). The button does nothing before the page is interactive, and
+// waitForHydration needs a dark system.
+test.use({ colorScheme: 'dark' })
+
+const trigger = (page: Page) => page.getByTestId('filter-sheet__open--button')
+const bar = (page: Page) => page.getByTestId('filter-sheet__bar--div')
+const sheet = (page: Page) => page.getByTestId('filter-sheet__root--dialog')
+const closeButton = (page: Page) => page.getByTestId('filter-sheet__close--button')
+const clearButton = (page: Page) => page.getByTestId('filter-sheet__clear--button')
+const apply = (page: Page) => page.getByTestId('filter-sheet__apply--button')
+// The page has a panel of its own, hidden below 960px: the sheet's is the one in the dialog
+const stateBox = (page: Page, slug: string) =>
+  sheet(page).locator(`[data-testid="filter-panel__state--checkbox"][value="${slug}"]`)
+const cards = (page: Page) => page.getByTestId('customer-card__root--article')
+
+// Two frames are enough for what runs a frame after an event: the scroll, the focus
+const settle = (page: Page) =>
+  page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  )
+
+async function boxOf(locator: Locator) {
+  const box = await locator.boundingBox()
+  if (!box) throw new Error('the element is not rendered')
+  return box
+}
+
+// The fixture has 20 customers, 2 of them from Minas Gerais and 1 from Acre, which is not one of the
+// five states of the short list
+async function openList(page: Page, { path = '/customers', width = 375 } = {}) {
+  await page.setViewportSize({ width, height: 812 })
+  await page.goto(path)
+  await waitForHydration(page)
+}
+
+async function openSheet(page: Page, options?: { path?: string; width?: number }) {
+  await openList(page, options)
+  await trigger(page).click()
+  await expect(sheet(page)).toBeVisible()
+}
+
+test('the focus goes to the close button, and Esc closes the sheet and gives it back to the button', async ({
+  page,
+}) => {
+  await openSheet(page)
+  await expect(closeButton(page)).toBeFocused()
+
+  await page.keyboard.press('Escape')
+
+  await expect(sheet(page)).toBeHidden()
+  await expect(trigger(page)).toBeFocused()
+})
+
+// The sheet is modal: the page behind it is inert, so Tab goes round the controls of the sheet (the
+// close button, the 27 states, the gender, the two buttons) with one stop on the document, the
+// browser's own UI, at the end of each lap. Never on the page. More than two laps, either way.
+test('Tab and Shift+Tab stay in the sheet', async ({ page }) => {
+  await openSheet(page)
+  const where = () =>
+    page.evaluate(() => {
+      const active = document.activeElement
+      if (active === document.body) return 'document'
+      return document.querySelector('dialog')?.contains(active) ? 'sheet' : 'page'
+    })
+
+  for (const key of ['Tab', 'Shift+Tab']) {
+    const stops: string[] = []
+    for (let step = 0; step < 70; step++) {
+      await page.keyboard.press(key)
+      stops.push(await where())
+    }
+    expect(
+      stops.filter((stop) => stop === 'page'),
+      key,
+    ).toEqual([])
+    expect(stops.filter((stop) => stop === 'sheet').length, key).toBeGreaterThanOrEqual(64)
+  }
+})
+
+// The backdrop catches the click: it closes the sheet and the theme toggle under it, in the top
+// strip the sheet leaves, does not get it
+test('a click outside the sheet closes it and does not reach the page', async ({ page }) => {
+  await openSheet(page)
+  const toggle = await boxOf(page.getByTestId('header__theme--toggle'))
+
+  await page.mouse.click(toggle.x + toggle.width / 2, toggle.y + toggle.height / 2)
+
+  await expect(sheet(page)).toBeHidden()
+  await settle(page)
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+})
+
+// The filters apply at each click, so the button of the sheet is a count of the list as it is
+test('a state picked in the sheet is in the URL at once, and the button names the new total', async ({
+  page,
+}) => {
+  await openSheet(page)
+  await expect(apply(page)).toHaveText('Ver 20 clientes')
+  await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
+
+  // A state outside the five: the sheet lists them all
+  await stateBox(page, 'acre').check()
+  await expect(page).toHaveURL('/customers?states=acre')
+  await expect(apply(page)).toHaveText('Ver 1 cliente')
+  await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros, 1 ativo')
+
+  await stateBox(page, 'minas-gerais').check()
+  await expect(page).toHaveURL('/customers?states=acre,minas-gerais')
+  await expect(apply(page)).toHaveText('Ver 3 clientes')
+  await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros, 2 ativos')
+
+  await clearButton(page).click()
+  await expect(page).toHaveURL('/customers')
+  await expect(apply(page)).toHaveText('Ver 20 clientes')
+  await expect(stateBox(page, 'acre')).not.toBeChecked()
+  await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
+  await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros')
+
+  // The button only closes: the list is already the one it names
+  await stateBox(page, 'minas-gerais').check()
+  await expect(apply(page)).toHaveText('Ver 2 clientes')
+  await apply(page).click()
+  await expect(sheet(page)).toBeHidden()
+  await expect(trigger(page)).toBeFocused()
+  await expect(page).toHaveURL('/customers?states=minas-gerais')
+  await expect(cards(page)).toHaveCount(2)
+})
+
+test('the page behind does not scroll while the sheet is open', async ({ page }) => {
+  await openSheet(page)
+  await expect(page.locator('html')).toHaveCSS('overflow', 'hidden')
+
+  // Over the top strip the sheet leaves: the wheel there would scroll the page
+  await page.mouse.move(187, 40)
+  await page.mouse.wheel(0, 600)
+  await settle(page)
+
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+  await page.keyboard.press('Escape')
+  await expect(page.locator('html')).toHaveCSS('overflow', 'visible')
+})
+
+// The prototype's animations, jsm-up for the sheet and jsm-fade for the backdrop. Reduced motion
+// takes both away: the backdrop is not an element, so the rule of the page has to name it.
+test('the sheet and its backdrop animate, and reduced motion takes the animations away', async ({
+  page,
+}) => {
+  await openSheet(page)
+  const animations = () =>
+    sheet(page).evaluate((el) => [
+      getComputedStyle(el).animationName,
+      getComputedStyle(el, '::backdrop').animationName,
+    ])
+  expect(await animations()).toEqual(['jsm-up', 'jsm-fade'])
+
+  await page.keyboard.press('Escape')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await trigger(page).click()
+
+  await expect(sheet(page)).toBeVisible()
+  expect(await animations()).toEqual(['none', 'none'])
+})
+
+// A bottom sheet: as wide as the screen up to 560px and in the middle of it, on the bottom edge, no
+// taller than 88% of the screen, with the corners on top rounded and the backdrop over the page
+for (const { width, sheetWidth } of [
+  { width: 375, sheetWidth: 375 },
+  { width: 768, sheetWidth: 560 },
+]) {
+  test(`the sheet sits on the bottom edge, ${String(sheetWidth)}px wide at ${String(width)}px`, async ({
+    page,
+  }) => {
+    // The entrance moves the sheet while it plays; reduced motion leaves it in place
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await openSheet(page, { width })
+
+    const box = await boxOf(sheet(page))
+    expect(box.width).toBeCloseTo(sheetWidth, 1)
+    expect(box.x).toBeCloseTo((width - sheetWidth) / 2, 1)
+    expect(box.y + box.height).toBeCloseTo(812, 1)
+    expect(box.height).toBeLessThanOrEqual(812 * 0.88 + 1)
+    await expect(sheet(page)).toHaveCSS('border-top-left-radius', '16px')
+    await expect(sheet(page)).toHaveCSS('border-bottom-left-radius', '0px')
+    const backdrop = await sheet(page).evaluate(
+      (el) => getComputedStyle(el, '::backdrop').backgroundColor,
+    )
+    // [data-theme='dark'] --overlay
+    expect(backdrop).toBe('rgba(0, 0, 0, 0.6)')
+  })
+}
+
+// Under the header, as the first thing in the column, edge to edge: the padding of <main> (16px, 24px
+// from 640px) is where the button sits. The page scrolls under it, which is why the padding of the
+// fragments counts its 61px (customerListLayout.spec.ts).
+for (const { width, inset } of [
+  { width: 375, inset: 16 },
+  { width: 768, inset: 24 },
+]) {
+  test(`the bar sticks under the header at ${String(width)}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/customers')
+    const header = await boxOf(page.getByRole('banner'))
+    const before = await boxOf(bar(page))
+    expect(before.height).toBeCloseTo(61, 1)
+    // It starts lower, in the flow of the column, and the scroll brings it up to the header
+    expect(before.y).toBeGreaterThan(header.y + header.height + 40)
+
+    await page.evaluate(() => {
+      window.scrollTo(0, 500)
+    })
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500)
+
+    const after = await boxOf(bar(page))
+    expect(after.y).toBeCloseTo(header.y + header.height, 1)
+    expect(after.x).toBeCloseTo(0, 1)
+    expect(after.width).toBeCloseTo(width, 1)
+    expect((await boxOf(trigger(page))).x).toBeCloseTo(inset, 1)
+  })
+}
+
+// ADR-0014: the bar is out of the page from 960px, and with it the button, from the accessibility
+// tree and the tab order; the panel of the page is there instead
+for (const { width, shown } of [
+  { width: 959, shown: true },
+  { width: 960, shown: false },
+]) {
+  test(`the bar is ${shown ? 'in' : 'out of'} the page at ${String(width)}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/customers')
+
+    await expect(bar(page)).toBeVisible({ visible: shown })
+    await expect(page.getByRole('button', { name: 'Filtros' })).toHaveCount(shown ? 1 : 0)
+    await expect(page.getByRole('complementary', { name: 'Filtros' })).toBeVisible({
+      visible: !shown,
+    })
+  })
+}
+
+// ADR-0014 again: the width is CSS, so a sheet that is open when the screen grows to 960px is not
+// closed by it. The dialog is beside the bar and not in it, or it would go with the bar. When it
+// closes the button it would give the focus back to is gone, and the focus is left on the page.
+test('an open sheet stays open when the screen grows to 960px', async ({ page }) => {
+  await openSheet(page)
+
+  await page.setViewportSize({ width: 1280, height: 812 })
+
+  await expect(bar(page)).toBeHidden()
+  await expect(sheet(page)).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(sheet(page)).toBeHidden()
+  // The browser moves the focus off the close button that is gone on the next frame
+  await expect.poll(() => page.evaluate(() => document.activeElement === document.body)).toBe(true)
+})
