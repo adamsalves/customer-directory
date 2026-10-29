@@ -15,7 +15,6 @@ const COUNT = '[data-testid="filter-panel__count--text"]'
 const COUNT_LABEL = '[data-testid="filter-panel__count--label"]'
 const COUNT_NUMBER = '[data-testid="filter-panel__count--number"]'
 const CLEAR = '[data-testid="filter-panel__clear--button"]'
-const ROOT = '[data-testid="filter-panel__root--div"]'
 const TOGGLE = '[data-testid="filter-panel__toggle--button"]'
 
 // Every state, as the BFF answers: 0 for the ones nobody is from. `all` is the two genders together.
@@ -623,17 +622,5 @@ describe('FilterPanel sheet variant', () => {
     await urlIs('/customers')
 
     expect(document.activeElement).toBe(stateBox(wrapper, 'acre').element)
-  })
-
-  // The hook of the styles of the sheet (#96); the panel of the page has none
-  it('marks its root with the class of the variant, and the panel of the page does not', async () => {
-    const hasSheetClass = (wrapper: TWrapper) =>
-      wrapper
-        .get(ROOT)
-        .classes()
-        .some((name) => name.includes('Sheet'))
-
-    expect(hasSheetClass(await mountSheetPanel())).toBe(true)
-    expect(hasSheetClass(await mountPanel())).toBe(false)
   })
 })

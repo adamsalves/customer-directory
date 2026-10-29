@@ -125,11 +125,7 @@ function toggleState(slug: string) {
 </script>
 
 <template>
-  <div
-    ref="root"
-    :class="[S.Panel, variant === 'sheet' && S.Sheet]"
-    data-testid="filter-panel__root--div"
-  >
+  <div ref="root" :class="S.Panel" data-testid="filter-panel__root--div">
     <fieldset :class="S.Group" data-testid="filter-panel__states--fieldset">
       <legend :class="S.Legend">Por Estado</legend>
       <div :id="statesListId">

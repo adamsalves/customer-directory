@@ -6,13 +6,6 @@
   gap: 28px;
 }
 
-// The panel in the sheet (#26). The pills of the states and the segmented gender (#96) start from
-// this class, which holds nothing until then. The comment inside is a loud one on purpose: Sass drops
-// a rule with only silent comments in it, and the class with it.
-.Sheet {
-  /* the pills and the segmented gender (#96) */
-}
-
 .Group {
   margin: 0;
   padding: 0;

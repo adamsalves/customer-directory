@@ -207,8 +207,6 @@ test('a state picked in the sheet is in the URL at once, and the button names th
   await openSheet(page)
   await expect(apply(page)).toHaveText('Ver 20 clientes')
   await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
-  // The class that the styles of the sheet variant start from (#96), as the build exports it
-  await expect(sheet(page).getByTestId('filter-panel__root--div')).toHaveClass(/Sheet/)
 
   // A state outside the five: the sheet lists them all
   await stateBox(page, 'acre').check()
