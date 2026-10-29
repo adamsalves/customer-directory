@@ -476,7 +476,9 @@ test('the geometry and the style of the bar and of the sheet', async ({ page }) 
 // the page counts its 61px (customerListLayout.spec.ts).
 for (const { width, inset } of [
   { width: 375, inset: 16 },
-  { width: 768, inset: 24 },
+  { width: 639, inset: 16 },
+  { width: 640, inset: 24 },
+  { width: 959, inset: 24 },
 ]) {
   test(`the bar sticks under the header at ${String(width)}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 })
