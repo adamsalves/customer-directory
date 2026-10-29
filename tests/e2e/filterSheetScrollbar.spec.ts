@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test'
 import { waitForHydration } from './hydration'
 import { layoutWidth } from './layoutWidth'
 
-// The scroll lock of the sheet takes the scrollbar of the page away, and the page keeps its room
-// (`scrollbar-gutter`, base.scss) so that nothing in it moves. That shows only where a scrollbar takes
-// room in the layout: the headless Chromium hides its own, and the overlay scrollbar of a phone takes
-// none. This file lets the desktop one draw its scrollbar, which a whole file has to ask for, and
+// The scroll lock of the sheet takes the scrollbar of the page away and keeps the room it had
+// (`scrollbar-gutter`, base.scss), so that nothing in the page moves. That shows only where a scrollbar
+// takes room in the layout: the headless Chromium hides its own, and the overlay scrollbar of a phone
+// takes none. This file lets the desktop one draw its scrollbar, which a whole file has to ask for, and
 // filterSheet.spec.ts measures the layout without it. waitForHydration needs a dark system.
 test.use({ colorScheme: 'dark', launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } })
 test.skip(({ isMobile }) => isMobile, 'the scrollbar of a phone is an overlay')

@@ -1,6 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
-import { layoutWidth } from './layoutWidth'
 
 // ADR-0009: the server reads the 20-record fixture, not the 200 records on S3. Page 3 is then
 // the last page, with 2 cards; on S3 it would have 9.
@@ -195,8 +194,7 @@ test.describe('the compact list with up to 5 pages', () => {
       // Both page lists are in the DOM and CSS hides one of them
       const links = page.getByTestId('pagination__page--link').filter({ visible: true })
       // 16px gutters on each side
-      const layout = await layoutWidth(page)
-      const size = Math.min(44, (layout - 32) / 7)
+      const size = Math.min(44, (width - 32) / 7)
 
       for (const [index, totalPages] of [2, 3, 4, 5].entries()) {
         await test.step(`${String(totalPages)} pages`, async () => {

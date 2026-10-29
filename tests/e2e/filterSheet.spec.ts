@@ -266,11 +266,12 @@ test('a dialog that is not modal does not lock the page', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
 })
 
-// The lock takes the scrollbar of the page away. The room it took stays, so that nothing in the page
-// moves: the declaration is what is read here, and filterSheetScrollbar.spec.ts reads the page itself.
-test('the page keeps the room of its scrollbar while the sheet locks it', async ({ page }) => {
+// The lock takes the scrollbar of the page away and keeps the room it had, so that nothing in the page
+// moves. Only the lock does: the page keeps no room of its own for a scrollbar it does not have. The
+// declaration is what is read here, and filterSheetScrollbar.spec.ts reads the page itself.
+test('the page keeps the room of its scrollbar only while the sheet locks it', async ({ page }) => {
   await openList(page)
-  await expect(page.locator('html')).toHaveCSS('scrollbar-gutter', 'stable')
+  await expect(page.locator('html')).toHaveCSS('scrollbar-gutter', 'auto')
 
   await trigger(page).click()
   await expect(sheet(page)).toBeVisible()
@@ -313,7 +314,8 @@ for (const { width, sheetWidth } of [
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await openSheet(page, { width })
 
-    // As wide as the layout, which is the screen less the room of the scrollbar (layoutWidth.ts)
+    // As wide as the layout, which with the sheet open is the screen less the room the lock keeps for
+    // the scrollbar (layoutWidth.ts)
     const layout = await layoutWidth(page)
     const wide = Math.min(sheetWidth, layout)
     const box = await boxOf(sheet(page))
@@ -611,7 +613,7 @@ for (const { width, inset } of [
     const after = await boxOf(bar(page))
     expect(after.y).toBeCloseTo(header.y + header.height, 1)
     expect(after.x).toBeCloseTo(0, 1)
-    expect(after.width).toBeCloseTo(await layoutWidth(page), 1)
+    expect(after.width).toBeCloseTo(width, 1)
     expect((await boxOf(trigger(page))).x).toBeCloseTo(inset, 1)
   })
 }
