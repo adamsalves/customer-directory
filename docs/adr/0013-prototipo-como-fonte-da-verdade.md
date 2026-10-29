@@ -57,6 +57,10 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | "Limpar" do sheet com `disabled`                    | `aria-disabled="true"`, sem `disabled`     | o botão desabilitado perde o foco do clique     |
 | o sheet fecha ao passar de 960px (`onResize`)       | continua aberto; o foco cai no `body`      | a largura é só CSS (ADR-0014); o botão saiu     |
 | "Ver N membros" com o total do filtro local         | último total; sem resposta, "Ver clientes" | o total vem do BFF; na busca vale o anterior    |
+| `max-height: 88vh` no sheet                         | `max-block-size: 88dvh`                    | `vh` não acompanha a barra de URL do celular    |
+| `body.style.overflow = 'hidden'` ao abrir o sheet   | `overflow` + `scrollbar-gutter` no `html`  | só o `:modal` trava; a barra sai e nada se move |
+| o fundo é um `div` à parte, com `onClick`           | fecha se apertar e soltar no fundo         | o arrasto que cruza a borda clica no `<dialog>` |
+| o 2º clique de um clique duplo age no sheet         | ignora clique com `detail > 1` no sheet    | o 2º clique de "Filtros" cai no sheet aberto    |
 
 ## Consequências
 
