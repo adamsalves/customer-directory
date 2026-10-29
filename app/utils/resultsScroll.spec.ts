@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { RESULTS_ID, scrollToResults } from './resultsScroll'
 
-// The header (scroll-padding on <html>) and the margin of the results: 97 + 24
-const OFFSET = 121
+// The header and the filter bar under it (scroll-padding on <html>, 69 + 61 at 375px) and the margin of
+// the results: 130 + 24
+const OFFSET = 154
 // The page is scrolled 900px and the results start 300px above the viewport, 600px down the page
 const SCROLL_Y = 900
 const ABOVE = -300
@@ -26,7 +27,7 @@ beforeEach(() => {
   focus = vi.spyOn(results, 'focus')
   vi.spyOn(results, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, top, 100, 100))
   document.body.append(results)
-  document.documentElement.style.setProperty('scroll-padding-top', '97px')
+  document.documentElement.style.setProperty('scroll-padding-top', '130px')
   vi.stubGlobal('scrollY', SCROLL_Y)
   vi.stubGlobal('scrollTo', scrollTo)
   vi.stubGlobal('matchMedia', (query: string) => ({

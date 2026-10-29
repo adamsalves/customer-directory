@@ -37,7 +37,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `aria-hidden` no span da reticência                 | `aria-hidden` no próprio `<li>`            | sem `listitem` vazio para o leitor de tela      |
 | espaços de 12px e 4px em qualquer largura           | sem espaços abaixo de 348px de container   | as listas compactas cabem de 280px a 375px      |
 | alvos de 32px (44px do projeto abaixo de 960px)     | container ÷ 7 abaixo de 308px (41px a 320) | 5 páginas a 280px; mínimo de 24px (WCAG 2.5.8)  |
-| `goPage` rola se `top < 0` e leva o topo a 130px    | `top` < header + 24px: leva-o a esse ponto | 130 = header + toolbar sticky (ainda não há)    |
+| `goPage` rola se `top < 0` e leva o topo a 130px    | `top` < header+barra+24px: leva-o até lá   | 130 = header + toolbar sticky (barra do sheet)  |
 | rolagem suave sempre                                | imediata com `prefers-reduced-motion`      | respeita o movimento reduzido do sistema        |
 | filtra a cada tecla, sem espera                     | grava a URL 300ms depois da última tecla   | cada gravação da URL refaz a busca no BFF       |
 | `replaceState` em toda busca                        | `replace` na lista, `push` vindo de fora   | voltar não percorre cada termo e volta à origem |
@@ -52,6 +52,15 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | remover um chip não move o foco                     | foco: chip seguinte, anterior, `#results`  | o chip sai e o foco cai no `body` (ADR-0022)    |
 | chip de 32px de altura em qualquer largura          | 44px abaixo de 960px                       | alvo de toque do projeto: 44px                  |
 | rótulo do chip sem limite de largura                | uma linha com reticências                  | uma busca longa sem espaço estoura a tela       |
+| botão "Filtros" com `aria-expanded`                 | só `aria-haspopup="dialog"`                | o botão fica inerte com o sheet aberto          |
+| rótulo "Filtros, 1 ativos"                          | "Filtros, 1 ativo"                         | concordância: o plural só a partir de 2         |
+| "Limpar" do sheet com `disabled`                    | `aria-disabled="true"`, sem `disabled`     | o botão desabilitado perde o foco do clique     |
+| o sheet fecha ao passar de 960px (`onResize`)       | continua aberto; o foco cai no `body`      | a largura é só CSS (ADR-0014); o botão saiu     |
+| "Ver N membros" com o total do filtro local         | último total; sem resposta, "Ver clientes" | o total vem do BFF; na busca vale o anterior    |
+| `max-height: 88vh` no sheet                         | `max-block-size: 88dvh`                    | `vh` não acompanha a barra de URL do celular    |
+| `body.style.overflow = 'hidden'` ao abrir o sheet   | `overflow` + `scrollbar-gutter` no `html`  | só o `:modal` trava; a barra sai e nada se move |
+| o fundo é um `div` à parte, com `onClick`           | fecha se apertar e soltar no fundo         | o arrasto que cruza a borda clica no `<dialog>` |
+| o 2º clique de um clique duplo age no sheet         | ignora clique com `detail > 1` no sheet    | o 2º clique de "Filtros" cai no sheet aberto    |
 
 ## Consequências
 

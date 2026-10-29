@@ -6,8 +6,13 @@ import { GENDERS } from '~/utils/genders'
 import S from './FilterPanel.module.scss'
 
 // The facets come from the BFF answer, never from the URL. There is none while no answer has come
-// (or after a failed one): the panel then has no counts.
-const props = defineProps<{ facets: ICustomerFacets | undefined }>()
+// (or after a failed one): the panel then has no counts. `aside` is the card of the page from 960px;
+// `sheet` is the same panel in the dialog below it (#26), with every state listed and no clear button
+// of its own, since the sheet has one.
+const props = withDefaults(
+  defineProps<{ facets: ICustomerFacets | undefined; variant?: 'aside' | 'sheet' }>(),
+  { variant: 'aside' },
+)
 
 defineEmits<{ clear: [] }>()
 
@@ -33,13 +38,17 @@ const statesListId = useId()
 const expanded = ref(false)
 const toggleRef = useTemplateRef('toggle')
 
-// The states in the list: the five, then the picked ones, or all of them once "Ver todos" is open.
-// `states` is in table order, so the picked ones are as well. A state with nobody in it is dimmed
-// unless it is picked: a pick is never dimmed, it is what the list is filtered by (ADR-0013).
+// The states in the list: the five, then the picked ones, or all of them once "Ver todos" is open
+// (the sheet has no such button: it lists them all). `states` is in table order, so the picked ones
+// are as well. A state with nobody in it is dimmed unless it is picked: a pick is never dimmed, it
+// is what the list is filtered by (ADR-0013).
 const stateRows = computed(() =>
   [
     ...DEFAULT_STATES,
-    ...OTHER_STATES.filter(({ slug }) => expanded.value || current.value.states.includes(slug)),
+    ...OTHER_STATES.filter(
+      ({ slug }) =>
+        props.variant === 'sheet' || expanded.value || current.value.states.includes(slug),
+    ),
   ].map(({ slug, name }) => {
     const checked = current.value.states.includes(slug)
     const count = props.facets?.states[slug]
@@ -145,6 +154,7 @@ function toggleState(slug: string) {
         </label>
       </div>
       <button
+        v-if="variant === 'aside'"
         ref="toggle"
         type="button"
         :aria-expanded="expanded"
@@ -184,7 +194,7 @@ function toggleState(slug: string) {
       </label>
     </fieldset>
     <button
-      v-if="hasFilter"
+      v-if="variant === 'aside' && hasFilter"
       type="button"
       :class="S.Clear"
       data-testid="filter-panel__clear--button"

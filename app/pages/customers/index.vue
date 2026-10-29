@@ -42,12 +42,15 @@ function clearSearchAndFilters() {
     <AppBreadcrumb :items="[{ label: 'Home', to: '/customers' }, { label: 'Clientes' }]" />
     <h1 :class="S.Title" data-testid="customers__title--heading">Lista de clientes</h1>
     <div :class="S.Layout">
-      <!-- In the HTML for any width: CSS shows it from 960px, and the sheet (#26) takes the filters
-           below that (ADR-0014) -->
+      <!-- In the HTML for any width: CSS shows it from 960px, and below that the filters are in the
+           sheet the bar opens (#26, ADR-0014) -->
       <aside aria-label="Filtros" :class="S.Filters" data-testid="customers__filters--aside">
         <FilterPanel :facets="data?.facets" @clear="clearSearchAndFilters" />
       </aside>
       <div data-testid="customers__column--div">
+        <!-- The bar that opens the sheet of the filters, below 960px. The first thing in the column, so
+             it sticks under the header for the whole column. -->
+        <FilterSheet :total="data?.total" :facets="data?.facets" />
         <!-- Outside the results, so the chips stay through the skeleton and the focus a removal leaves
              on the next chip is not lost when the list reloads -->
         <FilterChips />

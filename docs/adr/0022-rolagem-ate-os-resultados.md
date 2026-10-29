@@ -34,6 +34,6 @@ Fontes: [caniuse.com/css-overflow-anchor](https://caniuse.com/css-overflow-ancho
 - Hash, skip link e troca de rota continuam sendo do Nuxt.
 - A altura do header continua definida num lugar só (`base.scss`).
 - Voltar e avançar não restauram a posição salva. Restaurar a posição deixava a página fora do lugar, porque o skeleton e a lista trocam logo depois e deslocam o conteúdo.
-- Quando a toolbar sticky do mobile entrar (no protótipo, `top: headerH`, cerca de 61px), o `scroll-padding-block-start` do `<html>` precisa somar a altura dela. Senão os resultados e o destino do skip link ficam embaixo dela.
+- A toolbar sticky do mobile entrou na #26 (no protótipo, `top: headerH`; 61px abaixo de 960px). O `scroll-padding-block-start` do `<html>` soma a altura dela: `--header-size` mais `--toolbar-size` em `base.scss`, 130px a 375px, 158px a 768px e 97px a partir de 960px, onde a barra sai da página. Assim os resultados e o destino do skip link ficam abaixo dela.
 - O foco do teclado depois da troca de página (#72) segue a regra da rolagem: só na troca de página, nunca ao voltar e avançar. Quem o move é o `scrollToResults`, que ganhou essa segunda tarefa e manteve o nome.
 - A página não rola além do próprio fim. Na última página, numa tela mais alta que ela, o rodapé é empurrado para baixo e o `<select>` termina mais abaixo do que estava, ainda na tela.

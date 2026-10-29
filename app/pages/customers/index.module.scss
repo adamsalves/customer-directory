@@ -14,8 +14,9 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-// The card around the panel, as in the prototype. Below 960px the filters wait for the sheet (#26),
-// so the panel is out of the page, not just out of sight (ADR-0014).
+// The card around the panel, as in the prototype. Below 960px the filters are in the sheet (#26), so
+// the panel is out of the page, not just out of sight, and no control of it is left in the tab order
+// (ADR-0014).
 .Filters {
   display: none;
   padding-block: 24px 28px;
@@ -25,7 +26,8 @@
   background: var(--surface);
 }
 
-// A page change scrolls here; with the header's scroll-padding on <html> this leaves 24px of air
+// A page change scrolls here; with the scroll-padding on <html> (the header, and below 960px the
+// filter bar) this leaves 24px of air
 .Results {
   scroll-margin-block-start: 24px;
 }

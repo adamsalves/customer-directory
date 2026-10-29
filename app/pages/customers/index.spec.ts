@@ -81,6 +81,10 @@ const CLEAR = '[data-testid="empty-state__clear--button"]'
 const SEARCH = '[data-testid="header__search--input"]'
 const PER_PAGE = '[data-testid="pagination__per-page--select"]'
 const CHIPS = '[data-testid="filter-chips__root--list"]'
+const BAR = '[data-testid="filter-sheet__bar--div"]'
+const SHEET = '[data-testid="filter-sheet__root--dialog"]'
+const SHEET_OPEN = '[data-testid="filter-sheet__open--button"]'
+const SHEET_APPLY = '[data-testid="filter-sheet__apply--button"]'
 const CHIP = '[data-testid="filter-chips__chip--button"]'
 const GENDER = '[data-testid="filter-panel__gender--radio"]'
 
@@ -599,15 +603,63 @@ describe('customers page', () => {
     })
   })
 
+  // The sheet is the filter panel below 960px: all the states, with the counts of the same answer
+  it('gives the panel of the sheet the counts of the answer', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers' })
+
+    await wrapper.get(SHEET_OPEN).trigger('click')
+    await vi.waitFor(() => {
+      expect(wrapper.get(SHEET).find(PANEL).exists()).toBe(true)
+    })
+    const panel = wrapper.get(SHEET).get(PANEL)
+
+    expect(panel.findAll(STATE)).toHaveLength(BRAZILIAN_STATES.length)
+    expect(panel.get(`label:has(${STATE}[value="sao-paulo"]) ${COUNT}`).text()).toBe('12')
+    expect(panel.get(`label:has(${STATE}[value="minas-gerais"]) ${COUNT}`).text()).toBe('8')
+  })
+
+  // The button of the sheet names the total of the answer, and keeps the last one while the next
+  // loads, as the counts of the panel do. A failed request has none.
+  it('names the total in the button of the sheet, the last one while the next answer loads', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers' })
+    expect(wrapper.get(SHEET_APPLY).text()).toBe('Ver 20 clientes')
+    gate = new Promise((resolve) => {
+      release = resolve
+    })
+    empty = true
+
+    await navigateTo('/customers?states=bahia')
+    await vi.waitFor(() => {
+      expect(wrapper.find(SKELETON).exists()).toBe(true)
+    })
+    expect(wrapper.get(SHEET_APPLY).text()).toBe('Ver 20 clientes')
+
+    release?.()
+    await vi.waitFor(() => {
+      expect(wrapper.get(SHEET_APPLY).text()).toBe('Nenhum resultado')
+    })
+  })
+
+  it('names no total in the button of the sheet when the request fails', async () => {
+    failing = true
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers' })
+
+    expect(wrapper.get(SHEET_APPLY).text()).toBe('Ver clientes')
+  })
+
   // Outside the results, so the skeleton does not swap them out and the focus a removal gives the next
-  // chip stays on it while the list loads. Nor are they in the panel's aside.
-  it('puts the filter chips at the top of the results column, outside the results', async () => {
+  // chip stays on it while the list loads. Nor are they in the panel's aside. The bar of the sheet
+  // (#26) and its dialog come first: the bar sticks under the header for the whole column.
+  it('puts the filter chips at the top of the results column, under the bar of the sheet', async () => {
     const wrapper = await mountSuspended(CustomersPage, {
       route: '/customers?search=ana&states=bahia',
     })
     const chips = wrapper.get(CHIPS).element
+    const sheet = wrapper.get(SHEET).element
 
-    expect(wrapper.get(COLUMN).element.firstElementChild).toBe(chips)
+    expect(wrapper.get(COLUMN).element.firstElementChild).toBe(wrapper.get(BAR).element)
+    expect(sheet.previousElementSibling).toBe(wrapper.get(BAR).element)
+    expect(sheet.nextElementSibling).toBe(chips)
     expect(wrapper.get(RESULTS).element.contains(chips)).toBe(false)
     expect(wrapper.get(FILTERS).element.contains(chips)).toBe(false)
   })

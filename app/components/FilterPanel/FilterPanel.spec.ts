@@ -38,7 +38,7 @@ afterEach(() => {
 // In the document, so a control can take focus. The route is the list state the panel starts from.
 async function mountPanel(
   route = '/customers',
-  props: { facets: ICustomerFacets | undefined } = { facets },
+  props: { facets: ICustomerFacets | undefined; variant?: 'aside' | 'sheet' } = { facets },
 ) {
   return mountSuspended(FilterPanel, { route, props, attachTo: document.body })
 }
@@ -589,5 +589,38 @@ describe('FilterPanel clear button', () => {
     expect(wrapper.emitted('clear')).toEqual([[]])
     expect(push).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
+  })
+})
+
+// The sheet (#26) shows the same panel in a dialog: all the states in the list, with no "Ver todos",
+// and no clear button, since the sheet has its own. The default, `aside`, is every test above.
+describe('FilterPanel sheet variant', () => {
+  const mountSheetPanel = (route = '/customers') => mountPanel(route, { facets, variant: 'sheet' })
+
+  it('lists the 27 states at once, as "Ver todos" lists them, with nothing to open', async () => {
+    const aside = await mountPanel()
+    await aside.get(TOGGLE).trigger('click')
+    const wrapper = await mountSheetPanel()
+
+    expect(wrapper.find(TOGGLE).exists()).toBe(false)
+    expect(namesIn(wrapper, STATES)).toHaveLength(27)
+    expect(namesIn(wrapper, STATES)).toEqual(namesIn(aside, STATES))
+  })
+
+  it('has no clear button of its own, whatever is picked', async () => {
+    const wrapper = await mountSheetPanel('/customers?search=ana&states=bahia&gender=female')
+
+    expect(wrapper.find(CLEAR).exists()).toBe(false)
+  })
+
+  // The row stays, so the focus has nowhere to move from
+  it('leaves the focus on a state outside the five that is unpicked', async () => {
+    const wrapper = await mountSheetPanel('/customers?states=acre')
+    focusOn(stateBox(wrapper, 'acre').element)
+
+    await stateBox(wrapper, 'acre').setValue(false)
+    await urlIs('/customers')
+
+    expect(document.activeElement).toBe(stateBox(wrapper, 'acre').element)
   })
 })

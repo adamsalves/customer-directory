@@ -153,9 +153,12 @@ for (const { width, height } of [
 // The chip repeats the search, which can be 100 characters with no space (MAX_SEARCH_LENGTH), like an
 // email, or words that would break into lines. The label ends in an ellipsis on one line, else the
 // chip is wider than the screen and the page scrolls sideways, or taller than the target. The chip
-// keeps its height, the ✕ its size, and the name the whole search.
+// keeps its height, the ✕ its size, and the name the whole search. The chips come in with a lift
+// (jsm-in): mid-way the boxes are off the pixel grid, and one that crosses 256px from the top (below
+// the bar of the sheet, #26) is off by a float rounding. Reduced motion leaves them in place.
 for (const width of [320, 375]) {
   test(`a long search in a filter chip at ${String(width)}px`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
     const search = `${'w'.repeat(60)} ${'w'.repeat(39)}`
     await page.setViewportSize({ width, height: 800 })
     await page.goto(`/customers?search=${encodeURIComponent(search)}`)
@@ -179,6 +182,7 @@ for (const width of [320, 375]) {
 
 // Four chips do not fit a row at 375px: they wrap onto the next one, 8px apart both ways, instead of
 // running off the page, and the results start 16px under them. The first two fit together. The chips
+// start 16px under the bar of the sheet, the first thing in the column below 960px (#26). The chips
 // come in with a lift (jsm-in) that moves what is measured: reduced motion leaves them in place.
 test('the filter chips wrap onto another row, 8px apart, 16px above the results', async ({
   page,
@@ -195,9 +199,11 @@ test('the filter chips wrap onto another row, 8px apart, 16px above the results'
   const list = await boxOf(page.getByTestId('filter-chips__root--list'))
   const results = await boxOf(page.getByTestId('customers__results--section'))
   const column = await boxOf(page.getByTestId('customers__column--div'))
+  const bar = await boxOf(page.getByTestId('filter-sheet__bar--div'))
   await expect(page.getByTestId('filter-chips__root--list')).toHaveCSS('list-style-type', 'none')
   expect(first.x).toBeCloseTo(column.x, 1)
-  expect(first.y).toBeCloseTo(column.y, 1)
+  expect(bar.y).toBeCloseTo(column.y, 1)
+  expect(first.y - (bar.y + bar.height)).toBeCloseTo(16, 1)
   expect(second.y).toBeCloseTo(first.y, 1)
   expect(second.x - (first.x + first.width)).toBeCloseTo(8, 1)
   expect(third.y - (first.y + first.height)).toBeCloseTo(8, 1)
@@ -227,7 +233,7 @@ const afterColumn = (image: TBox) => image.x + 272 + 16
 // the image and the pad on each side, and no more. From 960px the logo has a column of 272px in the
 // header grid and the search starts 16px after it, counted from the image, in either theme; below
 // that the search follows the logo by a gap of 16px (12px under 640px). The header is 97px tall
-// from 640px and 69px under it, the two numbers base.scss holds in scroll-padding. The theme toggle
+// from 640px and 69px under it, the two numbers base.scss holds in --header-size. The theme toggle
 // is at the far end of the row, the padding of the header (24px, 16px under 640px) from its edge.
 for (const theme of ['light', 'dark']) {
   const pad = theme === 'dark' ? 6 : 0
@@ -259,8 +265,32 @@ for (const theme of ['light', 'dark']) {
   }
 }
 
-// The filter panel is out of the page below 960px until the sheet (#26): display none, so it is out of
-// the accessibility tree too and no tab stop is left behind a hidden control. 959px is the edge.
+// What the page scrolls under (fragment and focus scrolling, ADR-0022): the header, and below 960px the
+// bar of the sheet that sticks under it (#26), 61px tall. The padding is the sum of what is there, as
+// measured, so neither number in base.scss can drift from the boxes.
+for (const { width, padding, bar } of [
+  { width: 375, padding: 130, bar: true },
+  { width: 639, padding: 130, bar: true },
+  { width: 640, padding: 158, bar: true },
+  { width: 768, padding: 158, bar: true },
+  { width: 959, padding: 158, bar: true },
+  { width: 960, padding: 97, bar: false },
+  { width: 1280, padding: 97, bar: false },
+]) {
+  test(`the page scrolls under ${String(padding)}px at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    const header = await boxOf(page.getByRole('banner'))
+    await expect(page.locator('html')).toHaveCSS('scroll-padding-top', `${String(padding)}px`)
+    const sheetBar = page.getByTestId('filter-sheet__bar--div')
+    await expect(sheetBar).toBeVisible({ visible: bar })
+    expect(header.height + (bar ? (await boxOf(sheetBar)).height : 0)).toBeCloseTo(padding, 1)
+  })
+}
+
+// The filter panel is out of the page below 960px, where the sheet has the filters (#26): display none,
+// so it is out of the accessibility tree too and no tab stop is left behind a hidden control. 959px
+// is the edge.
 test('the filter panel is out of the page at 959px', async ({ page }) => {
   await openList(page, 959)
 

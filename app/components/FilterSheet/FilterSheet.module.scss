@@ -1,0 +1,208 @@
+// Measures of the prototype's filter bar and bottom sheet (v2, ADR-0013). The pills of the states and
+// the segmented gender inside the sheet are the panel's (#96).
+
+// Sticky under the header, as the first thing in the results column: 61px tall (8px, the button of
+// 44px, 8px and the border), which is --toolbar-size in base.scss. It bleeds to the edges of the
+// screen through the padding of <main>. From 960px the panel is in the page and the bar is not: out
+// of the accessibility tree and of the tab order, not just out of sight (ADR-0014).
+.Bar {
+  position: sticky;
+  inset-block-start: var(--header-size);
+  z-index: 15;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-inline: -24px;
+  margin-block-end: 16px;
+  padding-block: 8px;
+  padding-inline: 24px;
+  border-block-end: 1px solid var(--border-subtle);
+  background: var(--toolbar-bg);
+  backdrop-filter: saturate(1.4) blur(6px);
+}
+
+.Trigger {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+  block-size: 44px;
+  padding-block: 0;
+  padding-inline: 14px 16px;
+  border: 1px solid var(--text-strong);
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.Trigger:active {
+  background: var(--surface-alt);
+}
+
+.Badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 22px;
+  block-size: 22px;
+  padding-inline: 6px;
+  border-radius: 11px;
+  background: var(--inverse-bg);
+  color: var(--inverse-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+// A modal dialog of the browser is in the middle of the screen, with a frame, a padding and margins of
+// its own, auto, which also center it across. This one sits on the bottom edge, as wide as the screen
+// up to 560px, and its body is what scrolls: the height is capped, in dvh since vh is the screen with
+// the URL bar of a phone pulled in, and the grip, the header and the footer stay. The browser hides a
+// closed dialog, so the layout is set only for an open one.
+.Sheet {
+  inline-size: 100%;
+  max-inline-size: 560px;
+  max-block-size: 88dvh;
+  margin-block: auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 16px 16px 0 0;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sheet);
+  overflow: hidden;
+}
+
+.Sheet[open] {
+  display: flex;
+  flex-direction: column;
+  animation: global(jsm-up) 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.Sheet::backdrop {
+  background: var(--overlay);
+  animation: global(jsm-fade) 0.2s ease-out;
+}
+
+// A box of its own for the handle: a click beside it must land on the grip and not on the bare
+// dialog, which closes the sheet (FilterSheet.vue)
+.Grip {
+  flex: 0 0 auto;
+  padding-block-start: 8px;
+}
+
+.Grip::before {
+  content: '';
+  display: block;
+  inline-size: 40px;
+  block-size: 4px;
+  margin-inline: auto;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+
+.Header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 8px;
+  padding-inline: 20px 8px;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.Title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 20px;
+}
+
+.Close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+
+.Close:active {
+  background: var(--surface-alt);
+}
+
+.Body {
+  flex: 1 1 auto;
+  padding-block: 20px 24px;
+  padding-inline: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.Footer {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding-block: 12px calc(12px + env(safe-area-inset-bottom));
+  padding-inline: 20px;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+// As tall as the action button, which sets the 48px: the footer stretches this one to it
+.Clear {
+  flex: 0 0 auto;
+  padding-block: 0;
+  padding-inline: 20px;
+  border: 1px solid var(--text-strong);
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+// Nothing to clear: the button stays where it is, in the tab order, and says so
+.Clear[aria-disabled='true'] {
+  opacity: 0.4;
+}
+
+.Apply {
+  flex: 1 1 auto;
+  block-size: 48px;
+  padding-block: 0;
+  padding-inline: 20px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.Apply:active {
+  background: var(--primary-bg-hover);
+}
+
+@media (width >= 960px) {
+  .Bar {
+    display: none;
+  }
+}
+
+@media (width < 640px) {
+  .Bar {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+}

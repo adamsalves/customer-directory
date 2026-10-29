@@ -317,3 +317,44 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   Conferido no preview, nos dois temas a 375, 768 e 1280px: o roteiro de 4 passos, a busca longa, o Voltar depois de remover a busca e o duplo clique.
 
 - **Pendente:** clicar no chip da busca no mesmo quadro em que o próprio campo grava cancela essa gravação, e o campo fica com o texto. Não é alcançável à mão, e a correção é no `SearchField`. Leitura única do estado em voo no `useListQuery` ([#95](https://github.com/adamsalves/customer-directory/issues/95)). Sheet mobile (#26); E2E dos filtros (#27). Leitor de tela e Safari não conferidos.
+
+### #26 · Sheet de filtros no mobile · [PR #98](https://github.com/adamsalves/customer-directory/pull/98)
+
+- **Decidido:** [#26](https://github.com/adamsalves/customer-directory/issues/26) · ADR-0013 (9 linhas novas), ADR-0014, ADR-0015 (o keyframe é `jsm-up`, e o `::backdrop` entra no movimento reduzido), ADR-0022 (a soma da barra no `scroll-padding` foi cumprida). O visual de pills e segmentado saiu para a [#96](https://github.com/adamsalves/customer-directory/issues/96), para o comportamento ficar num PR só. O dono decidiu:
+  - o sheet continua aberto quando a tela passa de 960px: a largura é só CSS, e ao fechar o foco cai no `body`;
+  - durante o carregamento, "Ver N clientes" mostra o último total;
+  - o "Limpar" do rodapé limpa estados e gênero e mantém a busca, como no protótipo.
+
+  O dono aprovou passar do teto de ~400 linhas e manter os E2E de estilo.
+
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/26#issuecomment-6496067522) · estimativa ~520 linhas
+- **Como:** o `FilterSheet` fica na coluna da lista, antes dos chips.
+  - **Barra fixa:** só abaixo de 960px, encostada no header (`--header-size`). O `--toolbar-size` de 61px entra no `scroll-padding-block-start`, que fica em 130px a 375, 158px a 768 e 97px a partir de 960.
+  - **Botão "Filtros":** um badge com estados + gênero, sem a busca, lidos do estado em voo como nos chips. O `aria-label` é "Filtros, 1 ativo" ou "Filtros, N ativos".
+  - **Dialog:** `<dialog>` com `showModal()` e o `FilterPanel` na variante `sheet`, montado só com o sheet aberto. A variante lista os 27 estados, sem "Ver todos" e sem o "Limpar filtros" interno, que levaria o foco a um fundo inerte.
+  - **Rodapé:** o "Limpar" usa `aria-disabled` sem filtros, para o foco não cair no `body`. O botão de ação diz "Nenhum resultado", "Ver 1 cliente" ou "Ver N clientes" e só fecha o sheet.
+  - **Rolagem:** `html:has(dialog:modal)` trava a página com `overflow: hidden` e `scrollbar-gutter: stable`.
+  - **Animação:** `jsm-up` no sheet e `jsm-fade` no fundo, as duas desligadas pelo movimento reduzido.
+- **Resultado:** +1697 −33 sem este registro (estimativa ~520; antes do review, +1410 −34). Código +451, specs +1234, docs +12.
+  - **Por que estourou:** o SCSS do sheet deu 207 linhas (eu tinha estimado ~90), e o E2E fixa o estilo declaração por declaração.
+  - **Mutação:** 77 de 77 no componente; 126 de 126 declarações de CSS; 26 de 26 nas correções do review. Três declarações equivalentes saíram do código. O `env(safe-area-inset-bottom)` não aparece no Chromium. O `88dvh` só se distingue do `vh` com a barra do navegador de um celular, e por isso o teste lê o texto da declaração.
+  - **Review** (`/code-review`, 10 achados, 5 aplicados):
+    1. Um arraste que começava dentro do sheet e terminava no fundo fechava o sheet, porque o clique vai para o ancestral comum, o dialog. Agora o fundo só fecha se a pressão e a soltura caem nele. O caso inverso, que o implementer achou depois, entrou na mesma regra.
+    2. No duplo clique em "Filtros", o 2º clique caía no sheet recém-aberto: fechava pelo fundo ou marcava um estado. Agora um clique com `event.detail > 1` dentro do sheet é ignorado em captura. É a mesma lição dos chips.
+    3. Travar a página com `overflow: hidden` tira a barra de rolagem clássica, e a página pulava 15px de lado. O `scrollbar-gutter: stable` entrou na própria regra da trava, que agora mira `dialog:modal`.
+       - Primeiro eu o pus no `html` inteiro. O Chromium headless reservou 15px, quebrou 15 E2E de geometria, e uma página curta ganharia uma faixa vazia. Voltou para a trava.
+    4. O `88vh` podia passar da área visível com a barra do navegador aberta. Agora é `88dvh`.
+    5. A classe `.Sheet` vazia, criada para a #96, saiu com os testes dela. A #96 cria a classe quando houver estilo.
+
+  - **Recusados 5:**
+    - o anúncio do novo total ao leitor de tela, que virou a [#97](https://github.com/adamsalves/customer-directory/issues/97) (M9);
+    - o tamanho do PR (exceção aprovada);
+    - este registro, que já estava previsto;
+    - derivar a altura do header e a sangria da barra de uma fonte só (dois casos, e o E2E fixa os valores);
+    - reaproveitar o `hasFilters` e o plural do painel (o badge precisa do número, e o plural tem dois usos).
+
+- **Pendente:** visual de pills e segmentado (#96); anúncio do total (#97); E2E dos filtros (#27). Não conferidos:
+  - Safari e iPhone (`dvh`, área segura, foco depois do toque);
+  - leitor de tela.
+
+  Com barra clássica, numa página sem rolagem, travar a página ainda estreita o layout em 15px.
