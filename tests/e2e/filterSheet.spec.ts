@@ -17,6 +17,16 @@ const apply = (page: Page) => page.getByTestId('filter-sheet__apply--button')
 // The page has a panel of its own, hidden below 960px: the sheet's is the one in the dialog
 const stateBox = (page: Page, slug: string) =>
   sheet(page).locator(`[data-testid="filter-panel__state--checkbox"][value="${slug}"]`)
+// In the sheet the box is 1px and out of sight: the pill, its label, is what the pointer meets
+const pillOf = (page: Page, slug: string) =>
+  sheet(page).locator(`label:has([data-testid="filter-panel__state--checkbox"][value="${slug}"])`)
+const segmentOf = (page: Page, value: string) =>
+  sheet(page).locator(`label:has([data-testid="filter-panel__gender--radio"][value="${value}"])`)
+const nameOf = (label: Locator) => label.getByTestId('filter-panel__name--text')
+const countOf = (label: Locator) => label.getByTestId('filter-panel__count--text')
+const numberOf = (label: Locator) => label.getByTestId('filter-panel__count--number')
+const checkOf = (label: Locator) => label.getByTestId('filter-panel__check--icon')
+const legendOf = (page: Page, text: string) => sheet(page).locator('legend', { hasText: text })
 const cards = (page: Page) => page.getByTestId('customer-card__root--article')
 
 // Two frames are enough for what runs a frame after an event: the scroll, the focus
@@ -194,7 +204,7 @@ test('a double click on "Filtros" opens the sheet and leaves it open', async ({ 
 
 // The label of a state sends its click to the box, and the box ticks itself: the browser acts on a
 // click before anyone listens to it. The first click of a double click picks the state and the second
-// leaves it picked, on the name and on the box alike.
+// leaves it picked, on the name and on the pill alike (4px in, in its border and padding).
 test('a double click on a state in the sheet picks it once', async ({ page }) => {
   await openSheet(page)
   const name = (state: string) =>
@@ -204,7 +214,7 @@ test('a double click on a state in the sheet picks it once', async ({ page }) =>
   await expect(stateBox(page, 'acre')).toBeChecked()
   await expect(page).toHaveURL('/customers?states=acre')
 
-  await stateBox(page, 'bahia').dblclick()
+  await pillOf(page, 'bahia').dblclick({ position: { x: 4, y: 20 } })
   await expect(stateBox(page, 'bahia')).toBeChecked()
   await expect(page).toHaveURL('/customers?states=acre,bahia')
 })
@@ -218,12 +228,12 @@ test('a state picked in the sheet is in the URL at once, and the button names th
   await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
 
   // A state outside the five: the sheet lists them all
-  await stateBox(page, 'acre').check()
+  await pillOf(page, 'acre').click()
   await expect(page).toHaveURL('/customers?states=acre')
   await expect(apply(page)).toHaveText('Ver 1 cliente')
   await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros, 1 ativo')
 
-  await stateBox(page, 'minas-gerais').check()
+  await pillOf(page, 'minas-gerais').click()
   await expect(page).toHaveURL('/customers?states=acre,minas-gerais')
   await expect(apply(page)).toHaveText('Ver 3 clientes')
   await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros, 2 ativos')
@@ -236,7 +246,7 @@ test('a state picked in the sheet is in the URL at once, and the button names th
   await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros')
 
   // The button only closes: the list is already the one it names
-  await stateBox(page, 'minas-gerais').check()
+  await pillOf(page, 'minas-gerais').click()
   await expect(apply(page)).toHaveText('Ver 2 clientes')
   await apply(page).click()
   await expect(sheet(page)).toBeHidden()
@@ -595,6 +605,219 @@ test('the geometry and the style of the bar and of the sheet', async ({ page }) 
   await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
   await expect(clearButton(page)).toHaveCSS('opacity', '0.4')
 })
+
+// The panel in the sheet (#96): the states as pills and the gender as a segmented control, as the
+// prototype draws them (v2, ADR-0013), in both themes. The boxes are out of sight and each label draws
+// its own state, which happy-dom, with no layout and no :has(), cannot see (FilterPanel.spec.ts).
+// Minas Gerais (2 customers) is the state picked; São Paulo (nobody) is a dimmed pill and Espírito
+// Santo (1) a plain one. The page opens dark, which waitForHydration needs: the toggle takes it to the
+// light theme once it is interactive.
+async function openPanelIn(page: Page, theme: 'dark' | 'light') {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openList(page, { path: '/customers?states=minas-gerais' })
+  if (theme === 'light') {
+    await page.getByTestId('header__theme--toggle').click()
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  }
+  await trigger(page).click()
+  await expect(sheet(page)).toBeVisible()
+}
+
+// Each property as the token it must resolve to in the theme of the page
+async function expectTokens(page: Page, target: Locator, style: Record<string, string>) {
+  for (const [property, token] of Object.entries(style)) {
+    await expect(target, property).toHaveCSS(property, await resolved(page, 'color', token))
+  }
+}
+
+for (const theme of ['dark', 'light'] as const) {
+  // A pill is 40px tall and 20px round, 14px in from its 1px border, the name and the count 6px apart.
+  // A picked one is filled with --inverse-bg and has a check of 14px before the name, which the others
+  // do not have, not even as room. A state nobody is from is in the muted color, and never a picked one.
+  test(`the pills of the states in the ${theme} theme`, async ({ page }) => {
+    await openPanelIn(page, theme)
+    const plain = pillOf(page, 'espirito-santo')
+    const dimmed = pillOf(page, 'sao-paulo')
+    const picked = pillOf(page, 'minas-gerais')
+    const legend = legendOf(page, 'Por Estado')
+
+    await expectStyle(plain, {
+      position: 'relative',
+      'column-gap': '6px',
+      height: '40px',
+      'padding-left': '14px',
+      'padding-right': '14px',
+      'border-top-width': '1px',
+      'border-top-style': 'solid',
+      'border-top-left-radius': '20px',
+      'font-size': '14px',
+    })
+    await expectTokens(page, plain, {
+      'border-top-color': '--border-strong',
+      'background-color': '--surface',
+      color: '--text-strong',
+    })
+    await expectTokens(page, dimmed, { color: '--text-muted' })
+    await expectTokens(page, picked, {
+      'border-top-color': '--inverse-bg',
+      'background-color': '--inverse-bg',
+      color: '--inverse-text',
+    })
+    // The count: 12px, and on a picked pill in the color of the pill, a little faded
+    await expectStyle(countOf(plain), { 'font-size': '12px' })
+    await expectTokens(page, countOf(plain), { color: '--text-count' })
+    await expectStyle(countOf(picked), { 'font-size': '12px', opacity: '0.75' })
+    await expectTokens(page, countOf(picked), { color: '--inverse-text' })
+    await expectStyle(checkOf(plain), { display: 'none' })
+    await expectStyle(checkOf(picked), { display: 'block', 'stroke-width': '3px' })
+    await expectTokens(page, checkOf(picked), { stroke: '--inverse-text' })
+    await expectStyle(sheet(page).getByTestId('filter-panel__list--div'), {
+      display: 'flex',
+      'flex-wrap': 'wrap',
+      'row-gap': '8px',
+      'column-gap': '8px',
+    })
+    await expectStyle(legend, {
+      'font-size': '16px',
+      'font-weight': '500',
+      'line-height': 'normal',
+    })
+    await expectTokens(page, legend, { color: '--text-strong' })
+
+    // The name is the border and the padding in, with no room kept for the check; the check of a picked
+    // pill takes its place there, 14px, and the name is 6px after it
+    const name = await boxOf(nameOf(plain))
+    expect(name.x - (await boxOf(plain)).x).toBeCloseTo(1 + 14, 1)
+    const check = await boxOf(checkOf(picked))
+    expect(check).toMatchObject({ width: 14, height: 14 })
+    expect(check.x - (await boxOf(picked)).x).toBeCloseTo(1 + 14, 1)
+    expect((await boxOf(nameOf(picked))).x - (check.x + check.width)).toBeCloseTo(6, 1)
+    // The box of the control is 1px, out of sight
+    const input = plain.getByTestId('filter-panel__state--checkbox')
+    expect(await boxOf(input)).toMatchObject({ width: 1, height: 1 })
+  })
+
+  // Three columns of one width in a track of 4px, with 4px between them; the options are 40px tall and
+  // 20px round. The picked one is --seg-active-bg with its shadow, the others are bare. The name and the
+  // count are 3px apart, which the prototype writes as a space, in the middle. The count of the picked
+  // option has its color and the others the muted one: --text-count is 4.34:1 on --surface-alt in the
+  // light theme and 2.52:1 on the picked option in the dark one (ADR-0013).
+  test(`the segmented gender in the ${theme} theme`, async ({ page }) => {
+    await openPanelIn(page, theme)
+    const group = sheet(page).getByTestId('filter-panel__segments--div')
+    const active = segmentOf(page, 'all')
+    const inactive = segmentOf(page, 'female')
+    const last = segmentOf(page, 'male')
+    const shape = {
+      position: 'relative',
+      height: '40px',
+      'border-top-left-radius': '20px',
+      'column-gap': '3px',
+      'justify-content': 'center',
+      'font-size': '14px',
+    }
+
+    await expectStyle(group, {
+      display: 'grid',
+      'row-gap': '4px',
+      'column-gap': '4px',
+      'padding-top': '4px',
+      'padding-left': '4px',
+      'border-top-left-radius': '24px',
+    })
+    await expectTokens(page, group, { 'background-color': '--surface-alt' })
+    await expectStyle(active, { ...shape, 'font-weight': '500' })
+    await expectTokens(page, active, {
+      'background-color': '--seg-active-bg',
+      color: '--seg-active-text',
+    })
+    await expect(active).toHaveCSS('box-shadow', await resolved(page, 'boxShadow', '--shadow-seg'))
+    await expectStyle(inactive, { ...shape, 'font-weight': '400', 'box-shadow': 'none' })
+    await expectStyle(inactive, { 'background-color': 'rgba(0, 0, 0, 0)' })
+    await expectTokens(page, inactive, { color: '--text' })
+    await expectStyle(nameOf(inactive), { 'flex-grow': '0' })
+    await expectStyle(countOf(active), { 'font-size': '12px' })
+    await expectTokens(page, countOf(active), { color: '--seg-active-text' })
+    await expectStyle(countOf(inactive), { 'font-size': '12px' })
+    await expectTokens(page, countOf(inactive), { color: '--text-muted' })
+    await expectTokens(page, legendOf(page, 'Por Gênero'), { color: '--text-strong' })
+    await expectStyle(legendOf(page, 'Por Gênero'), {
+      'font-size': '16px',
+      'line-height': 'normal',
+    })
+
+    // The options fill the track, three of one width
+    const track = await boxOf(group)
+    const width = (track.width - 4 * 2 - 4 * 2) / 3
+    for (const [index, option] of [active, inactive, last].entries()) {
+      const box = await boxOf(option)
+      expect(box.width, `option ${String(index)}`).toBeCloseTo(width, 1)
+      expect(box.x - track.x, `option ${String(index)}`).toBeCloseTo(4 + index * (width + 4), 1)
+    }
+    // The room on both sides of the name and the count is the same
+    const box = await boxOf(last)
+    const name = await boxOf(nameOf(last))
+    const number = await boxOf(numberOf(last))
+    expect(number.x - (name.x + name.width)).toBeCloseTo(3, 1)
+    expect(name.x - box.x).toBeCloseTo(box.x + box.width - (number.x + number.width), 1)
+  })
+
+  // The focus is shown on the label, the one thing in sight, and only to the keyboard: the ring of the
+  // page (2px of --link, 2px away). The first Tab from the close button lands on the first state, and
+  // Shift+Tab from "Limpar" on the picked radio, the one stop of the group. A click is not the keyboard.
+  test(`the keyboard focus rings a pill and a segment in the ${theme} theme`, async ({ page }) => {
+    await openPanelIn(page, theme)
+    const ring = { 'outline-style': 'solid', 'outline-width': '2px', 'outline-offset': '2px' }
+    const none = { 'outline-style': 'none' }
+    const radio = (value: string) =>
+      sheet(page).locator(`[data-testid="filter-panel__gender--radio"][value="${value}"]`)
+
+    await expect(closeButton(page)).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(stateBox(page, 'sao-paulo')).toBeFocused()
+    await expectStyle(pillOf(page, 'sao-paulo'), ring)
+    await expectTokens(page, pillOf(page, 'sao-paulo'), { 'outline-color': '--link' })
+    await expectStyle(pillOf(page, 'rio-de-janeiro'), none)
+
+    await clearButton(page).focus()
+    await page.keyboard.press('Shift+Tab')
+    await expect(radio('all')).toBeFocused()
+    await expectStyle(segmentOf(page, 'all'), ring)
+    await expectTokens(page, segmentOf(page, 'all'), { 'outline-color': '--link' })
+    await expectStyle(segmentOf(page, 'female'), none)
+
+    await nameOf(pillOf(page, 'bahia')).click()
+    await expect(stateBox(page, 'bahia')).toBeFocused()
+    await expectStyle(pillOf(page, 'bahia'), none)
+    await nameOf(segmentOf(page, 'female')).click()
+    await expect(radio('female')).toBeFocused()
+    await expectStyle(segmentOf(page, 'female'), none)
+  })
+
+  // The prototype presses a plain pill into --surface-alt and has no hover. The page adds it for a
+  // pointer that can hover (ADR-0013): the desktop project has a mouse, the mobile one a touch screen.
+  // A picked pill and a segment stay as they are under either.
+  test(`a pill is pressed and hovered in the ${theme} theme`, async ({ page, isMobile }) => {
+    await openPanelIn(page, theme)
+    const [alt, surface, inverse] = await Promise.all([
+      resolved(page, 'color', '--surface-alt'),
+      resolved(page, 'color', '--surface'),
+      resolved(page, 'color', '--inverse-bg'),
+    ])
+    const title = page.getByTestId('filter-sheet__title--heading')
+    const plain = pillOf(page, 'espirito-santo')
+    const picked = pillOf(page, 'minas-gerais')
+
+    expect(await pressedColor(page, plain, title)).toBe(alt)
+    expect(await pressedColor(page, picked, title)).toBe(inverse)
+    await plain.hover()
+    await expect(plain).toHaveCSS('background-color', isMobile ? surface : alt)
+    await picked.hover()
+    await expect(picked).toHaveCSS('background-color', inverse)
+    await segmentOf(page, 'female').hover()
+    await expect(segmentOf(page, 'female')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  })
+}
 
 // Under the header, as the first thing in the column, edge to edge: the padding of <main> (16px, 24px
 // from 640px) is where the button sits. The page scrolls under it, which is why the scroll padding of

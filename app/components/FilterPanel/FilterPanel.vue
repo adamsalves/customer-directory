@@ -8,13 +8,18 @@ import S from './FilterPanel.module.scss'
 // The facets come from the BFF answer, never from the URL. There is none while no answer has come
 // (or after a failed one): the panel then has no counts. `aside` is the card of the page from 960px;
 // `sheet` is the same panel in the dialog below it (#26), with every state listed and no clear button
-// of its own, since the sheet has one.
+// of its own, since the sheet has one, and drawn as pills and a segmented control (#96).
 const props = withDefaults(
   defineProps<{ facets: ICustomerFacets | undefined; variant?: 'aside' | 'sheet' }>(),
   { variant: 'aside' },
 )
 
 defineEmits<{ clear: [] }>()
+
+// In the sheet the boxes are out of sight (VisuallyHidden, as the phrase of a count is) and each label
+// draws what its box says, with `:has(:checked)`: no class follows a pick, since `syncControls` writes
+// only `input.checked` (FilterPanel.module.scss)
+const isSheet = computed(() => props.variant === 'sheet')
 
 const isDefaultState = (slug: string) =>
   DEFAULT_STATE_SLUGS.some((defaultSlug) => defaultSlug === slug)
@@ -125,19 +130,35 @@ function toggleState(slug: string) {
 </script>
 
 <template>
-  <div ref="root" :class="S.Panel" data-testid="filter-panel__root--div">
+  <div ref="root" :class="[S.Panel, isSheet && S.Sheet]" data-testid="filter-panel__root--div">
     <fieldset :class="S.Group" data-testid="filter-panel__states--fieldset">
       <legend :class="S.Legend">Por Estado</legend>
-      <div :id="statesListId">
+      <div :id="statesListId" :class="S.States" data-testid="filter-panel__list--div">
         <label v-for="row in stateRows" :key="row.slug" :class="[S.Option, row.dimmed && S.Dimmed]">
           <input
             type="checkbox"
             :value="row.slug"
             :checked="row.checked"
-            :class="S.Input"
+            :class="isSheet ? 'VisuallyHidden' : S.Input"
             data-testid="filter-panel__state--checkbox"
             @change="toggleState(row.slug)"
           />
+          <svg
+            v-if="isSheet"
+            :class="S.Check"
+            aria-hidden="true"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            data-testid="filter-panel__check--icon"
+          >
+            <path d="M5 12.5l4.5 4.5L19 7.5"></path>
+          </svg>
           <span :class="S.Name" data-testid="filter-panel__name--text">{{ row.name }}</span>
           <span
             v-if="row.count !== undefined"
@@ -168,30 +189,32 @@ function toggleState(slug: string) {
     </fieldset>
     <fieldset :class="S.Group" data-testid="filter-panel__gender--fieldset">
       <legend :class="S.Legend">Por Gênero</legend>
-      <label v-for="row in genderRows" :key="row.value" :class="S.Option">
-        <input
-          type="radio"
-          :name="genderName"
-          :value="row.value"
-          :checked="row.checked"
-          :class="S.Input"
-          data-testid="filter-panel__gender--radio"
-          @change="pick({ gender: row.value })"
-        />
-        <span :class="S.Name" data-testid="filter-panel__name--text">{{ row.label }}</span>
-        <span
-          v-if="row.count !== undefined"
-          :class="S.Count"
-          data-testid="filter-panel__count--text"
-        >
-          <span class="VisuallyHidden" data-testid="filter-panel__count--label">
-            {{ countLabel(row.count) }}
+      <div :class="S.Segments" data-testid="filter-panel__segments--div">
+        <label v-for="row in genderRows" :key="row.value" :class="S.Option">
+          <input
+            type="radio"
+            :name="genderName"
+            :value="row.value"
+            :checked="row.checked"
+            :class="isSheet ? 'VisuallyHidden' : S.Input"
+            data-testid="filter-panel__gender--radio"
+            @change="pick({ gender: row.value })"
+          />
+          <span :class="S.Name" data-testid="filter-panel__name--text">{{ row.label }}</span>
+          <span
+            v-if="row.count !== undefined"
+            :class="S.Count"
+            data-testid="filter-panel__count--text"
+          >
+            <span class="VisuallyHidden" data-testid="filter-panel__count--label">
+              {{ countLabel(row.count) }}
+            </span>
+            <span aria-hidden="true" data-testid="filter-panel__count--number">
+              {{ row.count }}
+            </span>
           </span>
-          <span aria-hidden="true" data-testid="filter-panel__count--number">
-            {{ row.count }}
-          </span>
-        </span>
-      </label>
+        </label>
+      </div>
     </fieldset>
     <button
       v-if="variant === 'aside' && hasFilter"
