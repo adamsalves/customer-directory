@@ -114,8 +114,8 @@ function clear() {
     @click="closeOnBackdrop"
     @close="open = false"
   >
-    <div aria-hidden="true" :class="S.Grip"></div>
-    <div :class="S.Header">
+    <div aria-hidden="true" :class="S.Grip" data-testid="filter-sheet__grip--div"></div>
+    <div :class="S.Header" data-testid="filter-sheet__header--div">
       <h2 :id="titleId" :class="S.Title" data-testid="filter-sheet__title--heading">Filtros</h2>
       <button
         type="button"
@@ -141,7 +141,7 @@ function clear() {
     <div :class="S.Body" data-testid="filter-sheet__body--div">
       <FilterPanel v-if="open" variant="sheet" :facets="facets" />
     </div>
-    <div :class="S.Footer">
+    <div :class="S.Footer" data-testid="filter-sheet__footer--div">
       <button
         type="button"
         :aria-disabled="count === 0 ? 'true' : undefined"

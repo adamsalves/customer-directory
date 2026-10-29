@@ -9,6 +9,7 @@ import FilterSheet from './FilterSheet.vue'
 const OPEN = '[data-testid="filter-sheet__open--button"]'
 const BADGE = '[data-testid="filter-sheet__badge--text"]'
 const DIALOG = '[data-testid="filter-sheet__root--dialog"]'
+const GRIP = '[data-testid="filter-sheet__grip--div"]'
 const BODY = '[data-testid="filter-sheet__body--div"]'
 const TITLE = '[data-testid="filter-sheet__title--heading"]'
 const CLOSE = '[data-testid="filter-sheet__close--button"]'
@@ -113,6 +114,7 @@ describe('FilterSheet bar', () => {
     expect(button.attributes('aria-haspopup')).toBe('dialog')
     expect(button.attributes('aria-expanded')).toBeUndefined()
     expect(button.text()).toBe('Filtros')
+    expect(button.get('svg').attributes('aria-hidden')).toBe('true')
   })
 
   // The route is a frame behind a pick: the badge follows the write on its way, as the panel does
@@ -142,6 +144,10 @@ describe('FilterSheet dialog', () => {
     expect(dialog.getAttribute('aria-labelledby')).toMatch(/\S/)
     expect(wrapper.get(TITLE).attributes('id')).toBe(dialog.getAttribute('aria-labelledby'))
     expect(wrapper.get(CLOSE).attributes('aria-label')).toBe('Fechar filtros')
+    expect(wrapper.get(CLOSE).attributes('type')).toBe('button')
+    // The icon and the handle are decoration
+    expect(wrapper.get(CLOSE).get('svg').attributes('aria-hidden')).toBe('true')
+    expect(wrapper.get(GRIP).attributes('aria-hidden')).toBe('true')
   })
 
   // happy-dom only sets `open`: the top layer, the inert page, Esc and the focus are the E2E's
