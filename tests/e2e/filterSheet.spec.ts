@@ -631,9 +631,10 @@ async function expectTokens(page: Page, target: Locator, style: Record<string, s
 }
 
 for (const theme of ['dark', 'light'] as const) {
-  // A pill is 40px tall and 20px round, 14px in from its 1px border, the name and the count 6px apart.
-  // A picked one is filled with --inverse-bg and has a check of 14px before the name, which the others
-  // do not have, not even as room. A state nobody is from is in the muted color, and never a picked one.
+  // A pill is 44px tall, the project's touch target where the prototype has 40px, and 22px round, 14px
+  // in from its 1px border, the name and the count 6px apart. A picked one is filled with --inverse-bg
+  // and has a check of 14px before the name, which the others do not have, not even as room. A state
+  // nobody is from is in the muted color, and never a picked one.
   test(`the pills of the states in the ${theme} theme`, async ({ page }) => {
     await openPanelIn(page, theme)
     const plain = pillOf(page, 'espirito-santo')
@@ -644,12 +645,12 @@ for (const theme of ['dark', 'light'] as const) {
     await expectStyle(plain, {
       position: 'relative',
       'column-gap': '6px',
-      height: '40px',
+      height: '44px',
       'padding-left': '14px',
       'padding-right': '14px',
       'border-top-width': '1px',
       'border-top-style': 'solid',
-      'border-top-left-radius': '20px',
+      'border-top-left-radius': '22px',
       'font-size': '14px',
     })
     await expectTokens(page, plain, {
@@ -697,11 +698,12 @@ for (const theme of ['dark', 'light'] as const) {
     expect(await boxOf(input)).toMatchObject({ width: 1, height: 1 })
   })
 
-  // Three columns of one width in a track of 4px, with 4px between them; the options are 40px tall and
-  // 20px round. The picked one is --seg-active-bg with its shadow, the others are bare. The name and the
-  // count are 3px apart, which the prototype writes as a space, in the middle. The count of the picked
-  // option has its color and the others the muted one: --text-count is 4.34:1 on --surface-alt in the
-  // light theme and 2.52:1 on the picked option in the dark one (ADR-0013).
+  // Three columns of one width in a track of 4px, with 4px between them; the options are 44px tall and
+  // 22px round, so the track is 52px and 26px round. The picked one is --seg-active-bg with its shadow,
+  // the others are bare. The name and the count are 3px apart, which the prototype writes as a space,
+  // in the middle. The count of the picked option has its color and the others the muted one:
+  // --text-count is 4.34:1 on --surface-alt in the light theme and 2.52:1 on the picked option in the
+  // dark one (ADR-0013).
   test(`the segmented gender in the ${theme} theme`, async ({ page }) => {
     await openPanelIn(page, theme)
     const group = sheet(page).getByTestId('filter-panel__segments--div')
@@ -710,8 +712,8 @@ for (const theme of ['dark', 'light'] as const) {
     const last = segmentOf(page, 'male')
     const shape = {
       position: 'relative',
-      height: '40px',
-      'border-top-left-radius': '20px',
+      height: '44px',
+      'border-top-left-radius': '22px',
       'column-gap': '3px',
       'justify-content': 'center',
       'font-size': '14px',
@@ -723,7 +725,7 @@ for (const theme of ['dark', 'light'] as const) {
       'column-gap': '4px',
       'padding-top': '4px',
       'padding-left': '4px',
-      'border-top-left-radius': '24px',
+      'border-top-left-radius': '26px',
     })
     await expectTokens(page, group, { 'background-color': '--surface-alt' })
     await expectStyle(active, { ...shape, 'font-weight': '500' })
@@ -749,6 +751,7 @@ for (const theme of ['dark', 'light'] as const) {
     // The options fill the track, three of one width
     const track = await boxOf(group)
     const width = (track.width - 4 * 2 - 4 * 2) / 3
+    expect(track.height).toBeCloseTo(4 + 44 + 4, 1)
     for (const [index, option] of [active, inactive, last].entries()) {
       const box = await boxOf(option)
       expect(box.width, `option ${String(index)}`).toBeCloseTo(width, 1)

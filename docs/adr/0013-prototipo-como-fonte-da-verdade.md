@@ -51,6 +51,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `replaceState` em todo filtro                       | `push` a cada filtro                       | voltar desfaz o filtro (ADR-0007)               |
 | remover um chip não move o foco                     | foco: chip seguinte, anterior, `#results`  | o chip sai e o foco cai no `body` (ADR-0022)    |
 | chip de 32px de altura em qualquer largura          | 44px abaixo de 960px                       | alvo de toque do projeto: 44px                  |
+| pílula e segmento do sheet de 40px de altura        | 44px (raio de 22px); trilha de 52px (26px) | alvo de toque do projeto: 44px                  |
 | rótulo do chip sem limite de largura                | uma linha com reticências                  | uma busca longa sem espaço estoura a tela       |
 | botão "Filtros" com `aria-expanded`                 | só `aria-haspopup="dialog"`                | o botão fica inerte com o sheet aberto          |
 | rótulo "Filtros, 1 ativos"                          | "Filtros, 1 ativo"                         | concordância: o plural só a partir de 2         |
