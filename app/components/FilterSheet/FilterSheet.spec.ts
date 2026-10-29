@@ -57,6 +57,13 @@ async function openSheet(wrapper: TWrapper) {
   await flushPromises()
 }
 
+// A click on the backdrop as the browser makes it: the press and the click, both on the dialog
+// itself, since the backdrop is part of its box
+async function clickBackdrop(wrapper: TWrapper) {
+  await wrapper.get(DIALOG).trigger('pointerdown')
+  await wrapper.get(DIALOG).trigger('click', { detail: 1 })
+}
+
 const urlIs = (url: string) =>
   vi.waitFor(() => {
     expect(useRoute().fullPath).toBe(url)
@@ -192,10 +199,7 @@ describe('FilterSheet dialog', () => {
       close: (wrapper: TWrapper) => wrapper.get(APPLY).trigger('click'),
     },
     // The click on the backdrop lands on the dialog itself
-    {
-      name: 'a click on the backdrop',
-      close: (wrapper: TWrapper) => wrapper.get(DIALOG).trigger('click'),
-    },
+    { name: 'a click on the backdrop', close: clickBackdrop },
     // As on Esc
     {
       name: 'the browser, on Esc',
@@ -227,6 +231,28 @@ describe('FilterSheet dialog', () => {
 
     expect(dialogOf(wrapper).open).toBe(true)
     expect(wrapper.find(PANEL).exists()).toBe(true)
+  })
+
+  // A drag that begins in the sheet and lets go on the backdrop clicks the dialog, the closest element
+  // that holds both. The press says where it began, and each press says it anew: a press on the
+  // backdrop that never gets its click (the pointer let go outside the window) is not the next one.
+  it('stays open when a drag from inside the sheet ends on the backdrop', async () => {
+    const wrapper = await mountSheet()
+    await openSheet(wrapper)
+    await wrapper.get(DIALOG).trigger('pointerdown')
+
+    for (const inside of [BODY, TITLE, PANEL, STATE]) {
+      await wrapper.get(DIALOG).get(inside).trigger('pointerdown')
+      await wrapper.get(DIALOG).trigger('click', { detail: 1 })
+      await flushPromises()
+      expect(dialogOf(wrapper).open, `the press began on ${inside}`).toBe(true)
+    }
+    expect(wrapper.find(PANEL).exists()).toBe(true)
+
+    await clickBackdrop(wrapper)
+    await flushPromises()
+
+    expect(dialogOf(wrapper).open).toBe(false)
   })
 })
 

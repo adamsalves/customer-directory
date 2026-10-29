@@ -125,6 +125,24 @@ test('a click outside the sheet closes it and does not reach the page', async ({
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 })
 
+// A drag that begins in the sheet and lets go on the backdrop is a click on the dialog, the closest
+// element that holds both, and not a click on the backdrop. At 768px the sheet is 560px wide, with
+// the backdrop on both sides of it. Reduced motion keeps the title where it is while the sheet opens.
+test('a drag from inside the sheet to the backdrop does not close it', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openSheet(page, { width: 768 })
+  const title = await boxOf(page.getByTestId('filter-sheet__title--heading'))
+  const frame = await boxOf(sheet(page))
+
+  await page.mouse.move(title.x + title.width / 2, title.y + title.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(frame.x / 2, frame.y + 200, { steps: 5 })
+  await page.mouse.up()
+  await settle(page)
+
+  await expect(sheet(page)).toBeVisible()
+})
+
 // The filters apply at each click, so the button of the sheet is a count of the list as it is
 test('a state picked in the sheet is in the URL at once, and the button names the new total', async ({
   page,

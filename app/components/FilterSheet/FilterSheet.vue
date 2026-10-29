@@ -55,9 +55,16 @@ function close() {
 
 // A click on the backdrop lands on the dialog itself, a click in the sheet on what is inside it. The
 // grip, the header, the body and the footer cover the whole box, so no click inside lands on the bare
-// dialog.
+// dialog. A drag that begins inside and lets go on the backdrop also clicks the dialog, the closest
+// element that holds both, so the press must have begun on the backdrop too.
+let pressedOnBackdrop = false
+
+function trackPress({ target }: PointerEvent) {
+  pressedOnBackdrop = target === dialogRef.value
+}
+
 function closeOnBackdrop({ target }: MouseEvent) {
-  if (target === dialogRef.value) close()
+  if (pressedOnBackdrop && target === dialogRef.value) close()
 }
 
 // Only the states and the gender, the search stays (the prototype's). With none picked the button is
@@ -111,6 +118,7 @@ function clear() {
     :aria-labelledby="titleId"
     :class="S.Sheet"
     data-testid="filter-sheet__root--dialog"
+    @pointerdown="trackPress"
     @click="closeOnBackdrop"
     @close="open = false"
   >
