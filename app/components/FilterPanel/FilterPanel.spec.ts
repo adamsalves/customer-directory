@@ -14,6 +14,9 @@ const NAME = '[data-testid="filter-panel__name--text"]'
 const COUNT = '[data-testid="filter-panel__count--text"]'
 const COUNT_LABEL = '[data-testid="filter-panel__count--label"]'
 const COUNT_NUMBER = '[data-testid="filter-panel__count--number"]'
+const LIST = '[data-testid="filter-panel__list--div"]'
+const SEGMENTS = '[data-testid="filter-panel__segments--div"]'
+const CHECK = '[data-testid="filter-panel__check--icon"]'
 const CLEAR = '[data-testid="filter-panel__clear--button"]'
 const TOGGLE = '[data-testid="filter-panel__toggle--button"]'
 
@@ -622,5 +625,65 @@ describe('FilterPanel sheet variant', () => {
     await urlIs('/customers')
 
     expect(document.activeElement).toBe(stateBox(wrapper, 'acre').element)
+  })
+
+  // What the stylesheet of the sheet hangs on (#96). A module class is a hashed name, read here by the
+  // name it was written with. happy-dom draws none of it: filterSheet.spec.ts reads the pixels.
+  const hasClass = (target: { classes: () => string[] }, name: string) =>
+    target.classes().some((className) => className.includes(name))
+
+  it('marks the root of the sheet and no other, and boxes the states and the genders in both', async () => {
+    const aside = await mountPanel()
+    const wrapper = await mountSheetPanel()
+
+    expect(hasClass(wrapper, 'Sheet')).toBe(true)
+    expect(hasClass(aside, 'Sheet')).toBe(false)
+    for (const panel of [aside, wrapper]) {
+      expect(hasClass(panel.get(LIST), 'States')).toBe(true)
+      expect(hasClass(panel.get(SEGMENTS), 'Segments')).toBe(true)
+      expect(panel.get(SEGMENTS).findAll('label')).toHaveLength(3)
+    }
+  })
+
+  it('takes the boxes out of sight with the global class, and keeps the order of the controls', async () => {
+    const aside = await mountPanel()
+    await aside.get(TOGGLE).trigger('click')
+    const wrapper = await mountSheetPanel()
+    const boxes = wrapper.findAll('input')
+
+    expect(boxes).toHaveLength(27 + 3)
+    for (const box of boxes) {
+      expect(box.classes()).toContain('VisuallyHidden')
+      expect(hasClass(box, 'Input')).toBe(false)
+    }
+    for (const box of aside.findAll('input')) {
+      expect(box.classes()).not.toContain('VisuallyHidden')
+      expect(hasClass(box, 'Input')).toBe(true)
+    }
+    expect(valuesOf(wrapper, 'input')).toEqual(valuesOf(aside, 'input'))
+  })
+
+  it('draws a check on each state, hidden from a screen reader, and nowhere else', async () => {
+    const aside = await mountPanel()
+    const wrapper = await mountSheetPanel()
+    const checks = wrapper.get(STATES).findAll(CHECK)
+
+    expect(checks).toHaveLength(27)
+    for (const check of checks) {
+      expect(check.attributes()).toMatchObject({
+        'aria-hidden': 'true',
+        width: '14',
+        height: '14',
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        stroke: 'currentColor',
+        'stroke-width': '3',
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round',
+      })
+      expect(check.get('path').attributes('d')).toBe('M5 12.5l4.5 4.5L19 7.5')
+    }
+    expect(wrapper.get(GENDERS).find(CHECK).exists()).toBe(false)
+    expect(aside.find(CHECK).exists()).toBe(false)
   })
 })

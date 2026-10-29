@@ -43,7 +43,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `replaceState` em toda busca                        | `replace` na lista, `push` vindo de fora   | voltar não percorre cada termo e volta à origem |
 | link de 272px a partir de 960px, com pílula e foco  | coluna do grid; pílula e foco só na imagem | a pílula é do logo (dono); protótipo no M9      |
 | "Limpar busca e filtros" não move o foco            | o foco vai para os resultados (`#results`) | o botão sai e o foco cai no `body` (ADR-0022)   |
-| esmaecido com `opacity: .45` (2,58:1)               | `color: var(--text-muted)` (5,83:1)        | contraste mínimo de 4,5:1 num controle ativo    |
+| esmaecido `opacity` .45 (2,58:1), sheet .5 (2,93:1) | `color: var(--text-muted)` (5,83:1)        | contraste mínimo de 4,5:1 num controle ativo    |
 | contagem com `aria-label` num `span`                | texto oculto "N clientes" ("1 cliente")    | ARIA 1.2 proíbe nome em `generic`               |
 | desmarcar um estado fora dos 5 não move o foco      | o foco vai para o botão "Ver todos"        | o item sai da lista e o foco cai no `body`      |
 | "Ver todos" com `aria-expanded`                     | `aria-expanded` + `aria-controls`          | disclosure do APG: aponta a lista que abre      |
@@ -51,6 +51,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `replaceState` em todo filtro                       | `push` a cada filtro                       | voltar desfaz o filtro (ADR-0007)               |
 | remover um chip não move o foco                     | foco: chip seguinte, anterior, `#results`  | o chip sai e o foco cai no `body` (ADR-0022)    |
 | chip de 32px de altura em qualquer largura          | 44px abaixo de 960px                       | alvo de toque do projeto: 44px                  |
+| pílula e segmento do sheet de 40px de altura        | 44px (raio de 22px); trilha de 52px (26px) | alvo de toque do projeto: 44px                  |
 | rótulo do chip sem limite de largura                | uma linha com reticências                  | uma busca longa sem espaço estoura a tela       |
 | botão "Filtros" com `aria-expanded`                 | só `aria-haspopup="dialog"`                | o botão fica inerte com o sheet aberto          |
 | rótulo "Filtros, 1 ativos"                          | "Filtros, 1 ativo"                         | concordância: o plural só a partir de 2         |
@@ -61,6 +62,8 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `body.style.overflow = 'hidden'` ao abrir o sheet   | `overflow` + `scrollbar-gutter` no `html`  | só o `:modal` trava; a barra sai e nada se move |
 | o fundo é um `div` à parte, com `onClick`           | fecha se apertar e soltar no fundo         | o arrasto que cruza a borda clica no `<dialog>` |
 | o 2º clique de um clique duplo age no sheet         | ignora clique com `detail > 1` no sheet    | o 2º clique de "Filtros" cai no sheet aberto    |
+| gênero segmentado com `role="radio"` num `button`   | os mesmos rádios do painel, estilizados    | semântica de formulário e setas do navegador    |
+| contagem do segmentado em `--text-count`            | `--text-muted`; no ativo, a cor do rótulo  | 4,34:1 no inativo claro; 2,52:1 no ativo escuro |
 
 ## Consequências
 
