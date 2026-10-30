@@ -358,3 +358,18 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - leitor de tela.
 
   Com barra clássica, numa página sem rolagem, travar a página ainda estreita o layout em 15px.
+
+### #96 · Visual de pills e segmentado no sheet · [PR #100](https://github.com/adamsalves/customer-directory/pull/100)
+
+- **Decidido:** [#96](https://github.com/adamsalves/customer-directory/issues/96) · ADR-0013 (3 linhas novas e 1 reescrita). Separada da #26 para o comportamento caber num PR só. O dono aprovou:
+  - 44px no lugar dos 40px do protótipo, pelo alvo de toque abaixo de 960px, como nos chips; com isso o trilho do segmentado fica com 52px;
+  - o gênero com os mesmos rádios do painel estilizados, no lugar de `role="radio"` num `button`, porque a semântica é de formulário;
+  - as contagens do segmentado com contraste: `--text-muted` no inativo (`--text-count` dá 4,34:1 no claro) e cor herdada no ativo (2,52:1 no escuro).
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/96#issuecomment-6505006862) · estimativa ~380 linhas
+- **Como:** tudo sob `.Sheet …`, e o painel desktop sem nenhuma regra nova. O `S.Sheet` volta no root (a classe vazia tinha saído no review do #98), o div dos estados ganha `S.States` e os rádios entram num `<div :class="S.Segments">`, porque o grid no `fieldset` poria o fundo atrás da legenda. No sheet, o input recebe a classe global `VisuallyHidden`: sai da vista, mas fica no DOM, na ordem de Tab e na árvore de acessibilidade, e o `syncControls` segue escrevendo em `input.checked`. Por isso marcado e foco saem de `:has(:checked)` e `:has(:focus-visible)`, sem classe nova; o anel de foco vai para o rótulo, com o anel global. O check é um `<svg aria-hidden>` com o caminho do protótipo (`M5 12.5l4.5 4.5L19 7.5`, traço 3). A pílula desmarcada ganha `--surface-alt` no `:active` e, dentro de `@media (hover: hover)`, também no hover; o segmento fica sem hover, como no protótipo.
+- **Resultado:** 489 linhas (+456 −33) sem este registro (estimativa ~380). Cerca de 44 linhas são só a reindentação dos rádios no novo `<div>`, e os specs somam 299, com uma asserção por declaração CSS nos dois temas a 375px. Mutação: 81 de 81 (CSS, seletores e template). Review (`/review`): nenhum bug. O que ele conferiu:
+  - a specificidade das contagens: a regra de `:has(:checked)` tem 5 classes e vence a dos segmentos, com 4, e o segmento ativo herda `--seg-active-text` como no plano;
+  - a geometria: o input `VisuallyHidden` sai do fluxo e não soma `gap`, o que fecha as asserções de deslocamento de x;
+  - a paridade com o protótipo (pílula, check, tokens do segmentado) e o teclado: o 1º Tab depois do "Fechar" cai em São Paulo, na ordem da tabela, e Shift+Tab entra no grupo no rádio marcado.
+    No aside, as regras novas não chegam, e o painel desktop ficou igual.
+- **Pendente:** o gate de Safari real — o marcado/desmarcado depende só de `:has()`, que existe desde a 15.4, e os chips seguem expondo os filtros; leitor de tela e toque. Animação de saída do sheet (#99); live region do "Ver N" (#97); E2E dos filtros (#27).
