@@ -212,3 +212,60 @@ O protótipo não move o foco depois de "Limpar", mas o botão some quando o ske
 
 **Abordagem final:**
 O "Limpar" grava com `replace`, mantém o `perPage` e leva o foco aos resultados. A dica quebra dentro da palavra (`overflow-wrap: anywhere`). O E2E busca `girao jesus` para o estado vazio: cada palavra casa com alguém e as duas juntas com ninguém, então as mutações "qualquer palavra" e "só a primeira" no BFF derrubam o teste. O teste do histórico espera o foco nos resultados antes de digitar, e o fluxo roda nos dois projetos.
+
+## M5 · Filtros
+
+### 🔧 Prompt: Filtros e contagens no BFF
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+Filtro por estado e por gênero no `/api/customers`, com a contagem de cada opção na resposta e as chaves `states` e `gender` na URL ([#23](https://github.com/adamsalves/customer-directory/issues/23), ADR-0004, ADR-0021).
+
+**O que aconteceu:**
+A regra das contagens veio do protótipo: cada uma deixa de fora o filtro a que pertence, então os estados são contados sobre busca + gênero e o gênero sobre busca + estados. Os casos de teste foram escolhidos para que AND, OR e "só o primeiro filtro" deem totais diferentes, e a mutação matou os 57 mutantes. O PR fechou com +624 contra ~290 estimadas, quase tudo teste. O review achou três coisas:
+
+- um link só com filtro (`?states=sao-paulo`) podia zerar a lista, e "Limpar busca e filtros" limpava só a busca;
+- o cache do Nitro em disco, no dev, sobrevivia ao restart e servia por até 1h clientes sem o `stateSlug` novo, e o filtro de estado não achava ninguém;
+- o `sameListState` comparava os estados em ordem, então a mesma escolha em outra ordem contava como estado diferente.
+
+**Abordagem final:**
+O parser mantém só os 27 slugs, sem repetição e na ordem da tabela, e o serializador aplica a mesma regra, porque todo link passa por ele. O "Limpar" zera também `states` e `gender`. O cache ganhou `integrity`, com um comentário para subir o valor quando o `ICustomer` mudar. O `sameListState` compara o que cada estado escreve na URL.
+
+### 🔧 Prompt: Painel, chips e quem grava na URL
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O painel de filtros do desktop com checkboxes e rádios nativos ([#24](https://github.com/adamsalves/customer-directory/issues/24)), os chips removíveis dos filtros ativos ([#25](https://github.com/adamsalves/customer-directory/issues/25)) e a dica certa no estado vazio quando há filtro ([#92](https://github.com/adamsalves/customer-directory/issues/92)).
+
+**O que aconteceu:**
+O review do painel achou uma escolha cancelada no caminho (breadcrumb, Voltar) deixando a caixa marcada com a lista sem filtro. O Vue só reescreve `checked` quando o valor do vnode muda. O mesmo review mostrou que a busca, gravando a partir da URL velha, cancelava a escolha do painel. Isso virou a [#90](https://github.com/adamsalves/customer-directory/issues/90), feita antes dos chips para eles não nascerem com o mesmo defeito, e o review dela levou a oito correções, entre elas:
+
+- uma busca (`replace`) sobre uma escolha (`push`) em voo apagava do histórico o estado anterior;
+- digitar e clicar em "Limpar" antes dos 300ms fazia a busca antiga voltar;
+- os links da paginação descartavam uma escolha em voo.
+
+Nos chips, um duplo clique removia dois: o chip some, o seguinte desliza para baixo do ponteiro e recebe o segundo clique. No preview do painel apareceu "Não encontramos ninguém chamado “nunes”" com busca e filtro, quando havia Nunes, só não mulheres na Bahia.
+
+**Abordagem final:**
+O `useListQuery` guarda a gravação que a URL ainda não tem, uma por router (ADR-0023). O `setQuery` soma o que muda ao que está em voo, e painel, chips, "Limpar" e paginação partem desse estado. O painel volta os controles ao que a URL diz quando nada mais está em voo. O chip ignora o clique com `event.detail > 1`, e o foco vai para o chip seguinte, o anterior ou os resultados. O `EmptyState` escolhe a dica pela busca e pelos filtros, e o `hasFilters` foi para `shared/`.
+
+### 🔧 Prompt: O sheet do mobile
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O bottom sheet de filtros abaixo de 960px com `<dialog>` nativo e "Ver N clientes" ([#26](https://github.com/adamsalves/customer-directory/issues/26)), o visual de pílulas e controle segmentado do protótipo ([#96](https://github.com/adamsalves/customer-directory/issues/96)) e o E2E dos filtros no desktop e no mobile ([#27](https://github.com/adamsalves/customer-directory/issues/27)).
+
+**O que aconteceu:**
+O visual saiu da #26 para o comportamento caber num PR, e mesmo assim ela fechou com +1697 contra ~520, porque o E2E fixa o estilo declaração por declaração. O review do sheet achou:
+
+- um arraste que começava no sheet e terminava no fundo fechava o sheet, porque o clique vai para o ancestral comum, o dialog;
+- no duplo clique em "Filtros", o segundo clique caía no sheet recém-aberto;
+- travar a rolagem tirava a barra e a página pulava 15px de lado.
+
+Nas pílulas, o segmento marcado sumia no Alto Contraste, e o indicador dava 1,09:1 sobre o trilho claro. A primeira correção do Alto Contraste passava nos testes, mas a conferência no preview mostrou o rótulo sumindo atrás de uma placa `Canvas`. No E2E, a mutação mostrou que "o chip remove o primeiro estado, não o clicado" passava na suíte inteira, porque todo teste clicava o primeiro. O review achou ainda duas asserções que nunca falhavam.
+
+**Abordagem final:**
+O fundo só fecha o sheet se a pressão e a soltura caem nele, o duplo clique é ignorado em captura e o `scrollbar-gutter: stable` fica na própria trava. As pílulas usam os mesmos checkbox e rádios do painel, com o input fora da vista, e o estado marcado sai de `:has(:checked)`. No Alto Contraste, o segmento ativo vai a `Highlight` com `forced-color-adjust: none`, e o E2E lê os pixels do nome. O E2E clica o chip do segundo estado e cada asserção tem um mutante que a derruba.
