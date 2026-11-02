@@ -3,7 +3,14 @@ import { NavigationFailureType, isNavigationFailure } from 'vue-router'
 import type { IListQuery } from '#shared/utils/listQuery'
 
 // The list state with nothing set; each test overrides what it exercises
-const defaults: IListQuery = { page: 1, perPage: 9, search: '', states: [], gender: 'all' }
+const defaults: IListQuery = {
+  page: 1,
+  perPage: 9,
+  search: '',
+  states: [],
+  gender: 'all',
+  sort: 'name',
+}
 
 afterEach(() => {
   vi.restoreAllMocks()

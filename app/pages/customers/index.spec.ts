@@ -489,6 +489,21 @@ describe('customers page', () => {
     expect(wrapper.find(EMPTY_TITLE).exists()).toBe(false)
   })
 
+  // The order is no search and no filter: the clear leaves it, as it leaves the page size
+  it('clears the search and the filters and keeps the sort', async () => {
+    empty = true
+    const wrapper = await mountSuspended(CustomersPage, {
+      route: '/customers?search=zzzz&page=3&states=bahia&gender=female&sort=last',
+    })
+    empty = false
+
+    await wrapper.get(CLEAR).trigger('click')
+
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?sort=last')
+    })
+  })
+
   // The button goes when the skeleton comes in: the focus it holds has to be somewhere that stays,
   // and moving it there must not scroll the page
   it('moves the focus to the results when clearing and keeps it there while the list loads', async () => {

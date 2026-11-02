@@ -47,6 +47,23 @@ function filterByStates(customers: ICustomer[], states: string[]): ICustomer[] {
   return customers.filter(({ stateSlug }) => named.has(stateSlug))
 }
 
+// Accents and case aside, in pt-BR: "Ágata" comes with the As, and "Girão" and "Girao" are the same
+const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' })
+
+// One comparator per order. The surname is the whole of it ("da Cruz" is among the Ds, as in the
+// prototype), and the first name breaks a tie. The dates go by the ISO timestamp, not by `age`: whole
+// years tie for 194 of the 200 customers. What still ties keeps the order of the source (the sort is
+// stable).
+const COMPARATORS: Record<IListQuery['sort'], (a: ICustomer, b: ICustomer) => number> = {
+  name: (a, b) => collator.compare(a.name, b.name),
+  'name-desc': (a, b) => collator.compare(b.name, a.name),
+  last: (a, b) =>
+    collator.compare(a.lastName, b.lastName) || collator.compare(a.firstName, b.firstName),
+  young: (a, b) => Date.parse(b.birthDate) - Date.parse(a.birthDate),
+  old: (a, b) => Date.parse(a.birthDate) - Date.parse(b.birthDate),
+  recent: (a, b) => Date.parse(b.registeredAt) - Date.parse(a.registeredAt),
+}
+
 // `byGender` has the search and the gender applied, `byStates` the search and the states: each
 // count leaves out the filter it belongs to (ICustomerFacets). A customer whose state is not one of
 // the 27 counts in no state, and still counts in `all`.
@@ -63,15 +80,16 @@ function countFacets(byGender: ICustomer[], byStates: ICustomer[]): ICustomerFac
   }
 }
 
-// One page of the list, after the search and the filters: the total and the pages count what
-// matched. A page past the end is clamped to the last one, so a stale link still shows customers; an
-// empty list is page 1 of 1. The facets count the whole list, not the page.
+// One page of the list, after the search and the filters, in the order asked for: the total and the
+// pages count what matched. A page past the end is clamped to the last one, so a stale link still
+// shows customers; an empty list is page 1 of 1. The facets count the whole list, not the page.
 export function queryCustomers(customers: ICustomer[], query: IListQuery): ICustomerListResponse {
   const { perPage } = query
   const bySearch = searchByName(customers, query.search)
   const byGender = filterByGender(bySearch, query.gender)
   const byStates = filterByStates(bySearch, query.states)
-  const matches = filterByGender(byStates, query.gender)
+  // toSorted, not sort: with no search and no filter this is the cached list itself
+  const matches = filterByGender(byStates, query.gender).toSorted(COMPARATORS[query.sort])
   const total = matches.length
   const totalPages = Math.max(1, Math.ceil(total / perPage))
   const page = Math.min(query.page, totalPages)

@@ -76,8 +76,8 @@ describe('GET /api/customers', () => {
 
     expect(body).toMatchObject({ total: 20, page: 2, perPage: 9, totalPages: 3 })
     expect(body).toHaveProperty('items.length', 9)
-    // The 10th customer. His email is "quévin.cavalcanti@…", so the slug has no accent (ADR-0006).
-    expect(body).toHaveProperty('items[0].slug', 'quevin-cavalcanti')
+    // The 10th customer by name, the default order
+    expect(body).toHaveProperty('items[0].slug', 'deolindo-dacunha')
   })
 
   it('reads perPage from the query', async () => {
@@ -93,6 +93,7 @@ describe('GET /api/customers', () => {
 
     expect(body).toMatchObject({ total: 1, page: 1, perPage: 9, totalPages: 1 })
     expect(body).toHaveProperty('items.length', 1)
+    // His email is "quévin.cavalcanti@…", so the slug has no accent (ADR-0006)
     expect(body).toHaveProperty('items[0].slug', 'quevin-cavalcanti')
   })
 
@@ -124,6 +125,24 @@ describe('GET /api/customers', () => {
       })
     },
   )
+
+  // The key `sort` goes through getQuery and parseListQuery. The 4 customers of MG and SC come by
+  // surname in an order that neither their name nor the source gives.
+  it('reads sort from the query', async () => {
+    const body: unknown = await $fetch(
+      '/api/customers?states=minas-gerais,santa-catarina&sort=last',
+    )
+
+    expect(body).toMatchObject({
+      total: 4,
+      items: [
+        { slug: 'abraim-dacosta' },
+        { slug: 'apolo-nunes' },
+        { slug: 'gilda-pires' },
+        { slug: 'alejandra-rodrigues' },
+      ],
+    })
+  })
 
   // One cached list for every query: a key per URL would refetch, and with swr never expire
   it('reads the source once for different queries', async () => {

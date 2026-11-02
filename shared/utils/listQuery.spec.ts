@@ -94,13 +94,47 @@ const NOT_A_GENDER: unknown[] = [
   undefined,
 ]
 
+// Not one of the six, exactly: the case, a space, a list and the names of Object.prototype are not.
+// A repeated key comes as an array, and a one-element array stringifies into a value that looks
+// valid, so only a type check rejects it.
+const NOT_A_SORT: unknown[] = [
+  '',
+  'NAME',
+  'Last',
+  ' last',
+  'last ',
+  'name-asc',
+  'age',
+  'last,old',
+  '__proto__',
+  'constructor',
+  ['last'],
+  ['last', 'old'],
+  [],
+  1,
+  null,
+  undefined,
+]
+
+// The orders of the prototype, written out here and not read from SORT_OPTIONS: the spec fails if
+// one of them goes missing from there. 'name' is the default, so it stays out of the URL.
+const SORTS = ['name', 'name-desc', 'last', 'young', 'old', 'recent'] as const
+const OTHER_SORTS = SORTS.slice(1)
+
 const SLUGS = BRAZILIAN_STATES.map(({ slug }) => slug)
 
 // Objects, because `it.each` spreads a case that is an array into the callback arguments
 const asCases = (values: unknown[]) => values.map((value) => ({ value }))
 
 // The list state with nothing set; each test overrides what it exercises
-const defaults: IListQuery = { page: 1, perPage: 9, search: '', states: [], gender: 'all' }
+const defaults: IListQuery = {
+  page: 1,
+  perPage: 9,
+  search: '',
+  states: [],
+  gender: 'all',
+  sort: 'name',
+}
 
 const queries: IListQuery[] = [
   ...PER_PAGE_OPTIONS.flatMap((perPage) =>
@@ -111,12 +145,14 @@ const queries: IListQuery[] = [
     (states) => ({ ...defaults, states }),
   ),
   ...(['female', 'male'] as const).map((gender) => ({ ...defaults, gender })),
+  ...OTHER_SORTS.map((sort) => ({ ...defaults, sort })),
   {
     page: 2,
     perPage: 27,
     search: 'álda',
     states: ['minas-gerais', 'santa-catarina'],
     gender: 'male',
+    sort: 'young',
   },
 ]
 
@@ -241,6 +277,14 @@ describe('parseListQuery', () => {
     expect(parseListQuery({ gender: value }).gender).toBe('all')
   })
 
+  it.each(SORTS)('accepts sort=%s', (sort) => {
+    expect(parseListQuery({ sort }).sort).toBe(sort)
+  })
+
+  it.each(asCases(NOT_A_SORT))('falls back to name for sort=$value', ({ value }) => {
+    expect(parseListQuery({ sort: value }).sort).toBe('name')
+  })
+
   it('validates each key independently, under its own key', () => {
     expect(parseListQuery({ page: '3', perPage: '18' })).toStrictEqual({
       ...defaults,
@@ -269,6 +313,14 @@ describe('parseListQuery', () => {
       ...defaults,
       gender: 'male',
     })
+    expect(parseListQuery({ gender: 'other', sort: 'last' })).toStrictEqual({
+      ...defaults,
+      sort: 'last',
+    })
+    expect(parseListQuery({ gender: 'male', sort: ['last'] })).toStrictEqual({
+      ...defaults,
+      gender: 'male',
+    })
   })
 
   it('ignores unknown keys, the pt-BR ones that ADR-0021 retired included', () => {
@@ -279,6 +331,7 @@ describe('parseListQuery', () => {
         busca: 'ariela',
         estados: 'bahia',
         genero: 'female',
+        ordem: 'last',
         color: 'red',
       }),
     ).toStrictEqual(defaults)
@@ -298,8 +351,8 @@ describe('hasFilters', () => {
     expect(hasFilters(defaults)).toBe(false)
   })
 
-  it('is false for the search, the page and the page size alone', () => {
-    const query: IListQuery = { ...defaults, page: 3, perPage: 18, search: 'ana' }
+  it('is false for the search, the page, the page size and the sort alone', () => {
+    const query: IListQuery = { ...defaults, page: 3, perPage: 18, search: 'ana', sort: 'young' }
 
     expect(hasFilters(query)).toBe(false)
   })
@@ -321,6 +374,7 @@ describe('sameListState', () => {
     search: 'ana',
     states: ['bahia', 'sao-paulo'],
     gender: 'female',
+    sort: 'last',
   }
 
   it('is true for two parses of the same list state', () => {
@@ -332,6 +386,7 @@ describe('sameListState', () => {
           search: ' ana',
           states: 'sao-paulo,bahia,bahia',
           gender: 'female',
+          sort: 'last',
         }),
         query,
       ),
@@ -348,6 +403,7 @@ describe('sameListState', () => {
     { name: 'search', other: { ...query, search: 'anas' } },
     { name: 'states', other: { ...query, states: ['bahia'] } },
     { name: 'gender', other: { ...query, gender: 'male' } },
+    { name: 'sort', other: { ...query, sort: 'old' } },
   ])('is false when $name differs', ({ other }) => {
     expect(sameListState(other, query)).toBe(false)
   })
@@ -392,8 +448,19 @@ describe('serializeListQuery', () => {
     expect(serializeListQuery({ ...defaults, gender })).toStrictEqual({ gender })
   })
 
+  it.each(OTHER_SORTS)('keeps sort=%s', (sort) => {
+    expect(serializeListQuery({ ...defaults, sort })).toStrictEqual({ sort })
+  })
+
+  // One order of keys, so the same list state is the same link
+  it('writes the sort after the gender', () => {
+    const params = serializeListQuery({ ...defaults, gender: 'female', sort: 'young' })
+
+    expect(Object.keys(params)).toStrictEqual(['gender', 'sort'])
+  })
+
   it.each(queries)(
-    'round-trips page $page, perPage $perPage, search "$search", states $states and gender $gender',
+    'round-trips page $page, perPage $perPage, search "$search", states $states, gender $gender and sort $sort',
     (query) => {
       expect(parseListQuery(serializeListQuery(query))).toStrictEqual(query)
     },

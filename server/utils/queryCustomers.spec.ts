@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
+import type { ICustomer } from '#shared/types/customer'
 import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import type { IListQuery } from '#shared/utils/listQuery'
 import customers from '../../tests/fixtures/customers.json'
@@ -11,14 +12,17 @@ import { queryCustomers } from './queryCustomers'
 const all = parseRawCustomers(customers).map((raw) => normalizeCustomer(raw))
 
 const slugsOf = (items: { slug: string }[]) => items.map(({ slug }) => slug)
+// The 20 first names of the fixture are all different, so they tell who is where in a list
+const firstNamesOf = (items: { name: string }[]) => items.map(({ name }) => name.replace(/ .*/, ''))
 
-// A query with no search and no filter; each test sets what it exercises
+// A query with no search and no filter, in the default order; each test sets what it exercises
 const query = (overrides: Partial<IListQuery> = {}): IListQuery => ({
   page: 1,
   perPage: 9,
   search: '',
   states: [],
   gender: 'all',
+  sort: 'name',
   ...overrides,
 })
 
@@ -28,12 +32,47 @@ const stateCounts = (counts: Record<string, number>) => ({ ...NO_STATES, ...coun
 
 const MG_SC = ['minas-gerais', 'santa-catarina']
 
+// The 20 customers in each order, by first name. Written by hand from the data of the fixture (names,
+// surnames, birth and sign-up dates), not worked out with the comparators. Only the surnames repeat:
+// Nunes (Ariela comes before Apolo in the source), Jesus and da Cunha.
+const split = (names: string) => names.split(/\s+/)
+const BY_NAME = split(`Abraim Alcindo Alda Alejandra Amadeu Apolo Ariela Armando Bartolomeu
+  Deolindo Eleutério Gilda Girão Marilene Melânia Melchior Nêuton Oceano Odélia Quévin`)
+const ORDERS: { sort: IListQuery['sort']; names: string[] }[] = [
+  { sort: 'name', names: BY_NAME },
+  {
+    sort: 'name-desc',
+    names: split(`Quévin Odélia Oceano Nêuton Melchior Melânia Marilene Girão Gilda Eleutério
+      Deolindo Bartolomeu Armando Ariela Apolo Amadeu Alejandra Alda Alcindo Abraim`),
+  },
+  {
+    sort: 'last',
+    names: split(`Eleutério Alda Quévin Abraim Armando Deolindo Melchior Marilene Girão Alcindo
+      Amadeu Melânia Oceano Bartolomeu Odélia Nêuton Apolo Ariela Gilda Alejandra`),
+  },
+  {
+    sort: 'young',
+    names: split(`Amadeu Alcindo Abraim Quévin Odélia Deolindo Melchior Melânia Ariela Alejandra
+      Eleutério Girão Bartolomeu Oceano Apolo Marilene Alda Nêuton Armando Gilda`),
+  },
+  {
+    sort: 'old',
+    names: split(`Gilda Armando Nêuton Alda Marilene Apolo Oceano Bartolomeu Girão Eleutério
+      Alejandra Ariela Melânia Melchior Deolindo Odélia Quévin Abraim Alcindo Amadeu`),
+  },
+  {
+    sort: 'recent',
+    names: split(`Amadeu Quévin Girão Alda Oceano Alejandra Abraim Ariela Bartolomeu Odélia
+      Deolindo Melchior Armando Marilene Apolo Nêuton Melânia Eleutério Alcindo Gilda`),
+  },
+]
+
 describe('queryCustomers', () => {
   it('returns the first page with the totals', () => {
     const result = queryCustomers(all, query())
 
     expect(result).toMatchObject({ total: 20, page: 1, perPage: 9, totalPages: 3 })
-    expect(slugsOf(result.items)).toStrictEqual(slugsOf(all.slice(0, 9)))
+    expect(firstNamesOf(result.items)).toStrictEqual(BY_NAME.slice(0, 9))
   })
 
   it('starts page 2 at the 10th customer', () => {
@@ -41,15 +80,15 @@ describe('queryCustomers', () => {
 
     expect(result).toMatchObject({ total: 20, page: 2, perPage: 9, totalPages: 3 })
     expect(result.items).toHaveLength(9)
-    expect(result.items[0]?.slug).toBe(all[9]?.slug)
-    expect(slugsOf(result.items)).toStrictEqual(slugsOf(all.slice(9, 18)))
+    expect(result.items[0]?.name).toBe('Deolindo da Cunha')
+    expect(firstNamesOf(result.items)).toStrictEqual(BY_NAME.slice(9, 18))
   })
 
   it('ends on a partial page', () => {
     const result = queryCustomers(all, query({ page: 3 }))
 
     expect(result.page).toBe(3)
-    expect(slugsOf(result.items)).toStrictEqual(slugsOf(all.slice(18)))
+    expect(firstNamesOf(result.items)).toStrictEqual(BY_NAME.slice(18))
     expect(result.items).toHaveLength(2)
   })
 
@@ -71,7 +110,7 @@ describe('queryCustomers', () => {
     const result = queryCustomers(all, query({ page: 2, perPage: 18 }))
 
     expect(result).toMatchObject({ total: 20, page: 2, perPage: 18, totalPages: 2 })
-    expect(slugsOf(result.items)).toStrictEqual(slugsOf(all.slice(18)))
+    expect(firstNamesOf(result.items)).toStrictEqual(BY_NAME.slice(18))
   })
 
   it.each([1, 5])('returns page 1 of 1 for an empty list asked for page %s', (page) => {
@@ -89,14 +128,14 @@ describe('queryCustomers', () => {
     const [first] = queryCustomers(all, query()).items
 
     expect(first).toStrictEqual({
-      slug: 'alejandra-rodrigues',
-      name: 'Alejandra Rodrigues',
-      street: 'Rua Santa Catarina, 3833',
-      city: 'Umuarama',
-      state: 'Santa Catarina',
-      uf: 'SC',
-      postcode: '43646',
-      picture: 'https://randomuser.me/api/portraits/women/18.jpg',
+      slug: 'abraim-dacosta',
+      name: 'Abraim da Costa',
+      street: 'Avenida D. Pedro II, 1315',
+      city: 'Taubaté',
+      state: 'Minas Gerais',
+      uf: 'MG',
+      postcode: '66230',
+      picture: 'https://randomuser.me/api/portraits/men/87.jpg',
     })
   })
 
@@ -127,7 +166,7 @@ describe('queryCustomers with a search', () => {
     const result = find(search)
 
     expect(result).toMatchObject({ total: 20, page: 1, totalPages: 3 })
-    expect(slugsOf(result.items)).toStrictEqual(slugsOf(all.slice(0, 9)))
+    expect(firstNamesOf(result.items)).toStrictEqual(BY_NAME.slice(0, 9))
   })
 
   // The most common request (no search at all). Folding the 20 names would change nothing, and it
@@ -169,14 +208,14 @@ describe('queryCustomers with a search', () => {
   })
 
   it('matches inside a word, not only at its start', () => {
-    expect(slugsOf(find('unes').items)).toStrictEqual(['ariela-nunes', 'apolo-nunes'])
+    expect(slugsOf(find('unes').items)).toStrictEqual(['apolo-nunes', 'ariela-nunes'])
   })
 
   it('lists every match, in the order of the list', () => {
     const result = find('nunes')
 
     expect(result).toMatchObject({ total: 2, page: 1, totalPages: 1 })
-    expect(slugsOf(result.items)).toStrictEqual(['ariela-nunes', 'apolo-nunes'])
+    expect(slugsOf(result.items)).toStrictEqual(['apolo-nunes', 'ariela-nunes'])
   })
 
   it.each(['ariela nunes', 'nunes ariela'])('needs every word, in any order: %j', (search) => {
@@ -198,7 +237,7 @@ describe('queryCustomers with a search', () => {
   })
 
   // "da" is in 10 of the 20 names: the matches fill 2 pages, the whole list 3. Filtering after the
-  // slice would show on page 2 only the 3 that sit among customers 10 to 18.
+  // slice would show on page 2 the 6 that sit among customers 10 to 18.
   it('paginates the matches, not the whole list', () => {
     const second = find('da', 2)
 
@@ -223,7 +262,7 @@ describe('queryCustomers with filters', () => {
     const result = find({ states: ['minas-gerais'] })
 
     expect(result).toMatchObject({ total: 2, page: 1, totalPages: 1 })
-    expect(slugsOf(result.items)).toStrictEqual(['gilda-pires', 'abraim-dacosta'])
+    expect(slugsOf(result.items)).toStrictEqual(['abraim-dacosta', 'gilda-pires'])
   })
 
   it('lists the customers of any of the states, in the order of the list', () => {
@@ -231,10 +270,10 @@ describe('queryCustomers with filters', () => {
 
     expect(result.total).toBe(4)
     expect(slugsOf(result.items)).toStrictEqual([
+      'abraim-dacosta',
       'alejandra-rodrigues',
       'apolo-nunes',
       'gilda-pires',
-      'abraim-dacosta',
     ])
   })
 
@@ -243,12 +282,12 @@ describe('queryCustomers with filters', () => {
 
     expect(result.total).toBe(7)
     expect(slugsOf(result.items)).toStrictEqual([
-      'alejandra-rodrigues',
       'alda-barbosa',
-      'marilene-darocha',
+      'alejandra-rodrigues',
       'ariela-nunes',
-      'melania-jesus',
       'gilda-pires',
+      'marilene-darocha',
+      'melania-jesus',
       'odelia-moura',
     ])
   })
@@ -267,7 +306,7 @@ describe('queryCustomers with filters', () => {
     const result = find({ search: 'da', states: ['minas-gerais', 'tocantins'], gender: 'male' })
 
     expect(result.total).toBe(2)
-    expect(slugsOf(result.items)).toStrictEqual(['eleuterio-almeida', 'abraim-dacosta'])
+    expect(slugsOf(result.items)).toStrictEqual(['abraim-dacosta', 'eleuterio-almeida'])
   })
 
   // 13 men fill a page of 9 and a page of 4: cutting the page before the filter would show others
@@ -277,16 +316,70 @@ describe('queryCustomers with filters', () => {
     expect(find({ gender: 'male' }).items).toHaveLength(9)
     expect(second).toMatchObject({ total: 13, page: 2, totalPages: 2 })
     expect(slugsOf(second.items)).toStrictEqual([
-      'neuton-novaes',
-      'abraim-dacosta',
-      'deolindo-dacunha',
       'melchior-dacunha',
+      'neuton-novaes',
+      'oceano-jesus',
+      'quevin-cavalcanti',
     ])
   })
 
   it('clamps a page past the end to the last page of the matches', () => {
     expect(find({ gender: 'male', page: 99 })).toMatchObject({ total: 13, page: 2, totalPages: 2 })
     expect(find({ states: MG_SC, page: 5 })).toMatchObject({ total: 4, page: 1, totalPages: 1 })
+  })
+})
+
+describe('queryCustomers sorted', () => {
+  // A page of 54 holds the 20, so the whole order shows. No two customers share a birth or sign-up
+  // date, and 4 pairs are born in the same year, where `age` (whole years) can tie.
+  it.each(ORDERS)('lists the customers in the order of sort=$sort', ({ sort, names }) => {
+    const result = queryCustomers(all, query({ sort, perPage: 54 }))
+
+    expect(firstNamesOf(result.items)).toStrictEqual(names)
+  })
+
+  // A customer the orders tell apart by the name alone; the rest is copied from the first of the fixture
+  function made(firstName: string, lastName: string): ICustomer {
+    const [template] = all
+    if (!template) throw new Error('the fixture has no customer')
+    return { ...template, firstName, lastName, name: `${firstName} ${lastName}` }
+  }
+  const namesOf = (list: ICustomer[], sort: IListQuery['sort']) =>
+    queryCustomers(list, query({ sort })).items.map(({ name }) => name)
+
+  // "Á" comes after "B" by code point, and an accent is no reason to leave the As
+  it('puts an accented first letter with its letter', () => {
+    expect(namesOf([made('Bruno', 'Dias'), made('Ágata', 'Lima')], 'name')).toStrictEqual([
+      'Ágata Lima',
+      'Bruno Dias',
+    ])
+  })
+
+  // The accent is no difference between surnames, so the first name decides. With the accent
+  // counting, "Girao" would come first whatever the first name.
+  it('takes "Girão" and "Girao" as one surname', () => {
+    expect(namesOf([made('Zeca', 'Girao'), made('Ana', 'Girão')], 'last')).toStrictEqual([
+      'Ana Girão',
+      'Zeca Girao',
+    ])
+  })
+
+  // Listed the other way round, so keeping the order it came in is not an answer
+  it('breaks a tie of surnames with the first name', () => {
+    expect(namesOf([made('Bia', 'Souza'), made('Ana', 'Souza')], 'last')).toStrictEqual([
+      'Ana Souza',
+      'Bia Souza',
+    ])
+  })
+
+  // With no search and no filter the list is the cached one: sorting it in place would reorder it
+  // for every request after
+  it('leaves the list it is given as it was', () => {
+    const given = [...all]
+
+    queryCustomers(given, query({ sort: 'name-desc' }))
+
+    expect(slugsOf(given)).toStrictEqual(slugsOf(all))
   })
 })
 

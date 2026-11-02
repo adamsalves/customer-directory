@@ -74,6 +74,10 @@ export function normalizeCustomer(raw: IRawCustomer, now = new Date()): ICustome
   return {
     slug: slugify(raw.email.replace(/@.*$/, '')),
     name: titleCase(`${name.first} ${name.last}`),
+    firstName: titleCase(name.first),
+    // The prototype's trick: a word in front, so a particle that opens the surname stays lowercase
+    // as it does in `name` ("da Cruz", not "Da Cruz"), then dropped
+    lastName: titleCase(`x ${name.last}`).slice(2),
     street: formatStreet(location.street),
     city: titleCase(location.city),
     state: state?.name ?? titleCase(location.state),
