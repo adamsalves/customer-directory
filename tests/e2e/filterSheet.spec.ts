@@ -55,6 +55,31 @@ const resolved = (page: Page, property: 'color' | 'boxShadow', token: string) =>
     { property, token },
   )
 
+// The share of the pixels of an element painted in a color, read from a screenshot: what forced colors
+// paint behind text (the backplate) is in no computed style
+async function shareOfColor(page: Page, target: Locator, color: string) {
+  const png = (await target.screenshot()).toString('base64')
+  return page.evaluate(
+    async ({ png, color }) => {
+      const bytes = Uint8Array.from(atob(png), (char) => char.charCodeAt(0))
+      const image = await createImageBitmap(new Blob([bytes], { type: 'image/png' }))
+      const canvas = new OffscreenCanvas(image.width, image.height)
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('no 2d context')
+      context.drawImage(image, 0, 0)
+      const { data } = context.getImageData(0, 0, image.width, image.height)
+      const [red = 0, green = 0, blue = 0] = (color.match(/\d+/g) ?? []).map(Number)
+      let hits = 0
+      for (let i = 0; i < data.length; i += 4) {
+        const [r = 0, g = 0, b = 0] = data.subarray(i, i + 3)
+        if (Math.abs(r - red) + Math.abs(g - green) + Math.abs(b - blue) < 24) hits += 1
+      }
+      return hits / (data.length / 4)
+    },
+    { png, color },
+  )
+}
+
 async function expectStyle(target: Locator, style: Record<string, string>) {
   for (const [property, value] of Object.entries(style)) {
     await expect(target, property).toHaveCSS(property, value)
@@ -777,7 +802,8 @@ for (const theme of ['dark', 'light'] as const) {
 
   // High Contrast takes the background and the shadow of an author away, and nothing else tells the
   // picked segment from the others: its box is out of sight and it has no check, as a pill has. The
-  // system colors are the user's, so they are read from the page (#100).
+  // system colors are the user's, so they are read from the page (#100). Without forced-color-adjust:
+  // none the computed colors are the same, but a Canvas backplate hides the label: the pixels tell.
   test(`the picked segment is drawn in forced colors in the ${theme} theme`, async ({ page }) => {
     await openPanelIn(page, theme)
     await page.emulateMedia({ forcedColors: 'active' })
@@ -786,10 +812,14 @@ for (const theme of ['dark', 'light'] as const) {
     const highlightText = await resolved(page, 'color', 'HighlightText')
 
     await expectStyle(picked, {
-      'forced-color-adjust': 'auto',
+      'forced-color-adjust': 'none',
+      'outline-color': await resolved(page, 'color', 'CanvasText'),
       'background-color': highlight,
       color: highlightText,
     })
+    expect(
+      await shareOfColor(page, nameOf(picked), await resolved(page, 'color', 'Canvas')),
+    ).toBeLessThan(0.5)
     await expect(countOf(picked)).toHaveCSS('color', highlightText)
     for (const value of ['female', 'male']) {
       await expectStyle(segmentOf(page, value), {
