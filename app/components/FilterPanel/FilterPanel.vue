@@ -51,8 +51,7 @@ const stateRows = computed(() =>
   [
     ...DEFAULT_STATES,
     ...OTHER_STATES.filter(
-      ({ slug }) =>
-        props.variant === 'sheet' || expanded.value || current.value.states.includes(slug),
+      ({ slug }) => isSheet.value || expanded.value || current.value.states.includes(slug),
     ),
   ].map(({ slug, name }) => {
     const checked = current.value.states.includes(slug)
@@ -188,7 +187,7 @@ function toggleState(slug: string) {
         </label>
       </div>
       <button
-        v-if="variant === 'aside'"
+        v-if="!isSheet"
         ref="toggle"
         type="button"
         :aria-expanded="expanded"
@@ -230,7 +229,7 @@ function toggleState(slug: string) {
       </div>
     </fieldset>
     <button
-      v-if="variant === 'aside' && hasFilter"
+      v-if="!isSheet && hasFilter"
       type="button"
       :class="S.Clear"
       data-testid="filter-panel__clear--button"
