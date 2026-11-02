@@ -84,7 +84,8 @@
 
 // The panel in the sheet (#26, #96): the states as pills and the gender as a segmented control, as the
 // prototype draws them (v2, ADR-0013), but 44px tall, the project's touch target, where the prototype
-// has 40px. The boxes are out of sight (VisuallyHidden), so each label draws what its box says:
+// has 40px: a minimum, so a label that wraps makes its pill or segment grow instead of spilling out. The
+// boxes are out of sight (VisuallyHidden), so each label draws what its box says:
 // `:has(:checked)` follows `input.checked`, which is all `syncControls` writes (FilterPanel.vue), and
 // the focus ring comes to the label the same way.
 .Sheet .Legend {
@@ -134,7 +135,7 @@
 
 .Sheet .States .Option {
   gap: 6px;
-  block-size: 44px;
+  min-block-size: 44px;
   padding-inline: 14px;
   border: 1px solid var(--border-strong);
   border-radius: 22px;
@@ -168,7 +169,7 @@
 .Sheet .Segments .Option {
   gap: 3px;
   justify-content: center;
-  block-size: 44px;
+  min-block-size: 44px;
   border-radius: 22px;
   color: var(--text);
 }

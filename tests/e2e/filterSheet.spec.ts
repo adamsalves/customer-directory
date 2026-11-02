@@ -851,6 +851,34 @@ for (const theme of ['dark', 'light'] as const) {
   })
 }
 
+// The 44px of a pill and of a segment is a minimum: a label that wraps (a long name, a text the system
+// scales up) makes it grow, with the label inside, and the track of the segments with it. The names of
+// the fixture are short, so the label is made long here: the box is what is measured.
+test('a pill and a segment grow with a label that wraps, and keep it inside', async ({ page }) => {
+  await openPanelIn(page, 'dark')
+  const group = sheet(page).getByTestId('filter-panel__segments--div')
+
+  for (const { label, words } of [
+    { label: pillOf(page, 'espirito-santo'), words: 30 },
+    { label: segmentOf(page, 'female'), words: 10 },
+  ]) {
+    await nameOf(label).evaluate((el, text) => {
+      el.textContent = text
+    }, 'palavra '.repeat(words))
+    const box = await boxOf(label)
+    const name = await boxOf(nameOf(label))
+
+    expect(box.height).toBeGreaterThan(44)
+    expect(name.y).toBeGreaterThanOrEqual(box.y)
+    expect(name.y + name.height).toBeLessThanOrEqual(box.y + box.height)
+  }
+  // The track is 4px of padding, the row and 4px of padding: the row is the taller segment
+  expect((await boxOf(group)).height).toBeCloseTo(
+    4 + (await boxOf(segmentOf(page, 'female'))).height + 4,
+    1,
+  )
+})
+
 // Under the header, as the first thing in the column, edge to edge: the padding of <main> (16px, 24px
 // from 640px) is where the button sits. The page scrolls under it, which is why the scroll padding of
 // the page counts its 61px (customerListLayout.spec.ts).
