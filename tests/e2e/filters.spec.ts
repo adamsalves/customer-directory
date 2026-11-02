@@ -71,7 +71,7 @@ test('search, states and gender narrow the list together, and the chips and a re
   await expect(page).toHaveURL(filtered)
 
   await expect(cards(page)).toHaveCount(2)
-  await expect(names(page)).toHaveText(['Girão da Rosa', 'Alcindo das Neves'])
+  await expect(names(page)).toHaveText(['Alcindo das Neves', 'Girão da Rosa'])
   // Each count leaves out its own filter: the genders count the two states and the search, so the
   // men are as many as the cards and there is no woman; a state counts the search and the gender,
   // so one of the 2 from Tocantins is left

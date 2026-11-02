@@ -5,7 +5,7 @@ import customers from '../../tests/fixtures/customers.json'
 import { normalizeCustomer } from './normalizeCustomer'
 import { parseRawCustomers } from './parseRawCustomers'
 
-type TTextField = 'name' | 'street' | 'city'
+type TTextField = 'name' | 'firstName' | 'lastName' | 'street' | 'city'
 type TFixtureText = { index: number; field: TTextField; expected: string }
 type TEditedText = { field: 'street' | 'city'; value: string; expected: string }
 type TAgeCase = { when: string; now: string; age: number; index?: number; dob?: string }
@@ -31,6 +31,10 @@ function normalizeEdited(edit: (raw: IRawCustomer) => void, index = 0, now = NOW
 const fixtureText: TFixtureText[] = [
   { index: 1, field: 'name', expected: 'Armando da Cruz' },
   { index: 12, field: 'name', expected: 'Alcindo das Neves' },
+  { index: 11, field: 'firstName', expected: 'Girão' },
+  // A surname that opens with a particle keeps it lowercase, as in the name
+  { index: 1, field: 'lastName', expected: 'da Cruz' },
+  { index: 12, field: 'lastName', expected: 'das Neves' },
   { index: 18, field: 'city', expected: 'Caxias do Sul' },
   { index: 19, field: 'city', expected: 'Angra dos Reis' },
   { index: 11, field: 'street', expected: 'Rua da Saudade, 3438' },
@@ -89,6 +93,8 @@ describe('normalizeCustomer', () => {
     expect(normalizeCustomer(rawAt(0), NOW)).toEqual({
       slug: 'alejandra-rodrigues',
       name: 'Alejandra Rodrigues',
+      firstName: 'Alejandra',
+      lastName: 'Rodrigues',
       street: 'Rua Santa Catarina, 3833',
       city: 'Umuarama',
       state: 'Santa Catarina',
@@ -110,6 +116,15 @@ describe('normalizeCustomer', () => {
 
   it.each(fixtureText)('writes $field of record $index as "$expected"', (row) => {
     expect(normalizeCustomer(rawAt(row.index), NOW)[row.field]).toBe(row.expected)
+  })
+
+  // The source can send an empty first name: the particle stays lowercase in `name` too
+  it('keeps the name equal to its parts when the first name is empty', () => {
+    const customer = normalizeEdited((raw) => {
+      raw.name.first = ''
+    }, 1)
+
+    expect(customer).toMatchObject({ name: 'da Cruz', firstName: '', lastName: 'da Cruz' })
   })
 
   it.each(editedText)('writes $field "$value" as "$expected"', ({ field, value, expected }) => {

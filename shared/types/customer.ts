@@ -31,6 +31,10 @@ export interface ICustomerCard {
 
 export interface ICustomer extends ICustomerCard {
   stateSlug: string // the state's value in the URL filter; the card does not carry it
+  // `name` in two parts, for the sort by surname: firstName + ' ' + lastName is the name, and the
+  // surname may be compound ("da Cruz"). The card does not carry them
+  firstName: string
+  lastName: string
   title: 'Sr.' | 'Sra.' | 'Srta.'
   gender: 'male' | 'female'
   email: string

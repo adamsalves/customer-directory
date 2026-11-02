@@ -1,6 +1,10 @@
 import { BRAZILIAN_STATES } from './brazilianStates'
 import { isRecord } from './isRecord'
 
+// The prototype's orders: the name from A to Z and from Z to A, the surname, the youngest, the oldest
+// and the latest to sign up
+export const SORT_OPTIONS = ['name', 'name-desc', 'last', 'young', 'old', 'recent'] as const
+
 export interface IListQuery {
   page: number
   perPage: number
@@ -8,12 +12,15 @@ export interface IListQuery {
   // Slugs of BRAZILIAN_STATES, each once and in the order of that table; none is every state
   states: string[]
   gender: 'all' | 'female' | 'male'
+  // The order of the list. It is not a filter: nobody leaves the list because of it
+  sort: (typeof SORT_OPTIONS)[number]
 }
 
 export const PER_PAGE_OPTIONS = [9, 18, 27, 54] as const
 export const DEFAULT_PER_PAGE = PER_PAGE_OPTIONS[0]
 const DEFAULT_PAGE = 1
 const DEFAULT_GENDER = 'all'
+const DEFAULT_SORT = 'name'
 // Longer than any name, short enough that the search (every word against every name, on each
 // request) stays cheap
 export const MAX_SEARCH_LENGTH = 100
@@ -41,12 +48,16 @@ function parseGender(value: unknown): IListQuery['gender'] {
   return value === 'female' || value === 'male' ? value : DEFAULT_GENDER
 }
 
+function parseSort(value: unknown): IListQuery['sort'] {
+  return SORT_OPTIONS.find((option) => option === value) ?? DEFAULT_SORT
+}
+
 // The only place that turns external input (`getQuery`, `route.query`) into an IListQuery
 // (ADR-0016). The URL keys are the field names (ADR-0021). Anything that is not a canonical
 // value, a repeated key included, falls back to the default. `search` is any string, trimmed so
 // "ana " and "ana" are one list state (the field keeps its own draft): the words are split by the
 // search itself. A longer search is cut at MAX_SEARCH_LENGTH, and trimmed again so the cut is
-// canonical too. `states` and `gender` keep only the values they know.
+// canonical too. `states`, `gender` and `sort` keep only the values they know.
 export function parseListQuery(input: unknown): IListQuery {
   const source = isRecord(input) ? input : {}
   const perPage = parsePositiveInteger(source.perPage)
@@ -59,6 +70,7 @@ export function parseListQuery(input: unknown): IListQuery {
         : '',
     states: parseStates(source.states),
     gender: parseGender(source.gender),
+    sort: parseSort(source.sort),
   }
 }
 
@@ -84,5 +96,6 @@ export function serializeListQuery(query: IListQuery): Record<string, string> {
   const states = inTableOrder(query.states)
   if (states.length > 0) params.states = states.join(',')
   if (query.gender !== DEFAULT_GENDER) params.gender = query.gender
+  if (query.sort !== DEFAULT_SORT) params.sort = query.sort
   return params
 }
