@@ -663,6 +663,21 @@ describe('FilterPanel sheet variant', () => {
     expect(valuesOf(wrapper, 'input')).toEqual(valuesOf(aside, 'input'))
   })
 
+  // iOS Safari applies :active on a touch only where the page listens to touchstart, and the pills are
+  // pressed into --surface-alt with it (FilterPanel.module.scss). The listener has nothing to do, so it
+  // is passive and holds up no scroll. happy-dom has no touch: what is read is the listener, and the
+  // press itself shows only in Safari on a phone.
+  it('listens to touchstart on the list of the pills, passively, for :active on iOS', async () => {
+    const listen = vi.spyOn(HTMLElement.prototype, 'addEventListener')
+    const wrapper = await mountSheetPanel()
+    const list = wrapper.get(LIST).element
+
+    const options = listen.mock.calls
+      .filter(([type], call) => type === 'touchstart' && listen.mock.contexts[call] === list)
+      .map(([, , option]) => option)
+    expect(options).toEqual([{ passive: true }])
+  })
+
   it('draws a check on each state, hidden from a screen reader, and nowhere else', async () => {
     const aside = await mountPanel()
     const wrapper = await mountSheetPanel()

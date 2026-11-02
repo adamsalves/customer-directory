@@ -82,6 +82,14 @@ function countLabel(count: number) {
   return `${String(count)} ${count === 1 ? 'cliente' : 'clientes'}`
 }
 
+// iOS Safari applies :active on a touch only where the page listens to touchstart, and the pills of the
+// sheet are pressed into --surface-alt with it (FilterPanel.module.scss). There is nothing to do with
+// the event, so the listener is passive: it holds up no scroll. The aside has it too, with no :active
+// for it to enable, which costs nothing.
+function enableActiveOnTouch() {
+  // On purpose: the listener is there for its presence alone
+}
+
 const rootRef = useTemplateRef('root')
 
 // Puts each control on what the URL says
@@ -133,7 +141,12 @@ function toggleState(slug: string) {
   <div ref="root" :class="[S.Panel, isSheet && S.Sheet]" data-testid="filter-panel__root--div">
     <fieldset :class="S.Group" data-testid="filter-panel__states--fieldset">
       <legend :class="S.Legend">Por Estado</legend>
-      <div :id="statesListId" :class="S.States" data-testid="filter-panel__list--div">
+      <div
+        :id="statesListId"
+        :class="S.States"
+        data-testid="filter-panel__list--div"
+        @touchstart.passive="enableActiveOnTouch"
+      >
         <label v-for="row in stateRows" :key="row.slug" :class="[S.Option, row.dimmed && S.Dimmed]">
           <input
             type="checkbox"
