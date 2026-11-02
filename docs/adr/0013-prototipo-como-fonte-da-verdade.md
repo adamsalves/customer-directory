@@ -66,6 +66,9 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | contagem do segmentado em `--text-count`            | `--text-muted`; no ativo, a cor do rótulo  | 4,34:1 no inativo claro; 2,52:1 no ativo escuro |
 | o segmento ativo só tem fundo e sombra              | anel interno de 1px em `--input-border`    | ativo contra o trilho claro: 1,09:1 → 3,19:1    |
 | Alto Contraste não previsto                         | segmento ativo em `Highlight`              | o rádio fica escondido; fundo e sombra somem    |
+| "membro(s)" na contagem e no "Carregando membros…"  | "cliente(s)"; "de 1 cliente" no singular   | ADR-0020                                        |
+| duas regiões vivas, trocadas pela largura (`vw`)    | uma região viva; o layout é do CSS         | um anúncio só; mesmo HTML em qualquer largura   |
+| "Erro ao carregar" na região da contagem            | região vazia no erro                       | o `ErrorState` já anuncia com `role="alert"`    |
 
 ## Consequências
 

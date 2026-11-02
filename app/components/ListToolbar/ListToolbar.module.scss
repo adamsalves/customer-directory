@@ -1,0 +1,34 @@
+// Measures of the prototype's toolbar (v2, ADR-0013). Below 960px it is one line under the bar of the
+// sheet: 12px below it (the 16px margin of the bar and the -4px of the line collapse) and 16px above
+// what follows. From 960px it is a card at the top of the column, 16px above what follows. One
+// element for both, so the page has one live region (ADR-0014).
+// ponytail: the card holds the count alone, so the prototype's flex-wrap, space-between and gap of
+// 8px 24px, which only act on two children, are left out. Upgrade: #29 adds them with the sort select.
+.Toolbar {
+  margin-block: -4px 16px;
+}
+
+.Count {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+@media (width >= 960px) {
+  .Toolbar {
+    display: flex;
+    align-items: center;
+    min-block-size: 60px;
+    margin-block-start: 0;
+    padding-block: 10px;
+    padding-inline: 15px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--surface);
+  }
+
+  .Count {
+    color: var(--text-strong);
+    font-size: 16px;
+  }
+}
