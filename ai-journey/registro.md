@@ -384,3 +384,17 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
     7. **`isSheet`:** as três checagens que ainda liam `variant` passaram a usá-lo.
     8. **Este registro:** a conta da specificidade das contagens ("5 classes contra 4") estava errada; a certa é a do `/review` acima.
 - **Pendente:** o gate de Safari real — o marcado/desmarcado depende só de `:has()`, que existe desde a 15.4, e os chips seguem expondo os filtros; o `:active` das pílulas, que só vale com o `touchstart` passivo e que o spec não vê; o Alto Contraste num Windows real, conferido só por emulação no Chromium; leitor de tela e toque. Animação de saída do sheet (#99); live region do "Ver N" (#97); E2E dos filtros (#27).
+
+### #27 · E2E dos filtros no desktop e no mobile · [PR #101](https://github.com/adamsalves/customer-directory/pull/101)
+
+- **Decidido:** [#27](https://github.com/adamsalves/customer-directory/issues/27). Só testes, sem ADR. O measurer achou o critério 1 sem cobertura (nenhum E2E combinava busca, estado e gênero, comparava contagem ou clicava num chip) e os critérios 2 e 3 parciais: o `Esc` só era testado com o sheet vazio e o único `reload()` com filtro era o da busca. Um arquivo novo, sem mexer nos helpers do `filterSheet.spec.ts`.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/27#issuecomment-6578840495) · estimativa ~150 linhas de spec
+- **Como:** `tests/e2e/filters.spec.ts` com 2 testes, cada um pulando por `isMobile`. No desktop: a busca `da` muda as contagens (masculino 13 → 7, Paraná 2 → 1); Mato Grosso do Sul, Distrito Federal e Masculino deixam 2 cards e a URL na ordem da tabela de UFs, não na dos cliques; o chip de MS sai e sobra Alcindo das Neves; o `reload()` mantém tudo. No mobile: o sheet vai de "Ver 10 clientes" a "Ver 1 cliente" com a URL já filtrada; o `Esc` fecha e mantém o filtro, que é aplicado ao vivo; o `reload()` reabre o sheet marcado. DF e MS não estão entre os 5 estados do painel, então o teste abre "Ver todos (27)" antes de marcá-los.
+- **Resultado:** 153 linhas de spec (+153 −0) sem este registro (estimativa ~150). Suíte E2E: 252 passed, 12 skipped.
+  - **Mutação:** 5 mutantes no app, todos mortos. O chip que remove sempre o primeiro estado, e não o clicado, sobrevivia à suíte inteira: o `FilterChips.spec.ts` e a primeira versão do E2E clicavam sempre o primeiro da lista, e aí os dois dão o mesmo resultado. O E2E passou a clicar o segundo; a unit mata "remove o último".
+  - **Review** (`/code-review`, 6 achados, 3 aplicados): nenhum bug, e os números da fixture conferiram.
+    1. **Asserção que não falhava após o reload:** abrir "Ver todos" e checar o MS desmarcado passava sempre, porque a linha nasce desmarcada. Virou `toHaveCount(0)` na opção do MS, que prova o que o comentário dizia. O mutante "painel lista os 27 estados" passava antes e agora cai nessa linha.
+    2. **`toHaveCount(9)` depois da busca:** são 9 cards antes e depois. Virou "os 9 nomes têm `da`"; 4 dos 9 primeiros sem busca não têm. O mutante "lista ignora a busca, contagens não" cai nessa linha.
+    3. **Este registro.**
+    - Recusados: juntar os localizadores repetidos nos 3 specs (fora do escopo no plano); `stateBox` direto na caixa (mesma garantia); dividir o teste do desktop (o critério 1 é um fluxo só, e o trace mostra o passo).
+- **Pendente:** nada da #27. Do M5 seguem a animação de saída do sheet (#99), a live region do "Ver N" (#97) e a leitura única do estado em voo (#95), todas no M9.
