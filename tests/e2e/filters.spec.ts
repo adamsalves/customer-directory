@@ -50,11 +50,11 @@ test('search, states and gender narrow the list together, and the chips and a re
   await expect(countOf(female)).toHaveText('7')
   await expect(countOf(stateOption(panel, 'parana'))).toHaveText('2')
 
-  // The counts follow the search. The field writes after a pause, and the 9 of the first page are
-  // there before and after: the counts are what tells the new list from the old one.
+  // The list and the counts follow the search. The field writes after a pause, and the page shows 9
+  // cards before and after: 4 of the first 9 without the search have no "da" in the name.
   await field(page).fill('da')
   await expect(page).toHaveURL(SEARCH_URL)
-  await expect(cards(page)).toHaveCount(9)
+  await expect(names(page)).toHaveText(Array.from({ length: 9 }, () => /da/i))
   await expect(countOf(male)).toHaveText('7')
   await expect(countOf(female)).toHaveText('3')
   await expect(countOf(stateOption(panel, 'parana'))).toHaveText('1')
@@ -109,8 +109,7 @@ test('search, states and gender narrow the list together, and the chips and a re
   await expect(stateBox(panel, 'distrito-federal')).toBeChecked()
   await expect(genderBox(panel, 'male')).toBeChecked()
   // Mato Grosso do Sul is behind "Ver todos" again, since it is neither picked nor one of the five
-  await toggle.click()
-  await expect(stateBox(panel, 'mato-grosso-do-sul')).not.toBeChecked()
+  await expect(stateOption(panel, 'mato-grosso-do-sul')).toHaveCount(0)
 })
 
 test('the sheet filters at each pick, and Esc closes it with the filters kept, reload included', async ({
