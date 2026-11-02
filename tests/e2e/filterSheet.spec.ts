@@ -41,12 +41,13 @@ async function boxOf(locator: Locator) {
   return box
 }
 
-// The resolved value of a token in the theme of the page, as the color or the shadow it stands for
+// The resolved value of a token in the theme of the page, as the color or the shadow it stands for. What
+// is no token (a system color, a list of shadows) is resolved as it is.
 const resolved = (page: Page, property: 'color' | 'boxShadow', token: string) =>
   page.evaluate(
     ({ property, token }) => {
       const probe = document.body.appendChild(document.createElement('i'))
-      probe.style[property] = `var(${token})`
+      probe.style[property] = token.startsWith('--') ? `var(${token})` : token
       const value = getComputedStyle(probe)[property]
       probe.remove()
       return value
@@ -763,6 +764,30 @@ for (const theme of ['dark', 'light'] as const) {
     const number = await boxOf(numberOf(last))
     expect(number.x - (name.x + name.width)).toBeCloseTo(3, 1)
     expect(name.x - box.x).toBeCloseTo(box.x + box.width - (number.x + number.width), 1)
+  })
+
+  // High Contrast takes the background and the shadow of an author away, and nothing else tells the
+  // picked segment from the others: its box is out of sight and it has no check, as a pill has. The
+  // system colors are the user's, so they are read from the page (#100).
+  test(`the picked segment is drawn in forced colors in the ${theme} theme`, async ({ page }) => {
+    await openPanelIn(page, theme)
+    await page.emulateMedia({ forcedColors: 'active' })
+    const picked = segmentOf(page, 'all')
+    const highlight = await resolved(page, 'color', 'Highlight')
+    const highlightText = await resolved(page, 'color', 'HighlightText')
+
+    await expectStyle(picked, {
+      'forced-color-adjust': 'none',
+      'background-color': highlight,
+      color: highlightText,
+    })
+    await expect(countOf(picked)).toHaveCSS('color', highlightText)
+    for (const value of ['female', 'male']) {
+      await expectStyle(segmentOf(page, value), {
+        'forced-color-adjust': 'auto',
+        'background-color': 'rgba(0, 0, 0, 0)',
+      })
+    }
   })
 
   // The focus is shown on the label, the one thing in sight, and only to the keyboard: the ring of the
