@@ -84,6 +84,9 @@ const CHIPS = '[data-testid="filter-chips__root--list"]'
 const BAR = '[data-testid="filter-sheet__bar--div"]'
 const TOOLBAR = '[data-testid="list-toolbar__root--div"]'
 const TOOLBAR_COUNT = '[data-testid="list-toolbar__count--text"]'
+// Every way an element goes live: aria-live, and the roles that are live by themselves, which a
+// search for aria-live alone would miss
+const LIVE_REGIONS = '[aria-live], [role=status], [role=alert], [role=log]'
 const SHEET = '[data-testid="filter-sheet__root--dialog"]'
 const SHEET_OPEN = '[data-testid="filter-sheet__open--button"]'
 const SHEET_APPLY = '[data-testid="filter-sheet__apply--button"]'
@@ -689,13 +692,13 @@ describe('customers page', () => {
     expect(wrapper.get(FILTERS).element.contains(chips)).toBe(false)
   })
 
-  // The one live region of the page (the route announcer is app.vue's), with the range of the answer
-  // and not of the URL: the BFF clamps the page and the page size, and this one answers page 2 of 6
-  // per page whatever the URL asks
+  // The one live region of the page (the route announcer is app.vue's, and the error alert is not
+  // there while the list loads), with the range of the answer and not of the URL: the BFF clamps the
+  // page and the page size, and this one answers page 2 of 6 per page whatever the URL asks
   it('has one live region, with the range of the answer', async () => {
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=999&perPage=18' })
 
-    expect(wrapper.findAll('[aria-live]')).toHaveLength(1)
+    expect(wrapper.findAll(LIVE_REGIONS)).toHaveLength(1)
     expect(wrapper.get(TOOLBAR_COUNT).text()).toBe('Exibindo 7–12 de 20 clientes')
   })
 

@@ -8,6 +8,9 @@ import ListToolbar from './ListToolbar.vue'
 
 const ROOT = '[data-testid="list-toolbar__root--div"]'
 const COUNT = '[data-testid="list-toolbar__count--text"]'
+// Every way an element goes live: aria-live, and the roles that are live by themselves, which a
+// search for aria-live alone would miss
+const LIVE_REGIONS = '[aria-live], [role=status], [role=alert], [role=log]'
 
 const card: ICustomerCard = {
   slug: 'customer-0',
@@ -73,7 +76,7 @@ describe('ListToolbar', () => {
 
     expect(count.element.tagName).toBe('P')
     expect(count.attributes()).toMatchObject({ role: 'status', 'aria-live': 'polite' })
-    expect(wrapper.findAll('[aria-live]')).toHaveLength(1)
+    expect(wrapper.findAll(LIVE_REGIONS)).toHaveLength(1)
   })
 
   // A page change scrolls back to the toolbar, and finds it by this id (resultsScroll.ts)
