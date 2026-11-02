@@ -82,6 +82,138 @@
   cursor: pointer;
 }
 
+// The panel in the sheet (#26, #96): the states as pills and the gender as a segmented control, as the
+// prototype draws them (v2, ADR-0013), but 44px tall, the project's touch target, where the prototype
+// has 40px: a minimum, so a label that wraps makes its pill or segment grow instead of spilling out. The
+// boxes are out of sight (VisuallyHidden), so each label draws what its box says:
+// `:has(:checked)` follows `input.checked`, which is all `syncControls` writes (FilterPanel.vue), and
+// the focus ring comes to the label the same way.
+.Sheet .Legend {
+  font-size: 16px;
+
+  // The prototype leaves it at `normal`, 19px at this size, where the page's legend is 24px
+  line-height: normal;
+}
+
+// Relative, so the box and the phrase of a count (absolute, VisuallyHidden) stay inside their label
+.Sheet .Option {
+  position: relative;
+  font-size: 14px;
+}
+
+.Sheet .Option:has(:focus-visible) {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.Sheet .Name {
+  flex: 0 1 auto;
+}
+
+.Sheet .Count {
+  font-size: 12px;
+}
+
+// Picked, a pill or a segment: the count has the color of the label (the prototype's too)
+.Sheet .Option:has(:checked) .Count {
+  color: inherit;
+}
+
+.Sheet .Check {
+  display: none;
+}
+
+.Sheet .Option:has(:checked) .Check {
+  display: block;
+}
+
+.Sheet .States {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.Sheet .States .Option {
+  gap: 6px;
+  min-block-size: 44px;
+  padding-inline: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  background: var(--surface);
+}
+
+.Sheet .States .Option:has(:checked) {
+  border-color: var(--inverse-bg);
+  background: var(--inverse-bg);
+  color: var(--inverse-text);
+}
+
+.Sheet .States .Option:has(:checked) .Count {
+  opacity: 0.75;
+}
+
+.Sheet .States .Option:not(:has(:checked)):active {
+  background: var(--surface-alt);
+}
+
+// One column for each option, all of one width whatever is in them: `minmax(0, 1fr)` and not `1fr`, which
+// is `minmax(auto, 1fr)` and widens the column of the widest text. The number of columns is the number of
+// options (GENDERS, app/utils/genders.ts), not a 3 written here.
+.Sheet .Segments {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 26px;
+  background: var(--surface-alt);
+}
+
+// The prototype writes a space between the label and the count: 3px at this size. The text keeps 8px off
+// the edge of the segment. Where the name and the count do not fit between the paddings (320px, a count
+// of 3 digits, a text scaled up) the count wraps under the name, the two centered and as far apart as the
+// gap, and the segment grows with them (min-block-size) instead of the text spilling out of it.
+.Sheet .Segments .Option {
+  flex-wrap: wrap;
+  gap: 3px;
+  place-content: center;
+  min-block-size: 44px;
+  padding-inline: 8px;
+  border-radius: 22px;
+  color: var(--text);
+}
+
+// --text-count is 4.34:1 on --surface-alt (light), under the 4.5:1 a number to read needs (ADR-0013)
+.Sheet .Segments .Count {
+  color: var(--text-muted);
+}
+
+// The active one is --seg-active-bg, where --text-count is 2.52:1 (dark): the count has the label's color.
+// Its ring is what tells it from the track, which --seg-active-bg alone does not in the light theme
+// (1.09:1; the ring is 3.19:1, WCAG 1.4.11, ADR-0013). Inset, so no geometry moves.
+.Sheet .Segments .Option:has(:checked) {
+  background: var(--seg-active-bg);
+  box-shadow:
+    inset 0 0 0 1px var(--input-border),
+    var(--shadow-seg);
+  color: var(--seg-active-text);
+  font-weight: 500;
+}
+
+// High Contrast discards the background and the shadow, and nothing else tells the picked segment from
+// the others (it has no check, as a pill has): the system colors do. Not an outline: the focus ring of
+// the label is one, and a rule as specific as this would take it away. forced-color-adjust: none, or the
+// browser paints a Canvas backplate behind the text and HighlightText on it can't be read; the focus
+// ring, now the author's, goes back to a system color.
+@media (forced-colors: active) {
+  .Sheet .Segments .Option:has(:checked) {
+    forced-color-adjust: none;
+    outline-color: CanvasText;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
 // Hover only where a pointer can hover, so a tap does not leave a button in that state (ADR-0013)
 @media (hover: hover) {
   .Toggle:hover {
@@ -91,5 +223,9 @@
   .Clear:hover {
     background: var(--inverse-bg);
     color: var(--inverse-text);
+  }
+
+  .Sheet .States .Option:not(:has(:checked)):hover {
+    background: var(--surface-alt);
   }
 }

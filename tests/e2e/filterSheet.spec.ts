@@ -17,6 +17,16 @@ const apply = (page: Page) => page.getByTestId('filter-sheet__apply--button')
 // The page has a panel of its own, hidden below 960px: the sheet's is the one in the dialog
 const stateBox = (page: Page, slug: string) =>
   sheet(page).locator(`[data-testid="filter-panel__state--checkbox"][value="${slug}"]`)
+// In the sheet the box is 1px and out of sight: the pill, its label, is what the pointer meets
+const pillOf = (page: Page, slug: string) =>
+  sheet(page).locator(`label:has([data-testid="filter-panel__state--checkbox"][value="${slug}"])`)
+const segmentOf = (page: Page, value: string) =>
+  sheet(page).locator(`label:has([data-testid="filter-panel__gender--radio"][value="${value}"])`)
+const nameOf = (label: Locator) => label.getByTestId('filter-panel__name--text')
+const countOf = (label: Locator) => label.getByTestId('filter-panel__count--text')
+const numberOf = (label: Locator) => label.getByTestId('filter-panel__count--number')
+const checkOf = (label: Locator) => label.getByTestId('filter-panel__check--icon')
+const legendOf = (page: Page, text: string) => sheet(page).locator('legend', { hasText: text })
 const cards = (page: Page) => page.getByTestId('customer-card__root--article')
 
 // Two frames are enough for what runs a frame after an event: the scroll, the focus
@@ -31,18 +41,44 @@ async function boxOf(locator: Locator) {
   return box
 }
 
-// The resolved value of a token in the theme of the page, as the color or the shadow it stands for
+// The resolved value of a token in the theme of the page, as the color or the shadow it stands for. What
+// is no token (a system color, a list of shadows) is resolved as it is.
 const resolved = (page: Page, property: 'color' | 'boxShadow', token: string) =>
   page.evaluate(
     ({ property, token }) => {
       const probe = document.body.appendChild(document.createElement('i'))
-      probe.style[property] = `var(${token})`
+      probe.style[property] = token.startsWith('--') ? `var(${token})` : token
       const value = getComputedStyle(probe)[property]
       probe.remove()
       return value
     },
     { property, token },
   )
+
+// The share of the pixels of an element painted in a color, read from a screenshot: what forced colors
+// paint behind text (the backplate) is in no computed style
+async function shareOfColor(page: Page, target: Locator, color: string) {
+  const png = (await target.screenshot()).toString('base64')
+  return page.evaluate(
+    async ({ png, color }) => {
+      const bytes = Uint8Array.from(atob(png), (char) => char.charCodeAt(0))
+      const image = await createImageBitmap(new Blob([bytes], { type: 'image/png' }))
+      const canvas = new OffscreenCanvas(image.width, image.height)
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('no 2d context')
+      context.drawImage(image, 0, 0)
+      const { data } = context.getImageData(0, 0, image.width, image.height)
+      const [red = 0, green = 0, blue = 0] = (color.match(/\d+/g) ?? []).map(Number)
+      let hits = 0
+      for (let i = 0; i < data.length; i += 4) {
+        const [r = 0, g = 0, b = 0] = data.subarray(i, i + 3)
+        if (Math.abs(r - red) + Math.abs(g - green) + Math.abs(b - blue) < 24) hits += 1
+      }
+      return hits / (data.length / 4)
+    },
+    { png, color },
+  )
+}
 
 async function expectStyle(target: Locator, style: Record<string, string>) {
   for (const [property, value] of Object.entries(style)) {
@@ -194,7 +230,7 @@ test('a double click on "Filtros" opens the sheet and leaves it open', async ({ 
 
 // The label of a state sends its click to the box, and the box ticks itself: the browser acts on a
 // click before anyone listens to it. The first click of a double click picks the state and the second
-// leaves it picked, on the name and on the box alike.
+// leaves it picked, on the name and on the pill alike (4px in, in its border and padding).
 test('a double click on a state in the sheet picks it once', async ({ page }) => {
   await openSheet(page)
   const name = (state: string) =>
@@ -204,7 +240,7 @@ test('a double click on a state in the sheet picks it once', async ({ page }) =>
   await expect(stateBox(page, 'acre')).toBeChecked()
   await expect(page).toHaveURL('/customers?states=acre')
 
-  await stateBox(page, 'bahia').dblclick()
+  await pillOf(page, 'bahia').dblclick({ position: { x: 4, y: 20 } })
   await expect(stateBox(page, 'bahia')).toBeChecked()
   await expect(page).toHaveURL('/customers?states=acre,bahia')
 })
@@ -218,12 +254,12 @@ test('a state picked in the sheet is in the URL at once, and the button names th
   await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
 
   // A state outside the five: the sheet lists them all
-  await stateBox(page, 'acre').check()
+  await pillOf(page, 'acre').click()
   await expect(page).toHaveURL('/customers?states=acre')
   await expect(apply(page)).toHaveText('Ver 1 cliente')
   await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros, 1 ativo')
 
-  await stateBox(page, 'minas-gerais').check()
+  await pillOf(page, 'minas-gerais').click()
   await expect(page).toHaveURL('/customers?states=acre,minas-gerais')
   await expect(apply(page)).toHaveText('Ver 3 clientes')
   await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros, 2 ativos')
@@ -236,7 +272,7 @@ test('a state picked in the sheet is in the URL at once, and the button names th
   await expect(trigger(page)).toHaveAttribute('aria-label', 'Filtros')
 
   // The button only closes: the list is already the one it names
-  await stateBox(page, 'minas-gerais').check()
+  await pillOf(page, 'minas-gerais').click()
   await expect(apply(page)).toHaveText('Ver 2 clientes')
   await apply(page).click()
   await expect(sheet(page)).toBeHidden()
@@ -594,6 +630,333 @@ test('the geometry and the style of the bar and of the sheet', async ({ page }) 
   await clearButton(page).click()
   await expect(clearButton(page)).toHaveAttribute('aria-disabled', 'true')
   await expect(clearButton(page)).toHaveCSS('opacity', '0.4')
+})
+
+// The panel in the sheet (#96): the states as pills and the gender as a segmented control, as the
+// prototype draws them (v2, ADR-0013), in both themes. The boxes are out of sight and each label draws
+// its own state, which happy-dom, with no layout and no :has(), cannot see (FilterPanel.spec.ts).
+// Minas Gerais (2 customers) is the state picked; São Paulo (nobody) is a dimmed pill and Espírito
+// Santo (1) a plain one. The page opens dark, which waitForHydration needs: the toggle takes it to the
+// light theme once it is interactive.
+async function openPanelIn(page: Page, theme: 'dark' | 'light') {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openList(page, { path: '/customers?states=minas-gerais' })
+  if (theme === 'light') {
+    await page.getByTestId('header__theme--toggle').click()
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  }
+  await trigger(page).click()
+  await expect(sheet(page)).toBeVisible()
+}
+
+// The options fill the track of the segments: three of one width, 4px from each other and from its
+// edges, in one row
+async function expectColumns(group: Locator, options: Locator[]) {
+  const track = await boxOf(group)
+  const width = (track.width - 4 * 2 - 4 * 2) / 3
+  expect(track.height).toBeCloseTo(4 + 44 + 4, 1)
+  for (const [index, option] of options.entries()) {
+    const box = await boxOf(option)
+    expect(box.width, `option ${String(index)}`).toBeCloseTo(width, 1)
+    expect(box.x - track.x, `option ${String(index)}`).toBeCloseTo(4 + index * (width + 4), 1)
+  }
+}
+
+// Each property as the token it must resolve to in the theme of the page
+async function expectTokens(page: Page, target: Locator, style: Record<string, string>) {
+  for (const [property, token] of Object.entries(style)) {
+    await expect(target, property).toHaveCSS(property, await resolved(page, 'color', token))
+  }
+}
+
+for (const theme of ['dark', 'light'] as const) {
+  // A pill is 44px tall, the project's touch target where the prototype has 40px, and 22px round, 14px
+  // in from its 1px border, the name and the count 6px apart. A picked one is filled with --inverse-bg
+  // and has a check of 14px before the name, which the others do not have, not even as room. A state
+  // nobody is from is in the muted color, and never a picked one.
+  test(`the pills of the states in the ${theme} theme`, async ({ page }) => {
+    await openPanelIn(page, theme)
+    const plain = pillOf(page, 'espirito-santo')
+    const dimmed = pillOf(page, 'sao-paulo')
+    const picked = pillOf(page, 'minas-gerais')
+    const legend = legendOf(page, 'Por Estado')
+
+    await expectStyle(plain, {
+      position: 'relative',
+      'column-gap': '6px',
+      height: '44px',
+      'padding-left': '14px',
+      'padding-right': '14px',
+      'border-top-width': '1px',
+      'border-top-style': 'solid',
+      'border-top-left-radius': '22px',
+      'font-size': '14px',
+    })
+    await expectTokens(page, plain, {
+      'border-top-color': '--border-strong',
+      'background-color': '--surface',
+      color: '--text-strong',
+    })
+    await expectTokens(page, dimmed, { color: '--text-muted' })
+    await expectTokens(page, picked, {
+      'border-top-color': '--inverse-bg',
+      'background-color': '--inverse-bg',
+      color: '--inverse-text',
+    })
+    // The count: 12px, and on a picked pill in the color of the pill, a little faded
+    await expectStyle(countOf(plain), { 'font-size': '12px' })
+    await expectTokens(page, countOf(plain), { color: '--text-count' })
+    await expectStyle(countOf(picked), { 'font-size': '12px', opacity: '0.75' })
+    await expectTokens(page, countOf(picked), { color: '--inverse-text' })
+    await expectStyle(checkOf(plain), { display: 'none' })
+    await expectStyle(checkOf(picked), { display: 'block', 'stroke-width': '3px' })
+    await expectTokens(page, checkOf(picked), { stroke: '--inverse-text' })
+    await expectStyle(sheet(page).getByTestId('filter-panel__list--div'), {
+      display: 'flex',
+      'flex-wrap': 'wrap',
+      'row-gap': '8px',
+      'column-gap': '8px',
+    })
+    await expectStyle(legend, {
+      'font-size': '16px',
+      'font-weight': '500',
+      'line-height': 'normal',
+    })
+    await expectTokens(page, legend, { color: '--text-strong' })
+
+    // The name is the border and the padding in, with no room kept for the check; the check of a picked
+    // pill takes its place there, 14px, and the name is 6px after it
+    const name = await boxOf(nameOf(plain))
+    expect(name.x - (await boxOf(plain)).x).toBeCloseTo(1 + 14, 1)
+    const check = await boxOf(checkOf(picked))
+    expect(check).toMatchObject({ width: 14, height: 14 })
+    expect(check.x - (await boxOf(picked)).x).toBeCloseTo(1 + 14, 1)
+    expect((await boxOf(nameOf(picked))).x - (check.x + check.width)).toBeCloseTo(6, 1)
+    // The box of the control is 1px, out of sight
+    const input = plain.getByTestId('filter-panel__state--checkbox')
+    expect(await boxOf(input)).toMatchObject({ width: 1, height: 1 })
+  })
+
+  // Three columns of one width in a track of 4px, with 4px between them; the options are 44px tall and
+  // 22px round, so the track is 52px and 26px round. The picked one is --seg-active-bg with its shadow
+  // and a ring of 1px in --input-border, the others are bare: the light theme's picked option is 1.09:1
+  // on the track without the ring, 3.19:1 with it (WCAG 1.4.11, ADR-0013). The name and the count are
+  // 3px apart, which the prototype writes as a space, in the middle. The count of the picked option has
+  // its color and the others the muted one: --text-count is 4.34:1 on --surface-alt in the light theme
+  // and 2.52:1 on the picked option in the dark one (ADR-0013).
+  test(`the segmented gender in the ${theme} theme`, async ({ page }) => {
+    await openPanelIn(page, theme)
+    const group = sheet(page).getByTestId('filter-panel__segments--div')
+    const active = segmentOf(page, 'all')
+    const inactive = segmentOf(page, 'female')
+    const last = segmentOf(page, 'male')
+    const shape = {
+      position: 'relative',
+      height: '44px',
+      'border-top-left-radius': '22px',
+      'column-gap': '3px',
+      'justify-content': 'center',
+      'font-size': '14px',
+    }
+
+    await expectStyle(group, {
+      display: 'grid',
+      'row-gap': '4px',
+      'column-gap': '4px',
+      'padding-top': '4px',
+      'padding-left': '4px',
+      'border-top-left-radius': '26px',
+    })
+    await expectTokens(page, group, { 'background-color': '--surface-alt' })
+    await expectStyle(active, { ...shape, 'font-weight': '500' })
+    await expectTokens(page, active, {
+      'background-color': '--seg-active-bg',
+      color: '--seg-active-text',
+    })
+    await expect(active).toHaveCSS(
+      'box-shadow',
+      await resolved(page, 'boxShadow', 'inset 0 0 0 1px var(--input-border), var(--shadow-seg)'),
+    )
+    await expectStyle(inactive, { ...shape, 'font-weight': '400', 'box-shadow': 'none' })
+    await expectStyle(inactive, { 'background-color': 'rgba(0, 0, 0, 0)' })
+    await expectTokens(page, inactive, { color: '--text' })
+    await expectStyle(nameOf(inactive), { 'flex-grow': '0' })
+    await expectStyle(countOf(active), { 'font-size': '12px' })
+    await expectTokens(page, countOf(active), { color: '--seg-active-text' })
+    await expectStyle(countOf(inactive), { 'font-size': '12px' })
+    await expectTokens(page, countOf(inactive), { color: '--text-muted' })
+    await expectTokens(page, legendOf(page, 'Por Gênero'), { color: '--text-strong' })
+    await expectStyle(legendOf(page, 'Por Gênero'), {
+      'font-size': '16px',
+      'line-height': 'normal',
+    })
+
+    await expectColumns(group, [active, inactive, last])
+    // The room on both sides of the name and the count is the same
+    const box = await boxOf(last)
+    const name = await boxOf(nameOf(last))
+    const number = await boxOf(numberOf(last))
+    expect(number.x - (name.x + name.width)).toBeCloseTo(3, 1)
+    expect(name.x - box.x).toBeCloseTo(box.x + box.width - (number.x + number.width), 1)
+  })
+
+  // High Contrast takes the background and the shadow of an author away, and nothing else tells the
+  // picked segment from the others: its box is out of sight and it has no check, as a pill has. The
+  // system colors are the user's, so they are read from the page (#100). Without forced-color-adjust:
+  // none the computed colors are the same, but a Canvas backplate hides the label: the pixels tell.
+  test(`the picked segment is drawn in forced colors in the ${theme} theme`, async ({ page }) => {
+    await openPanelIn(page, theme)
+    await page.emulateMedia({ forcedColors: 'active' })
+    const picked = segmentOf(page, 'all')
+    const highlight = await resolved(page, 'color', 'Highlight')
+    const highlightText = await resolved(page, 'color', 'HighlightText')
+
+    await expectStyle(picked, {
+      'forced-color-adjust': 'none',
+      'outline-color': await resolved(page, 'color', 'CanvasText'),
+      'background-color': highlight,
+      color: highlightText,
+    })
+    expect(
+      await shareOfColor(page, nameOf(picked), await resolved(page, 'color', 'Canvas')),
+    ).toBeLessThan(0.5)
+    await expect(countOf(picked)).toHaveCSS('color', highlightText)
+    for (const value of ['female', 'male']) {
+      await expectStyle(segmentOf(page, value), {
+        'forced-color-adjust': 'auto',
+        'background-color': 'rgba(0, 0, 0, 0)',
+      })
+    }
+  })
+
+  // The focus is shown on the label, the one thing in sight, and only to the keyboard: the ring of the
+  // page (2px of --link, 2px away). The first Tab from the close button lands on the first state, and
+  // Shift+Tab from "Limpar" on the picked radio, the one stop of the group. A click is not the keyboard.
+  test(`the keyboard focus rings a pill and a segment in the ${theme} theme`, async ({ page }) => {
+    await openPanelIn(page, theme)
+    const ring = { 'outline-style': 'solid', 'outline-width': '2px', 'outline-offset': '2px' }
+    const none = { 'outline-style': 'none' }
+    const radio = (value: string) =>
+      sheet(page).locator(`[data-testid="filter-panel__gender--radio"][value="${value}"]`)
+
+    await expect(closeButton(page)).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(stateBox(page, 'sao-paulo')).toBeFocused()
+    await expectStyle(pillOf(page, 'sao-paulo'), ring)
+    await expectTokens(page, pillOf(page, 'sao-paulo'), { 'outline-color': '--link' })
+    await expectStyle(pillOf(page, 'rio-de-janeiro'), none)
+
+    await clearButton(page).focus()
+    await page.keyboard.press('Shift+Tab')
+    await expect(radio('all')).toBeFocused()
+    await expectStyle(segmentOf(page, 'all'), ring)
+    await expectTokens(page, segmentOf(page, 'all'), { 'outline-color': '--link' })
+    await expectStyle(segmentOf(page, 'female'), none)
+
+    await nameOf(pillOf(page, 'bahia')).click()
+    await expect(stateBox(page, 'bahia')).toBeFocused()
+    await expectStyle(pillOf(page, 'bahia'), none)
+    await nameOf(segmentOf(page, 'female')).click()
+    await expect(radio('female')).toBeFocused()
+    await expectStyle(segmentOf(page, 'female'), none)
+  })
+
+  // The prototype presses a plain pill into --surface-alt and has no hover. The page adds it for a
+  // pointer that can hover (ADR-0013): the desktop project has a mouse, the mobile one a touch screen.
+  // A picked pill and a segment stay as they are under either.
+  test(`a pill is pressed and hovered in the ${theme} theme`, async ({ page, isMobile }) => {
+    await openPanelIn(page, theme)
+    const [alt, surface, inverse] = await Promise.all([
+      resolved(page, 'color', '--surface-alt'),
+      resolved(page, 'color', '--surface'),
+      resolved(page, 'color', '--inverse-bg'),
+    ])
+    const title = page.getByTestId('filter-sheet__title--heading')
+    const plain = pillOf(page, 'espirito-santo')
+    const picked = pillOf(page, 'minas-gerais')
+
+    expect(await pressedColor(page, plain, title)).toBe(alt)
+    expect(await pressedColor(page, picked, title)).toBe(inverse)
+    await plain.hover()
+    await expect(plain).toHaveCSS('background-color', isMobile ? surface : alt)
+    await picked.hover()
+    await expect(picked).toHaveCSS('background-color', inverse)
+    await segmentOf(page, 'female').hover()
+    await expect(segmentOf(page, 'female')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  })
+}
+
+// The 44px of a pill and of a segment is a minimum: a label that wraps (a long name, a text the system
+// scales up) makes it grow, with the label inside, and the track of the segments with it. The names of
+// the fixture are short, so the label is made long here: the box is what is measured.
+test('a pill and a segment grow with a label that wraps, and keep it inside', async ({ page }) => {
+  await openPanelIn(page, 'dark')
+  const group = sheet(page).getByTestId('filter-panel__segments--div')
+
+  for (const { label, words } of [
+    { label: pillOf(page, 'espirito-santo'), words: 30 },
+    { label: segmentOf(page, 'female'), words: 10 },
+  ]) {
+    await nameOf(label).evaluate((el, text) => {
+      el.textContent = text
+    }, 'palavra '.repeat(words))
+    const box = await boxOf(label)
+    const name = await boxOf(nameOf(label))
+
+    expect(box.height).toBeGreaterThan(44)
+    expect(name.y).toBeGreaterThanOrEqual(box.y)
+    expect(name.y + name.height).toBeLessThanOrEqual(box.y + box.height)
+  }
+  // The track is 4px of padding, the row and 4px of padding: the row is the taller segment
+  expect((await boxOf(group)).height).toBeCloseTo(
+    4 + (await boxOf(segmentOf(page, 'female'))).height + 4,
+    1,
+  )
+})
+
+// The three segments are one width whatever is in them, and the text keeps 8px off their edges. The
+// source has 200 customers, so its counts have 3 digits, which the fixture (20) never gives, and they
+// are made here. At 320px (WCAG 1.4.10) the column is 88px on a phone, and "Masculino" picked, in weight
+// 500, with "100" is 90px: it does not fit between the paddings, so the count goes under the name, the
+// two centered and 3px apart, in a segment that is no taller for it.
+test('the segments are one width and keep their text off the edge at 320px', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openSheet(page, { path: '/customers?gender=male', width: 320 })
+  await page.evaluate(() => document.fonts.ready)
+  const group = sheet(page).getByTestId('filter-panel__segments--div')
+  const all = segmentOf(page, 'all')
+  const female = segmentOf(page, 'female')
+  const male = segmentOf(page, 'male')
+  const options = [all, female, male]
+  for (const [option, text] of [
+    [all, '200'],
+    [female, '100'],
+    [male, '100'],
+  ] as const) {
+    await numberOf(option).evaluate((el, value) => {
+      el.textContent = value
+    }, text)
+  }
+
+  await expectColumns(group, options)
+  for (const option of options) {
+    await expectStyle(option, { 'padding-left': '8px', 'padding-right': '8px' })
+    const box = await boxOf(option)
+    for (const part of [nameOf(option), countOf(option)]) {
+      const text = await boxOf(part)
+      expect(text.x).toBeGreaterThanOrEqual(box.x + 8)
+      expect(text.x + text.width).toBeLessThanOrEqual(box.x + box.width - 8)
+    }
+  }
+  const name = await boxOf(nameOf(male))
+  const count = await boxOf(countOf(male))
+  expect(count.y - (name.y + name.height)).toBeCloseTo(3, 1)
+
+  // A name wider than its column does not widen it: the columns follow the track, not the text
+  await nameOf(all).evaluate((el) => {
+    el.textContent = 'Todos'.repeat(8)
+  })
+  await expectColumns(group, options)
 })
 
 // Under the header, as the first thing in the column, edge to edge: the padding of <main> (16px, 24px
