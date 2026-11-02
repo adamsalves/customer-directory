@@ -71,13 +71,16 @@ export function normalizeCustomer(raw: IRawCustomer, now = new Date()): ICustome
   const { name, location } = raw
   const stateSlug = slugify(location.state)
   const state = BRAZILIAN_STATES.find(({ slug }) => slug === stateSlug)
+  const firstName = titleCase(name.first)
+  // The prototype's trick: a word in front, so a particle that opens the surname stays lowercase
+  // ("da Cruz", not "Da Cruz"), then dropped
+  const lastName = titleCase(`x ${name.last}`).slice(2)
   return {
     slug: slugify(raw.email.replace(/@.*$/, '')),
-    name: titleCase(`${name.first} ${name.last}`),
-    firstName: titleCase(name.first),
-    // The prototype's trick: a word in front, so a particle that opens the surname stays lowercase
-    // as it does in `name` ("da Cruz", not "Da Cruz"), then dropped
-    lastName: titleCase(`x ${name.last}`).slice(2),
+    // Built from the parts, so the sort by surname and the card never disagree
+    name: `${firstName} ${lastName}`.trim(),
+    firstName,
+    lastName,
     street: formatStreet(location.street),
     city: titleCase(location.city),
     state: state?.name ?? titleCase(location.state),

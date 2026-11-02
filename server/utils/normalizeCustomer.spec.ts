@@ -118,13 +118,13 @@ describe('normalizeCustomer', () => {
     expect(normalizeCustomer(rawAt(row.index), NOW)[row.field]).toBe(row.expected)
   })
 
-  // The sort by surname needs the two apart; the card shows them together, as they always were
-  it('splits the name without changing it', () => {
-    const customers = raws.map((raw) => normalizeCustomer(raw, NOW))
+  // The source can send an empty first name: the particle stays lowercase in `name` too
+  it('keeps the name equal to its parts when the first name is empty', () => {
+    const customer = normalizeEdited((raw) => {
+      raw.name.first = ''
+    }, 1)
 
-    expect(customers.map(({ firstName, lastName }) => `${firstName} ${lastName}`)).toStrictEqual(
-      customers.map(({ name }) => name),
-    )
+    expect(customer).toMatchObject({ name: 'da Cruz', firstName: '', lastName: 'da Cruz' })
   })
 
   it.each(editedText)('writes $field "$value" as "$expected"', ({ field, value, expected }) => {
