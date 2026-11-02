@@ -51,6 +51,10 @@ function clearSearchAndFilters() {
         <!-- The bar that opens the sheet of the filters, below 960px. The first thing in the column, so
              it sticks under the header for the whole column. -->
         <FilterSheet :total="data?.total" :facets="data?.facets" />
+        <!-- Outside the results too: the count stays through the skeleton, saying it is loading, and a
+             page change scrolls back to it, so the new count is in sight. A card from 960px and a
+             line under the bar below it, by CSS (ADR-0014) -->
+        <ListToolbar :response="data" :status="status" />
         <!-- Outside the results, so the chips stay through the skeleton and the focus a removal leaves
              on the next chip is not lost when the list reloads -->
         <FilterChips />

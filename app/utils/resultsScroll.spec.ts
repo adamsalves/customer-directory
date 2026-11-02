@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
-import { RESULTS_ID, scrollToResults } from './resultsScroll'
+import { RESULTS_ID, TOOLBAR_ID, scrollToResults } from './resultsScroll'
 
 // The header and the filter bar under it (scroll-padding on <html>, 69 + 61 at 375px) and the margin of
-// the results: 130 + 24
-const OFFSET = 154
-// The page is scrolled 900px and the results start 300px above the viewport, 600px down the page
+// the toolbar below 960px: 130 + 12
+const OFFSET = 142
+// The page is scrolled 900px and the toolbar starts 300px above the viewport, 600px down the page
 const SCROLL_Y = 900
 const ABOVE = -300
 const TARGET = SCROLL_Y + ABOVE - OFFSET
@@ -12,6 +12,7 @@ const TARGET = SCROLL_Y + ABOVE - OFFSET
 const route = (fullPath: string) => useRouter().resolve(fullPath)
 const scrollTo = vi.fn()
 
+let toolbar: HTMLElement
 let results: HTMLElement
 let focus: MockInstance<HTMLElement['focus']>
 let top = ABOVE
@@ -21,12 +22,16 @@ beforeEach(() => {
   scrollTo.mockClear()
   top = ABOVE
   reducedMotion = false
+  // The toolbar is what scrolls into place and the results are what takes the focus: two boxes, in
+  // two places, and only the toolbar has a margin and a position here
+  toolbar = document.createElement('div')
+  toolbar.id = TOOLBAR_ID
+  toolbar.style.setProperty('scroll-margin-top', '12px')
+  vi.spyOn(toolbar, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, top, 100, 100))
   results = document.createElement('ul')
   results.id = RESULTS_ID
-  results.style.setProperty('scroll-margin-top', '24px')
   focus = vi.spyOn(results, 'focus')
-  vi.spyOn(results, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, top, 100, 100))
-  document.body.append(results)
+  document.body.append(toolbar, results)
   document.documentElement.style.setProperty('scroll-padding-top', '130px')
   vi.stubGlobal('scrollY', SCROLL_Y)
   vi.stubGlobal('scrollTo', scrollTo)
@@ -36,13 +41,14 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  toolbar.remove()
   results.remove()
   document.documentElement.style.removeProperty('scroll-padding-top')
   vi.unstubAllGlobals()
 })
 
 describe('scrollToResults', () => {
-  it('brings the top of the results back under the header when the page changes', () => {
+  it('brings the top of the toolbar back under the header when the page changes', () => {
     scrollToResults(route('/customers?page=3'), route('/customers?page=2'))
 
     expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ left: 0, top: TARGET, behavior: 'smooth' })
@@ -76,7 +82,7 @@ describe('scrollToResults', () => {
     scrollToResults(route('/customers?page=3'), route('/customers?page=2'))
 
     expect(scrollTo).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ top: SCROLL_Y + ABOVE - 24 }),
+      expect.objectContaining({ top: SCROLL_Y + ABOVE - 12 }),
     )
   })
 
@@ -86,7 +92,7 @@ describe('scrollToResults', () => {
     expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
   })
 
-  it('moves the focus when the results are already in sight and nothing scrolls', () => {
+  it('moves the focus when the toolbar is already in sight and nothing scrolls', () => {
     top = OFFSET
 
     scrollToResults(route('/customers?page=3'), route('/customers?page=2'))
@@ -95,7 +101,7 @@ describe('scrollToResults', () => {
     expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
   })
 
-  it('leaves the page alone when the results are already in sight', () => {
+  it('leaves the page alone when the toolbar is already in sight', () => {
     top = OFFSET
 
     scrollToResults(route('/customers?page=3'), route('/customers?page=2'))
@@ -129,6 +135,14 @@ describe('scrollToResults', () => {
 
   it('does not scroll when the page has no results', () => {
     results.remove()
+
+    scrollToResults(route('/customers?page=3'), route('/customers?page=2'))
+
+    expect(scrollTo).not.toHaveBeenCalled()
+  })
+
+  it('does not scroll when the page has no toolbar', () => {
+    toolbar.remove()
 
     scrollToResults(route('/customers?page=3'), route('/customers?page=2'))
 

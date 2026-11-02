@@ -182,8 +182,9 @@ for (const width of [320, 375]) {
 
 // Four chips do not fit a row at 375px: they wrap onto the next one, 8px apart both ways, instead of
 // running off the page, and the results start 16px under them. The first two fit together. The chips
-// start 16px under the bar of the sheet, the first thing in the column below 960px (#26). The chips
-// come in with a lift (jsm-in) that moves what is measured: reduced motion leaves them in place.
+// start 16px under the count of the toolbar, which is 12px under the bar of the sheet, the first
+// thing in the column below 960px (#26, #103). The chips come in with a lift (jsm-in) that moves
+// what is measured: reduced motion leaves them in place.
 test('the filter chips wrap onto another row, 8px apart, 16px above the results', async ({
   page,
 }) => {
@@ -200,10 +201,12 @@ test('the filter chips wrap onto another row, 8px apart, 16px above the results'
   const results = await boxOf(page.getByTestId('customers__results--section'))
   const column = await boxOf(page.getByTestId('customers__column--div'))
   const bar = await boxOf(page.getByTestId('filter-sheet__bar--div'))
+  const count = await boxOf(page.getByTestId('list-toolbar__count--text'))
   await expect(page.getByTestId('filter-chips__root--list')).toHaveCSS('list-style-type', 'none')
   expect(first.x).toBeCloseTo(column.x, 1)
   expect(bar.y).toBeCloseTo(column.y, 1)
-  expect(first.y - (bar.y + bar.height)).toBeCloseTo(16, 1)
+  expect(count.y - (bar.y + bar.height)).toBeCloseTo(12, 1)
+  expect(first.y - (count.y + count.height)).toBeCloseTo(16, 1)
   expect(second.y).toBeCloseTo(first.y, 1)
   expect(second.x - (first.x + first.width)).toBeCloseTo(8, 1)
   expect(third.y - (first.y + first.height)).toBeCloseTo(8, 1)
@@ -483,6 +486,141 @@ for (const theme of ['light', 'dark']) {
     await expect(nameOf('sao-paulo')).toHaveCSS('color', strong)
   })
 }
+
+// The toolbar of the list (ADR-0013), one element at any width, so the page has one live region
+// (ADR-0014). Below 960px it is a line with no card: 12px under the bar of the sheet (the 16px
+// margin of the bar and the -4px of the line collapse), 16px above the results, 14px in the muted
+// color. From 960px it is a card at the top of the column, 16px above the results: 1px of border,
+// 15px of padding at the sides and 10px above and under, 60px tall at least with the count centered
+// in it, 16px in the strong color. The fixture has 20 customers, 9 on page 1.
+for (const theme of ['light', 'dark']) {
+  test(`the toolbar is a line under the bar at 375px in the ${theme} theme`, async ({
+    page,
+    context,
+  }) => {
+    await openListIn(page, context, theme, 375)
+    const toolbar = page.getByTestId('list-toolbar__root--div')
+    const count = page.getByTestId('list-toolbar__count--text')
+    const bar = await boxOf(page.getByTestId('filter-sheet__bar--div'))
+    const line = await boxOf(count)
+    const results = await boxOf(page.getByTestId('customers__results--section'))
+
+    await expect(count).toHaveText('Exibindo 1–9 de 20 clientes')
+    expect(line.y - (bar.y + bar.height)).toBeCloseTo(12, 1)
+    expect(results.y - (line.y + line.height)).toBeCloseTo(16, 1)
+    expect((await boxOf(toolbar)).height).toBeCloseTo(line.height, 1)
+    await expect(count).toHaveCSS('color', await colorOfToken(page, '--text-muted'))
+    await expect(count).toHaveCSS('font-size', '14px')
+    // No card
+    const looks: Record<string, string> = {
+      display: 'block',
+      'padding-top': '0px',
+      'padding-left': '0px',
+      'border-top-width': '0px',
+      'border-top-left-radius': '0px',
+      'background-color': 'rgba(0, 0, 0, 0)',
+    }
+    for (const [property, value] of Object.entries(looks)) {
+      await expect(toolbar).toHaveCSS(property, value)
+    }
+  })
+
+  test(`the toolbar is a card at the top of the column at 1280px in the ${theme} theme`, async ({
+    page,
+    context,
+  }) => {
+    await openListIn(page, context, theme, 1280)
+    const toolbar = page.getByTestId('list-toolbar__root--div')
+    const count = page.getByTestId('list-toolbar__count--text')
+    const column = await boxOf(page.getByTestId('customers__column--div'))
+    const card = await boxOf(toolbar)
+    const text = await boxOf(count)
+    const results = await boxOf(page.getByTestId('customers__results--section'))
+
+    await expect(count).toHaveText('Exibindo 1–9 de 20 clientes')
+    expect(card.y).toBeCloseTo(column.y, 1)
+    expect(card.height).toBeCloseTo(60, 1)
+    expect(results.y - (card.y + card.height)).toBeCloseTo(16, 1)
+    // Inside 1px of border and 15px of padding
+    expect(text.x - card.x).toBeCloseTo(1 + 15, 1)
+    await expect(count).toHaveCSS('color', await colorOfToken(page, '--text-strong'))
+    await expect(count).toHaveCSS('font-size', '16px')
+    const looks: Record<string, string> = {
+      display: 'flex',
+      'align-items': 'center',
+      'padding-top': '10px',
+      'border-top-width': '1px',
+      'border-top-left-radius': '2px',
+      'border-top-color': await colorOfToken(page, '--border'),
+      'background-color': await colorOfToken(page, '--surface'),
+    }
+    for (const [property, value] of Object.entries(looks)) {
+      await expect(toolbar).toHaveCSS(property, value)
+    }
+  })
+}
+
+// The card comes in at 960px, where the bar of the sheet goes out: 959px is the edge
+for (const { width, card } of [
+  { width: 959, card: false },
+  { width: 960, card: true },
+]) {
+  test(`the toolbar is ${card ? 'a card' : 'a line'} at ${String(width)}px`, async ({ page }) => {
+    await openList(page, width)
+
+    await expect(page.getByTestId('list-toolbar__root--div')).toHaveCSS(
+      'border-top-width',
+      card ? '1px' : '0px',
+    )
+  })
+}
+
+// An error leaves the count empty, and the results start where they did with the text. Below 960px
+// that is a line and 16px under the bar of the sheet and its 12px, which the empty line keeps (else
+// the margins collapse through it and the results jump up under the bar). From 960px it is 16px under
+// the card, which holds its 60px by itself. The request is the browser's, so the page has to be
+// interactive: waitForHydration needs a dark system.
+test.describe('the toolbar on an error', () => {
+  test.use({ colorScheme: 'dark' })
+
+  for (const { width, top } of [
+    { width: 375, top: (bar: number, line: number) => bar + 12 + line + 16 },
+    { width: 1280, top: (bar: number) => bar + 60 + 16 },
+  ]) {
+    test(`it keeps its place at ${String(width)}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/customers')
+      await waitForHydration(page)
+      const count = page.getByTestId('list-toolbar__count--text')
+      // The bar of the sheet, measured: it is out of the page from 960px
+      const bar = (await page.getByTestId('filter-sheet__bar--div').boundingBox())?.height ?? 0
+      // From the top of the column to the results, and the height of the line, read in one go: a page
+      // change scrolls the page to the toolbar, smoothly, and two reads would meet it moving
+      const place = () =>
+        page.getByTestId('customers__results--section').evaluate((results) => {
+          const column = results.closest('[data-testid="customers__column--div"]')
+          const line = column?.querySelector('[data-testid="list-toolbar__count--text"]')
+          if (!column || !line) throw new Error('the list is not rendered')
+          return {
+            top: results.getBoundingClientRect().top - column.getBoundingClientRect().top,
+            line: line.getBoundingClientRect().height,
+          }
+        })
+      const before = await place()
+      expect(before.top).toBeCloseTo(top(bar, before.line), 1)
+      await page.route(/\/api\/customers\?/, (route) => route.fulfill({ status: 502 }))
+
+      await visible(page, 'pagination__page--link')
+        .filter({ hasText: /^\s*2\s*$/ })
+        .click()
+
+      await expect(page.getByTestId('error-state__message--alert')).toBeVisible()
+      await expect(count).toBeEmpty()
+      const after = await place()
+      expect(after.top).toBeCloseTo(top(bar, before.line), 1)
+    })
+  }
+})
 
 // The count is a number to the eye and a phrase to the screen reader, which sits in the row as text
 // that takes no room (ADR-0013)

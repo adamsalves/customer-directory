@@ -82,6 +82,11 @@ const SEARCH = '[data-testid="header__search--input"]'
 const PER_PAGE = '[data-testid="pagination__per-page--select"]'
 const CHIPS = '[data-testid="filter-chips__root--list"]'
 const BAR = '[data-testid="filter-sheet__bar--div"]'
+const TOOLBAR = '[data-testid="list-toolbar__root--div"]'
+const TOOLBAR_COUNT = '[data-testid="list-toolbar__count--text"]'
+// Every way an element goes live: aria-live, and the roles that are live by themselves, which a
+// search for aria-live alone would miss
+const LIVE_REGIONS = '[aria-live], [role=status], [role=alert], [role=log]'
 const SHEET = '[data-testid="filter-sheet__root--dialog"]'
 const SHEET_OPEN = '[data-testid="filter-sheet__open--button"]'
 const SHEET_APPLY = '[data-testid="filter-sheet__apply--button"]'
@@ -194,9 +199,9 @@ describe('customers page', () => {
     expect(names).toEqual(items.map((item) => item.name))
   })
 
-  // A page change scrolls back to the element with this id and moves the focus to it. The skeleton
-  // and the list come and go inside it, so the focus does not fall to the page when the skeleton goes.
-  it('wraps the list in the results the page change scrolls to and focuses', async () => {
+  // A page change moves the focus to the element with this id. The skeleton and the list come and go
+  // inside it, so the focus does not fall to the page when the skeleton goes.
+  it('wraps the list in the results the page change moves the focus to', async () => {
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
     const results = wrapper.get(RESULTS)
 
@@ -296,6 +301,7 @@ describe('customers page', () => {
     expect(wrapper.get(RESULTS).element.contains(skeletons.element)).toBe(true)
     expect(skeletons.attributes('aria-busy')).toBe('true')
     expect(skeletons.attributes('aria-label')).toBe('Carregando clientes')
+    expect(wrapper.get(TOOLBAR_COUNT).text()).toBe('Carregando clientes…')
     expect(skeletons.findAll('li')).toHaveLength(DEFAULT_PER_PAGE)
     expect(wrapper.find(CARD).exists()).toBe(false)
     expect(wrapper.getComponent(PaginationNav).props('loading')).toBe(true)
@@ -308,6 +314,7 @@ describe('customers page', () => {
     expect(wrapper.get(RESULTS).element).toBe(results)
     expect(wrapper.get(RESULTS).element.contains(wrapper.get(LIST).element)).toBe(true)
     expect(wrapper.getComponent(PaginationNav).props('loading')).toBe(false)
+    expect(wrapper.get(TOOLBAR_COUNT).text()).toBe('Exibindo 7–12 de 20 clientes')
   })
 
   // The BFF answers a page past the end with the last one (page 2 of 4 in this mock), so the
@@ -354,6 +361,8 @@ describe('customers page', () => {
     expect(wrapper.find(CARD).exists()).toBe(false)
     expect(wrapper.find(SKELETON).exists()).toBe(false)
     expect(wrapper.find(NAV).exists()).toBe(false)
+    // The alert is the one that speaks: the count is in the page, empty
+    expect(wrapper.get(TOOLBAR_COUNT).text()).toBe('')
   })
 
   // ofetch would retry a GET on a 502 by itself: one more read of a source that is down, and the
@@ -436,6 +445,7 @@ describe('customers page', () => {
     expect(wrapper.find(SKELETON).exists()).toBe(false)
     expect(wrapper.find(ERROR).exists()).toBe(false)
     expect(wrapper.find(NAV).exists()).toBe(false)
+    expect(wrapper.get(TOOLBAR_COUNT).text()).toBe('Nenhum cliente encontrado')
   })
 
   it('names the search in the URL in the empty state', async () => {
@@ -664,19 +674,32 @@ describe('customers page', () => {
 
   // Outside the results, so the skeleton does not swap them out and the focus a removal gives the next
   // chip stays on it while the list loads. Nor are they in the panel's aside. The bar of the sheet
-  // (#26) and its dialog come first: the bar sticks under the header for the whole column.
-  it('puts the filter chips at the top of the results column, under the bar of the sheet', async () => {
+  // (#26) and its dialog come first, then the toolbar: the bar sticks under the header for the whole
+  // column.
+  it('puts the toolbar, then the filter chips, at the top of the results column, under the bar of the sheet', async () => {
     const wrapper = await mountSuspended(CustomersPage, {
       route: '/customers?search=ana&states=bahia',
     })
     const chips = wrapper.get(CHIPS).element
     const sheet = wrapper.get(SHEET).element
+    const toolbar = wrapper.get(TOOLBAR).element
 
     expect(wrapper.get(COLUMN).element.firstElementChild).toBe(wrapper.get(BAR).element)
     expect(sheet.previousElementSibling).toBe(wrapper.get(BAR).element)
-    expect(sheet.nextElementSibling).toBe(chips)
+    expect(sheet.nextElementSibling).toBe(toolbar)
+    expect(toolbar.nextElementSibling).toBe(chips)
     expect(wrapper.get(RESULTS).element.contains(chips)).toBe(false)
     expect(wrapper.get(FILTERS).element.contains(chips)).toBe(false)
+  })
+
+  // The one live region of the page (the route announcer is app.vue's, and the error alert is not
+  // there while the list loads), with the range of the answer and not of the URL: the BFF clamps the
+  // page and the page size, and this one answers page 2 of 6 per page whatever the URL asks
+  it('has one live region, with the range of the answer', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=999&perPage=18' })
+
+    expect(wrapper.findAll(LIVE_REGIONS)).toHaveLength(1)
+    expect(wrapper.get(TOOLBAR_COUNT).text()).toBe('Exibindo 7–12 de 20 clientes')
   })
 
   // The field follows the URL: a search the chip takes out is gone from it too. Like any search
