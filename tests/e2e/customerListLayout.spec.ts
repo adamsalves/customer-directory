@@ -575,6 +575,51 @@ for (const { width, card } of [
   })
 }
 
+// An error leaves the count empty, and the results start where they did with the text. Below 960px
+// that is a line and 16px under the bar of the sheet and its 12px, which the empty line keeps (else
+// the margins collapse through it and the results jump up under the bar). From 960px it is 16px under
+// the card, which holds its 60px by itself. The request is the browser's, so the page has to be
+// interactive: waitForHydration needs a dark system.
+test.describe('the toolbar on an error', () => {
+  test.use({ colorScheme: 'dark' })
+
+  for (const { width, top } of [
+    { width: 375, top: (line: number) => 61 + 12 + line + 16 },
+    { width: 1280, top: () => 60 + 16 },
+  ]) {
+    test(`it keeps its place at ${String(width)}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/customers')
+      await waitForHydration(page)
+      const count = page.getByTestId('list-toolbar__count--text')
+      // From the top of the column to the results, and the height of the line, read in one go: a page
+      // change scrolls the page to the results, smoothly, and two reads would meet it moving
+      const place = () =>
+        page.getByTestId('customers__results--section').evaluate((results) => {
+          const column = results.closest('[data-testid="customers__column--div"]')
+          const line = column?.querySelector('[data-testid="list-toolbar__count--text"]')
+          if (!column || !line) throw new Error('the list is not rendered')
+          return {
+            top: results.getBoundingClientRect().top - column.getBoundingClientRect().top,
+            line: line.getBoundingClientRect().height,
+          }
+        })
+      const before = await place()
+      expect(before.top).toBeCloseTo(top(before.line), 1)
+      await page.route(/\/api\/customers\?/, (route) => route.fulfill({ status: 502 }))
+
+      await visible(page, 'pagination__page--link')
+        .filter({ hasText: /^\s*2\s*$/ })
+        .click()
+
+      await expect(page.getByTestId('error-state__message--alert')).toBeVisible()
+      await expect(count).toBeEmpty()
+      const after = await place()
+      expect(after.top).toBeCloseTo(top(before.line), 1)
+    })
+  }
+})
+
 // The count is a number to the eye and a phrase to the screen reader, which sits in the row as text
 // that takes no room (ADR-0013)
 test('the hidden phrase of a count takes no room', async ({ page }) => {

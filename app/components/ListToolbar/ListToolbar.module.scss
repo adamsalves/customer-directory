@@ -8,8 +8,11 @@
   margin-block: -4px 16px;
 }
 
+// The line stays when the count is empty, as on an error: else the margins collapse through it and
+// the results jump up under the bar
 .Count {
   margin: 0;
+  min-block-size: 1lh;
   color: var(--text-muted);
   font-size: 14px;
 }
