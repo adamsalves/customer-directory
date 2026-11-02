@@ -64,6 +64,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | o 2º clique de um clique duplo age no sheet         | ignora clique com `detail > 1` no sheet    | o 2º clique de "Filtros" cai no sheet aberto    |
 | gênero segmentado com `role="radio"` num `button`   | os mesmos rádios do painel, estilizados    | semântica de formulário e setas do navegador    |
 | contagem do segmentado em `--text-count`            | `--text-muted`; no ativo, a cor do rótulo  | 4,34:1 no inativo claro; 2,52:1 no ativo escuro |
+| o segmento ativo só tem fundo e sombra              | anel interno de 1px em `--input-border`    | ativo contra o trilho claro: 1,09:1 → 3,19:1    |
 
 ## Consequências
 

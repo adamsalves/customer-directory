@@ -700,11 +700,12 @@ for (const theme of ['dark', 'light'] as const) {
   })
 
   // Three columns of one width in a track of 4px, with 4px between them; the options are 44px tall and
-  // 22px round, so the track is 52px and 26px round. The picked one is --seg-active-bg with its shadow,
-  // the others are bare. The name and the count are 3px apart, which the prototype writes as a space,
-  // in the middle. The count of the picked option has its color and the others the muted one:
-  // --text-count is 4.34:1 on --surface-alt in the light theme and 2.52:1 on the picked option in the
-  // dark one (ADR-0013).
+  // 22px round, so the track is 52px and 26px round. The picked one is --seg-active-bg with its shadow
+  // and a ring of 1px in --input-border, the others are bare: the light theme's picked option is 1.09:1
+  // on the track without the ring, 3.19:1 with it (WCAG 1.4.11, ADR-0013). The name and the count are
+  // 3px apart, which the prototype writes as a space, in the middle. The count of the picked option has
+  // its color and the others the muted one: --text-count is 4.34:1 on --surface-alt in the light theme
+  // and 2.52:1 on the picked option in the dark one (ADR-0013).
   test(`the segmented gender in the ${theme} theme`, async ({ page }) => {
     await openPanelIn(page, theme)
     const group = sheet(page).getByTestId('filter-panel__segments--div')
@@ -734,7 +735,10 @@ for (const theme of ['dark', 'light'] as const) {
       'background-color': '--seg-active-bg',
       color: '--seg-active-text',
     })
-    await expect(active).toHaveCSS('box-shadow', await resolved(page, 'boxShadow', '--shadow-seg'))
+    await expect(active).toHaveCSS(
+      'box-shadow',
+      await resolved(page, 'boxShadow', 'inset 0 0 0 1px var(--input-border), var(--shadow-seg)'),
+    )
     await expectStyle(inactive, { ...shape, 'font-weight': '400', 'box-shadow': 'none' })
     await expectStyle(inactive, { 'background-color': 'rgba(0, 0, 0, 0)' })
     await expectTokens(page, inactive, { color: '--text' })

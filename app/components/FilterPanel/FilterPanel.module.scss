@@ -178,10 +178,14 @@
   color: var(--text-muted);
 }
 
-// The active one is --seg-active-bg, where --text-count is 2.52:1 (dark): the count has the label's color
+// The active one is --seg-active-bg, where --text-count is 2.52:1 (dark): the count has the label's color.
+// Its ring is what tells it from the track, which --seg-active-bg alone does not in the light theme
+// (1.09:1; the ring is 3.19:1, WCAG 1.4.11, ADR-0013). Inset, so no geometry moves.
 .Sheet .Segments .Option:has(:checked) {
   background: var(--seg-active-bg);
-  box-shadow: var(--shadow-seg);
+  box-shadow:
+    inset 0 0 0 1px var(--input-border),
+    var(--shadow-seg);
   color: var(--seg-active-text);
   font-weight: 500;
 }
