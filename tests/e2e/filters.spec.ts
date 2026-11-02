@@ -85,29 +85,32 @@ test('search, states and gender narrow the list together, and the chips and a re
     'Masculino',
   ])
 
-  // The chip takes out its own state, and the rest stays: the search, the other state, the gender
-  const federalDistrict = chips(page).filter({ hasText: 'Distrito Federal' })
-  await expect(federalDistrict).toHaveAccessibleName('Remover filtro Distrito Federal')
-  await federalDistrict.click()
-  const remaining = `${SEARCH_URL}&states=mato-grosso-do-sul&gender=male`
+  // The chip takes out its own state, and the rest stays: the search, the other state, the gender.
+  // It is the chip of the second state, where FilterChips.spec.ts takes out the first: a chip that
+  // took out a state by its place, the first or the last, would pass one spec and fail the other.
+  const matoGrossoDoSul = chips(page).filter({ hasText: 'Mato Grosso do Sul' })
+  await expect(matoGrossoDoSul).toHaveAccessibleName('Remover filtro Mato Grosso do Sul')
+  await matoGrossoDoSul.click()
+  const remaining = `${SEARCH_URL}&states=distrito-federal&gender=male`
   await expect(page).toHaveURL(remaining)
-  await expect(names(page)).toHaveText(['Girão da Rosa'])
-  await expect(chipLabels(page)).toHaveText(['Busca: “da”', 'Mato Grosso do Sul', 'Masculino'])
-  await expect(stateBox(panel, 'distrito-federal')).not.toBeChecked()
+  await expect(names(page)).toHaveText(['Alcindo das Neves'])
+  await expect(chipLabels(page)).toHaveText(['Busca: “da”', 'Distrito Federal', 'Masculino'])
+  await expect(stateBox(panel, 'distrito-federal')).toBeChecked()
+  await expect(stateBox(panel, 'mato-grosso-do-sul')).not.toBeChecked()
 
   await page.reload()
   // The server HTML has the filters already; the client must keep them
   await waitForHydration(page)
 
   await expect(page).toHaveURL(remaining)
-  await expect(names(page)).toHaveText(['Girão da Rosa'])
-  await expect(chipLabels(page)).toHaveText(['Busca: “da”', 'Mato Grosso do Sul', 'Masculino'])
+  await expect(names(page)).toHaveText(['Alcindo das Neves'])
+  await expect(chipLabels(page)).toHaveText(['Busca: “da”', 'Distrito Federal', 'Masculino'])
   await expect(field(page)).toHaveValue('da')
-  await expect(stateBox(panel, 'mato-grosso-do-sul')).toBeChecked()
+  await expect(stateBox(panel, 'distrito-federal')).toBeChecked()
   await expect(genderBox(panel, 'male')).toBeChecked()
-  // The Federal District is behind "Ver todos" again, since it is neither picked nor one of the five
+  // Mato Grosso do Sul is behind "Ver todos" again, since it is neither picked nor one of the five
   await toggle.click()
-  await expect(stateBox(panel, 'distrito-federal')).not.toBeChecked()
+  await expect(stateBox(panel, 'mato-grosso-do-sul')).not.toBeChecked()
 })
 
 test('the sheet filters at each pick, and Esc closes it with the filters kept, reload included', async ({
