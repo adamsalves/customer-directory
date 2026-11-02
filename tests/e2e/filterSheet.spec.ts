@@ -624,6 +624,19 @@ async function openPanelIn(page: Page, theme: 'dark' | 'light') {
   await expect(sheet(page)).toBeVisible()
 }
 
+// The options fill the track of the segments: three of one width, 4px from each other and from its
+// edges, in one row
+async function expectColumns(group: Locator, options: Locator[]) {
+  const track = await boxOf(group)
+  const width = (track.width - 4 * 2 - 4 * 2) / 3
+  expect(track.height).toBeCloseTo(4 + 44 + 4, 1)
+  for (const [index, option] of options.entries()) {
+    const box = await boxOf(option)
+    expect(box.width, `option ${String(index)}`).toBeCloseTo(width, 1)
+    expect(box.x - track.x, `option ${String(index)}`).toBeCloseTo(4 + index * (width + 4), 1)
+  }
+}
+
 // Each property as the token it must resolve to in the theme of the page
 async function expectTokens(page: Page, target: Locator, style: Record<string, string>) {
   for (const [property, token] of Object.entries(style)) {
@@ -753,15 +766,7 @@ for (const theme of ['dark', 'light'] as const) {
       'line-height': 'normal',
     })
 
-    // The options fill the track, three of one width
-    const track = await boxOf(group)
-    const width = (track.width - 4 * 2 - 4 * 2) / 3
-    expect(track.height).toBeCloseTo(4 + 44 + 4, 1)
-    for (const [index, option] of [active, inactive, last].entries()) {
-      const box = await boxOf(option)
-      expect(box.width, `option ${String(index)}`).toBeCloseTo(width, 1)
-      expect(box.x - track.x, `option ${String(index)}`).toBeCloseTo(4 + index * (width + 4), 1)
-    }
+    await expectColumns(group, [active, inactive, last])
     // The room on both sides of the name and the count is the same
     const box = await boxOf(last)
     const name = await boxOf(nameOf(last))
@@ -877,6 +882,51 @@ test('a pill and a segment grow with a label that wraps, and keep it inside', as
     4 + (await boxOf(segmentOf(page, 'female'))).height + 4,
     1,
   )
+})
+
+// The three segments are one width whatever is in them, and the text keeps 8px off their edges. The
+// source has 200 customers, so its counts have 3 digits, which the fixture (20) never gives, and they
+// are made here. At 320px (WCAG 1.4.10) the column is 88px on a phone, and "Masculino" picked, in weight
+// 500, with "100" is 90px: it does not fit between the paddings, so the count goes under the name, the
+// two centered and 3px apart, in a segment that is no taller for it.
+test('the segments are one width and keep their text off the edge at 320px', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openSheet(page, { path: '/customers?gender=male', width: 320 })
+  await page.evaluate(() => document.fonts.ready)
+  const group = sheet(page).getByTestId('filter-panel__segments--div')
+  const all = segmentOf(page, 'all')
+  const female = segmentOf(page, 'female')
+  const male = segmentOf(page, 'male')
+  const options = [all, female, male]
+  for (const [option, text] of [
+    [all, '200'],
+    [female, '100'],
+    [male, '100'],
+  ] as const) {
+    await numberOf(option).evaluate((el, value) => {
+      el.textContent = value
+    }, text)
+  }
+
+  await expectColumns(group, options)
+  for (const option of options) {
+    await expectStyle(option, { 'padding-left': '8px', 'padding-right': '8px' })
+    const box = await boxOf(option)
+    for (const part of [nameOf(option), countOf(option)]) {
+      const text = await boxOf(part)
+      expect(text.x).toBeGreaterThanOrEqual(box.x + 8)
+      expect(text.x + text.width).toBeLessThanOrEqual(box.x + box.width - 8)
+    }
+  }
+  const name = await boxOf(nameOf(male))
+  const count = await boxOf(countOf(male))
+  expect(count.y - (name.y + name.height)).toBeCloseTo(3, 1)
+
+  // A name wider than its column does not widen it: the columns follow the track, not the text
+  await nameOf(all).evaluate((el) => {
+    el.textContent = 'Todos'.repeat(8)
+  })
+  await expectColumns(group, options)
 })
 
 // Under the header, as the first thing in the column, edge to edge: the padding of <main> (16px, 24px

@@ -156,20 +156,29 @@
   background: var(--surface-alt);
 }
 
+// One column for each option, all of one width whatever is in them: `minmax(0, 1fr)` and not `1fr`, which
+// is `minmax(auto, 1fr)` and widens the column of the widest text. The number of columns is the number of
+// options (GENDERS, app/utils/genders.ts), not a 3 written here.
 .Sheet .Segments {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 4px;
   padding: 4px;
   border-radius: 26px;
   background: var(--surface-alt);
 }
 
-// The prototype writes a space between the label and the count: 3px at this size
+// The prototype writes a space between the label and the count: 3px at this size. The text keeps 8px off
+// the edge of the segment. Where the name and the count do not fit between the paddings (320px, a count
+// of 3 digits, a text scaled up) the count wraps under the name, the two centered and as far apart as the
+// gap, and the segment grows with them (min-block-size) instead of the text spilling out of it.
 .Sheet .Segments .Option {
+  flex-wrap: wrap;
   gap: 3px;
-  justify-content: center;
+  place-content: center;
   min-block-size: 44px;
+  padding-inline: 8px;
   border-radius: 22px;
   color: var(--text);
 }
