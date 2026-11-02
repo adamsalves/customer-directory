@@ -584,14 +584,16 @@ test.describe('the toolbar on an error', () => {
   test.use({ colorScheme: 'dark' })
 
   for (const { width, top } of [
-    { width: 375, top: (line: number) => 61 + 12 + line + 16 },
-    { width: 1280, top: () => 60 + 16 },
+    { width: 375, top: (bar: number, line: number) => bar + 12 + line + 16 },
+    { width: 1280, top: (bar: number) => bar + 60 + 16 },
   ]) {
     test(`it keeps its place at ${String(width)}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 })
       await page.goto('/customers')
       await waitForHydration(page)
       const count = page.getByTestId('list-toolbar__count--text')
+      // The bar of the sheet, measured: it is out of the page from 960px
+      const bar = (await page.getByTestId('filter-sheet__bar--div').boundingBox())?.height ?? 0
       // From the top of the column to the results, and the height of the line, read in one go: a page
       // change scrolls the page to the toolbar, smoothly, and two reads would meet it moving
       const place = () =>
@@ -605,7 +607,7 @@ test.describe('the toolbar on an error', () => {
           }
         })
       const before = await place()
-      expect(before.top).toBeCloseTo(top(before.line), 1)
+      expect(before.top).toBeCloseTo(top(bar, before.line), 1)
       await page.route(/\/api\/customers\?/, (route) => route.fulfill({ status: 502 }))
 
       await visible(page, 'pagination__page--link')
@@ -615,7 +617,7 @@ test.describe('the toolbar on an error', () => {
       await expect(page.getByTestId('error-state__message--alert')).toBeVisible()
       await expect(count).toBeEmpty()
       const after = await place()
-      expect(after.top).toBeCloseTo(top(before.line), 1)
+      expect(after.top).toBeCloseTo(top(bar, before.line), 1)
     })
   }
 })
