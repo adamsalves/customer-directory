@@ -786,7 +786,7 @@ for (const theme of ['dark', 'light'] as const) {
     const highlightText = await resolved(page, 'color', 'HighlightText')
 
     await expectStyle(picked, {
-      'forced-color-adjust': 'none',
+      'forced-color-adjust': 'auto',
       'background-color': highlight,
       color: highlightText,
     })

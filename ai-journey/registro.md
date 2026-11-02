@@ -361,21 +361,21 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 
 ### #96 · Visual de pills e segmentado no sheet · [PR #100](https://github.com/adamsalves/customer-directory/pull/100)
 
-- **Decidido:** [#96](https://github.com/adamsalves/customer-directory/issues/96) · ADR-0013 (4 linhas novas e 1 reescrita). Separada da #26 para o comportamento caber num PR só. O dono aprovou:
+- **Decidido:** [#96](https://github.com/adamsalves/customer-directory/issues/96) · ADR-0013 (5 linhas novas e 1 reescrita). Separada da #26 para o comportamento caber num PR só. O dono aprovou:
   - 44px no lugar dos 40px do protótipo, pelo alvo de toque abaixo de 960px, como nos chips; com isso o trilho do segmentado fica com 52px;
   - o gênero com os mesmos rádios do painel estilizados, no lugar de `role="radio"` num `button`, porque a semântica é de formulário;
   - as contagens do segmentado com contraste: `--text-muted` no inativo (`--text-count` dá 4,34:1 no claro) e cor herdada no ativo (2,52:1 no escuro).
 - **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/96#issuecomment-6505006862) · estimativa ~380 linhas
 - **Como:** tudo sob `.Sheet …`, e o painel desktop sem nenhuma regra nova. O `S.Sheet` volta no root (a classe vazia tinha saído no review do #98), o div dos estados ganha `S.States` e os rádios entram num `<div :class="S.Segments">`, porque o grid no `fieldset` poria o fundo atrás da legenda. No sheet, o input recebe a classe global `VisuallyHidden`: sai da vista, mas fica no DOM, na ordem de Tab e na árvore de acessibilidade, e o `syncControls` segue escrevendo em `input.checked`. Por isso marcado e foco saem de `:has(:checked)` e `:has(:focus-visible)`, sem classe nova; o anel de foco vai para o rótulo, com o anel global. O check é um `<svg aria-hidden>` com o caminho do protótipo (`M5 12.5l4.5 4.5L19 7.5`, traço 3). A pílula desmarcada ganha `--surface-alt` no `:active` e, dentro de `@media (hover: hover)`, também no hover; o segmento fica sem hover, como no protótipo.
-- **Resultado:** 661 linhas (+622 −39) sem este registro (estimativa ~380; antes do review, 489, +456 −33). Cerca de 44 linhas são só a reindentação dos rádios no novo `<div>`, e os specs somam 425 (eram 299), com uma asserção por declaração CSS nos dois temas a 375px e os casos de 320px.
-  - **Mutação:** 81 de 81 (CSS, seletores e template); 28 de 28 nas correções do review.
+- **Resultado:** 662 linhas (+623 −39) sem este registro (estimativa ~380; antes do review, 489, +456 −33). Cerca de 44 linhas são só a reindentação dos rádios no novo `<div>`, e os specs somam 425 (eram 299), com uma asserção por declaração CSS nos dois temas a 375px e os casos de 320px.
+  - **Mutação:** 81 de 81 (CSS, seletores e template); 29 de 29 nas correções do review.
   - **Review** (`/review`): nenhum bug. O que ele conferiu:
     - a specificidade das contagens: `.Sheet .Option:has(:checked) .Count` vale (0,4,0) e vence `.Sheet .Segments .Count`, (0,3,0), porque o `:has()` conta como o argumento mais específico, e o segmento ativo herda `--seg-active-text` como no plano;
     - a geometria: o input `VisuallyHidden` sai do fluxo e não soma `gap`, o que fecha as asserções de deslocamento de x;
     - a paridade com o protótipo (pílula, check, tokens do segmentado) e o teclado: o 1º Tab depois do "Fechar" cai em São Paulo, na ordem da tabela, e Shift+Tab entra no grupo no rádio marcado.
       No aside, as regras novas não chegam, e o painel desktop ficou igual.
   - **Review** (`/code-review`, 8 achados, 8 aplicados):
-    1. **Alto Contraste:** o segmento marcado só se via por fundo e sombra, que o modo descarta. Agora é `Highlight`/`HighlightText`, com a contagem junto; sem `outline`, que apagaria o anel de foco.
+    1. **Alto Contraste:** o segmento marcado só se via por fundo e sombra, que o modo descarta. Agora é `Highlight`/`HighlightText`, com a contagem junto e linha nova no ADR-0013. Sem `outline`, que apagaria o anel de foco, e sem `forced-color-adjust: none`: o Chromium já respeita a cor de sistema do autor, e o `none` deixaria o anel de foco na cor do site.
     2. **Contraste do indicador** (WCAG 1.4.11): `--seg-active-bg` sobre o trilho claro dá 1,09:1. Um anel interno de 1px em `--input-border` leva a 3,19:1, nos dois temas e sem mexer na geometria; linha nova no ADR-0013.
     3. **Altura:** o `block-size: 44px` fixo vazava com o rótulo quebrado. Virou `min-block-size`, e a pílula e o segmento crescem.
     4. **Colunas do segmentado:** `repeat(3, 1fr)` alargava a coluna do texto mais largo, e a 320px o texto encostava na borda. Agora `grid-auto-flow: column` com `minmax(0, 1fr)`, `padding-inline: 8px` e a contagem passa para baixo do nome quando não cabe.
@@ -383,4 +383,4 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
     6. **`repeat(3, …)`:** o 3 copiava o tamanho de `GENDERS`; saiu junto com o item 4.
     7. **`isSheet`:** as três checagens que ainda liam `variant` passaram a usá-lo.
     8. **Este registro:** a conta da specificidade das contagens ("5 classes contra 4") estava errada; a certa é a do `/review` acima.
-- **Pendente:** o gate de Safari real — o marcado/desmarcado depende só de `:has()`, que existe desde a 15.4, e os chips seguem expondo os filtros; o `:active` das pílulas, que só vale com o `touchstart` passivo e que o spec não vê; leitor de tela e toque. Animação de saída do sheet (#99); live region do "Ver N" (#97); E2E dos filtros (#27).
+- **Pendente:** o gate de Safari real — o marcado/desmarcado depende só de `:has()`, que existe desde a 15.4, e os chips seguem expondo os filtros; o `:active` das pílulas, que só vale com o `touchstart` passivo e que o spec não vê; o Alto Contraste num Windows real, conferido só por emulação no Chromium; leitor de tela e toque. Animação de saída do sheet (#99); live region do "Ver N" (#97); E2E dos filtros (#27).

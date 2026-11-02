@@ -202,10 +202,10 @@
 
 // High Contrast discards the background and the shadow, and nothing else tells the picked segment from
 // the others (it has no check, as a pill has): the system colors do. Not an outline: the focus ring of
-// the label is one, and a rule as specific as this would take it away.
+// the label is one, and a rule as specific as this would take it away. System colors an author writes
+// are kept as they are, so no forced-color-adjust: none, which would keep the author's focus ring too.
 @media (forced-colors: active) {
   .Sheet .Segments .Option:has(:checked) {
-    forced-color-adjust: none;
     background: Highlight;
     color: HighlightText;
   }

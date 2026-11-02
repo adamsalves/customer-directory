@@ -65,6 +65,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | gênero segmentado com `role="radio"` num `button`   | os mesmos rádios do painel, estilizados    | semântica de formulário e setas do navegador    |
 | contagem do segmentado em `--text-count`            | `--text-muted`; no ativo, a cor do rótulo  | 4,34:1 no inativo claro; 2,52:1 no ativo escuro |
 | o segmento ativo só tem fundo e sombra              | anel interno de 1px em `--input-border`    | ativo contra o trilho claro: 1,09:1 → 3,19:1    |
+| Alto Contraste não previsto                         | segmento ativo em `Highlight`              | o rádio fica escondido; fundo e sombra somem    |
 
 ## Consequências
 
