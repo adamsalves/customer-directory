@@ -3,8 +3,10 @@ import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { AsyncDataRequestStatus } from '#app'
 import type { ICustomerCard, ICustomerListResponse } from '#shared/types/customer'
+import { TOOLBAR_ID } from '~/utils/resultsScroll'
 import ListToolbar from './ListToolbar.vue'
 
+const ROOT = '[data-testid="list-toolbar__root--div"]'
 const COUNT = '[data-testid="list-toolbar__count--text"]'
 
 const card: ICustomerCard = {
@@ -72,5 +74,14 @@ describe('ListToolbar', () => {
     expect(count.element.tagName).toBe('P')
     expect(count.attributes()).toMatchObject({ role: 'status', 'aria-live': 'polite' })
     expect(wrapper.findAll('[aria-live]')).toHaveLength(1)
+  })
+
+  // A page change scrolls back to the toolbar, and finds it by this id (resultsScroll.ts)
+  it('has the id a page change scrolls back to', async () => {
+    const wrapper = await mountSuspended(ListToolbar, {
+      props: { response: undefined, status: 'idle' },
+    })
+
+    expect(wrapper.get(ROOT).attributes('id')).toBe(TOOLBAR_ID)
   })
 })

@@ -11,7 +11,7 @@ O caminho natural seria um `scrollBehavior` em `app/router.options.ts`. No Nuxt 
 
 ## Decisão
 
-Um plugin cliente (`app/plugins/scrollToResults.client.ts`) escuta o router com `afterEach`. Quando só a `page` da lista muda (o `perPage` é o mesmo), ele leva o topo dos resultados (`#results`) para logo abaixo do header sticky. A rolagem é suave, e imediata com `prefers-reduced-motion`. Se o topo já está à vista, nada se move. O deslocamento é o `scroll-padding-block-start` do `<html>` somado ao `scroll-margin-block-start` da lista.
+Um plugin cliente (`app/plugins/scrollToResults.client.ts`) escuta o router com `afterEach`. Quando só a `page` da lista muda (o `perPage` é o mesmo), ele leva o topo da toolbar (`#toolbar`) para logo abaixo do header sticky, e o foco vai para os resultados (`#results`). Quem rola é a toolbar porque a contagem que a troca atualiza fica nela, acima dos chips e dos resultados (#103), e o `goPage` do protótipo rola a seção que contém a barra e a contagem. A rolagem é suave, e imediata com `prefers-reduced-motion`. Se o topo já está à vista, nada se move. O deslocamento é o `scroll-padding-block-start` do `<html>` somado ao `scroll-margin-block-start` da toolbar: 12px abaixo de 960px, onde a contagem fica logo abaixo da barra sticky, e 24px a partir de 960px.
 
 A troca de itens por página não rola, mesmo que ela volte para a página 1: quem a faz está com o foco no `<select>`, e a rolagem o tiraria da tela.
 

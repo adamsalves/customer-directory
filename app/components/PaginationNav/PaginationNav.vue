@@ -38,7 +38,7 @@ function pageLink(page: number) {
 // does, and Chromium stopped once the results got a wrapper that stays through the swap (#72).
 let anchor: { el: HTMLSelectElement; top: number } | undefined
 // Any scroll the reader starts while the list loads wins: going back to the original top would undo
-// it (a wheel, a touch, or a page link that scrolls to the results). Not a scrollY check: the page
+// it (a wheel, a touch, or a page link that scrolls to the toolbar). Not a scrollY check: the page
 // gets shorter when the skeleton comes in and the browser moves scrollY back by itself. The keydown
 // that changed the select has already gone by when the change event runs.
 const forget = () => {

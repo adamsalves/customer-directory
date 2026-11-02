@@ -37,7 +37,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `aria-hidden` no span da reticência                 | `aria-hidden` no próprio `<li>`            | sem `listitem` vazio para o leitor de tela      |
 | espaços de 12px e 4px em qualquer largura           | sem espaços abaixo de 348px de container   | as listas compactas cabem de 280px a 375px      |
 | alvos de 32px (44px do projeto abaixo de 960px)     | container ÷ 7 abaixo de 308px (41px a 320) | 5 páginas a 280px; mínimo de 24px (WCAG 2.5.8)  |
-| `goPage` rola se `top < 0` e leva o topo a 130px    | `top` < header+barra+24px: leva-o até lá   | 130 = header + toolbar sticky (barra do sheet)  |
+| `goPage` rola se `top < 0` e leva o topo a 130px    | toolbar < header+barra+12px: leva-a até lá | a contagem nova fica à vista; 24px sem a barra  |
 | rolagem suave sempre                                | imediata com `prefers-reduced-motion`      | respeita o movimento reduzido do sistema        |
 | filtra a cada tecla, sem espera                     | grava a URL 300ms depois da última tecla   | cada gravação da URL refaz a busca no BFF       |
 | `replaceState` em toda busca                        | `replace` na lista, `push` vindo de fora   | voltar não percorre cada termo e volta à origem |

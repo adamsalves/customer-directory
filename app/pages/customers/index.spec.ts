@@ -196,9 +196,9 @@ describe('customers page', () => {
     expect(names).toEqual(items.map((item) => item.name))
   })
 
-  // A page change scrolls back to the element with this id and moves the focus to it. The skeleton
-  // and the list come and go inside it, so the focus does not fall to the page when the skeleton goes.
-  it('wraps the list in the results the page change scrolls to and focuses', async () => {
+  // A page change moves the focus to the element with this id. The skeleton and the list come and go
+  // inside it, so the focus does not fall to the page when the skeleton goes.
+  it('wraps the list in the results the page change moves the focus to', async () => {
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
     const results = wrapper.get(RESULTS)
 

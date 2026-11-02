@@ -593,7 +593,7 @@ test.describe('the toolbar on an error', () => {
       await waitForHydration(page)
       const count = page.getByTestId('list-toolbar__count--text')
       // From the top of the column to the results, and the height of the line, read in one go: a page
-      // change scrolls the page to the results, smoothly, and two reads would meet it moving
+      // change scrolls the page to the toolbar, smoothly, and two reads would meet it moving
       const place = () =>
         page.getByTestId('customers__results--section').evaluate((results) => {
           const column = results.closest('[data-testid="customers__column--div"]')

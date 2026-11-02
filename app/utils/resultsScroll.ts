@@ -3,8 +3,11 @@ import { parseListQuery, sameListState } from '#shared/utils/listQuery'
 
 type TRoute = Pick<RouteLocationNormalized, 'path' | 'hash' | 'query'>
 
-// The id of the results, the element a page change scrolls back to and moves the focus to
+// The id of the results, the element a page change moves the focus to
 export const RESULTS_ID = 'results'
+// The id of the toolbar, the element a page change scrolls back to: it is above the results and the
+// chips, and the count it holds is what the new page changes
+export const TOOLBAR_ID = 'toolbar'
 
 const px = (value: string) => Number.parseFloat(value) || 0
 
@@ -18,9 +21,9 @@ function pageChanged(to: TRoute, from: TRoute) {
   return next.page !== previous.page && sameListState({ ...next, page: previous.page }, previous)
 }
 
-// The focus goes to the results without a scroll of its own: a page change scrolls by itself, below,
-// and a retry stays where it is. The results stay while the skeleton comes and goes, the button or
-// link that had the focus does not (ADR-0022).
+// The focus goes to the results without a scroll of its own: a page change scrolls to the toolbar
+// by itself, below, and a retry stays where it is. The results stay while the skeleton comes and
+// goes, the button or link that had the focus does not (ADR-0022).
 export function focusResults(): HTMLElement | null {
   const results = document.getElementById(RESULTS_ID)
   results?.focus({ preventScroll: true })
@@ -28,20 +31,22 @@ export function focusResults(): HTMLElement | null {
 }
 
 // Nuxt leaves the page where it is when only the query changes, so a click on another page would
-// leave the reader at the end of the new list. This brings the top of the results back, under the
-// sticky header, and moves the focus there: the page link that was used turned into the current-page
-// span and the focus would be lost. Any other navigation is left to Nuxt, a new page size or search
-// included. Back and forward never get here: the plugin leaves them to Nuxt.
+// leave the reader at the end of the new list. This brings the top of the toolbar back, under the
+// sticky header, so the new count is in sight, and moves the focus to the results: the page link
+// that was used turned into the current-page span and the focus would be lost. Any other navigation
+// is left to Nuxt, a new page size or search included. Back and forward never get here: the plugin
+// leaves them to Nuxt.
 export function scrollToResults(to: TRoute, from: TRoute) {
   if (!pageChanged(to, from)) return
-  // Even when the results are already in sight
+  // Even when the toolbar is already in sight
   const results = focusResults()
-  if (!results) return
+  const toolbar = document.getElementById(TOOLBAR_ID)
+  if (!results || !toolbar) return
   // What Nuxt adds to a hash: the sticky header (scroll-padding on <html>) and the element's margin
   const offset =
-    px(getComputedStyle(results).getPropertyValue('scroll-margin-top')) +
+    px(getComputedStyle(toolbar).getPropertyValue('scroll-margin-top')) +
     px(getComputedStyle(document.documentElement).getPropertyValue('scroll-padding-top'))
-  const { top } = results.getBoundingClientRect()
+  const { top } = toolbar.getBoundingClientRect()
   // Already in sight: nothing moves. That much is as in the prototype's goPage; the rest differs
   // (ADR-0013)
   if (top >= offset) return

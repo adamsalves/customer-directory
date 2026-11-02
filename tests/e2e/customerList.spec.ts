@@ -30,24 +30,42 @@ test('the pagination marks only the current page', async ({ page }) => {
 const pageTwoLink = (page: Page) =>
   page.getByTestId('pagination__page--link').filter({ hasText: /^\s*2\s*$/, visible: true })
 
-// toBeInViewport would also pass for a card under the sticky header, so the top of the list is
-// measured against the header, and below 960px the bar of the sheet under it (#26): it settles 24px
-// below them (the scroll is smooth)
-test('changing page brings the top of the list back under the header', async ({ page }) => {
-  await page.goto('/customers')
-  await pageTwoLink(page).click()
-  await expect(page).toHaveURL(/page=2/)
+// toBeInViewport would also pass for a count under the sticky header, so the top of the toolbar is
+// measured against the header, and below 960px the bar of the sheet under it (#26): it settles 12px
+// below them, where the count rests under the bar, and 24px from 960px (the scroll is smooth). The
+// count is then compared with the same edge and with the bottom of the screen. Before the page is
+// interactive a link is a plain navigation, which loads the page at the top and scrolls nothing:
+// waitForHydration needs a dark system.
+test.describe('changing page', () => {
+  test.use({ colorScheme: 'dark' })
 
-  const header = await page.getByRole('banner').boundingBox()
-  const bar = page.getByTestId('filter-sheet__bar--div')
-  const barHeight = (await bar.isVisible()) ? ((await bar.boundingBox())?.height ?? 0) : 0
-  const list = page.getByTestId('customers__list--list')
-  await expect
-    .poll(async () => {
-      const box = await list.boundingBox()
-      return box && header ? Math.round(box.y - (header.y + header.height + barHeight)) : undefined
-    })
-    .toBe(24)
+  test('brings the count back under the header', async ({ page }) => {
+    await page.goto('/customers')
+    await waitForHydration(page)
+    await pageTwoLink(page).click()
+    await expect(page).toHaveURL(/page=2/)
+
+    const header = await page.getByRole('banner').boundingBox()
+    const bar = page.getByTestId('filter-sheet__bar--div')
+    const barHeight = (await bar.isVisible()) ? ((await bar.boundingBox())?.height ?? 0) : 0
+    const toolbar = page.getByTestId('list-toolbar__root--div')
+    await expect
+      .poll(async () => {
+        const box = await toolbar.boundingBox()
+        return box && header
+          ? Math.round(box.y - (header.y + header.height + barHeight))
+          : undefined
+      })
+      .toBe(barHeight > 0 ? 12 : 24)
+
+    const count = page.getByTestId('list-toolbar__count--text')
+    await expect(count).toHaveText('Exibindo 10–18 de 20 clientes')
+    const box = await count.boundingBox()
+    const screen = page.viewportSize()
+    if (!box || !header || !screen) throw new Error('the count is not rendered')
+    expect(box.y).toBeGreaterThanOrEqual(header.y + header.height + barHeight)
+    expect(box.y + box.height).toBeLessThanOrEqual(screen.height)
+  })
 })
 
 const resultsSection = (page: Page) => page.getByTestId('customers__results--section')

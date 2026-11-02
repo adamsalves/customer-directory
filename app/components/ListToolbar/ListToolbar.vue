@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AsyncDataRequestStatus } from '#app'
 import type { ICustomerListResponse } from '#shared/types/customer'
+import { TOOLBAR_ID } from '~/utils/resultsScroll'
 import S from './ListToolbar.module.scss'
 
 // `response` is the BFF answer: the last one while the next is on its way, as the counts of the panel
@@ -25,7 +26,7 @@ const text = computed(() => {
 </script>
 
 <template>
-  <div :class="S.Toolbar" data-testid="list-toolbar__root--div">
+  <div :id="TOOLBAR_ID" :class="S.Toolbar" data-testid="list-toolbar__root--div">
     <!-- The one live region of the list, in the HTML for every state and width: only its text
          changes, which is what a screen reader announces -->
     <p role="status" aria-live="polite" :class="S.Count" data-testid="list-toolbar__count--text">
