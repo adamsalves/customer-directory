@@ -25,6 +25,11 @@
   - uma tecla digitada enquanto a gravação anterior ainda navegava sumia do campo (#20);
   - `?search=ana%20` e `?search=ana` eram dois estados, com entrada nova no histórico (#19);
   - a busca do E2E dava o mesmo card casando todas as palavras, qualquer uma ou só a primeira (#22).
+- **No M5, o review achou o que nenhum teste unitário via.** Exemplos:
+  - uma escolha cancelada no caminho deixava a caixa marcada, porque o Vue não reescreve `checked` (#24);
+  - escritas em voo de componentes diferentes se cancelavam, e virou uma issue própria antes dos chips (#90);
+  - um duplo clique removia dois chips, e o mesmo defeito apareceu no gatilho do sheet (#25, #26).
+- **Conferir no preview.** O Alto Contraste das pílulas passava nos testes com valores computados certos, e só o preview mostrou o rótulo sumindo (#96).
 - **Dividir quando a issue cresce.** A paginação (#16) passou do teto; rolagem e foco viraram a #71 e a #72, cada uma com review próprio.
 
 ## ❌ O que não funcionou
@@ -41,6 +46,8 @@
 - **Pior caso tirado da fixture.** A "lista mais larga" da paginação veio dos dados de teste; o pior caso de verdade (`1 2 3 4 5`, 308px) só apareceu no review.
 - **Verde por sorte, de novo.** No E2E da #18, as repetições do `--repeat-each` rodaram em paralelo, colidiram na porta e passaram mesmo assim. Só a saída de erro mostrou.
 - **Apagar código porque a mutação sobreviveu.** Na #19, o `return` da busca em branco saiu porque não mudava a saída. Era o atalho da chamada mais comum, e sem ele a listagem dobrava os 200 nomes a cada pedido. O segundo review o trouxe de volta.
+- **Mutação que só pergunta "algum teste falha?".** No E2E dos filtros (#27), o chip que remove o primeiro estado passava porque todo teste clicava o primeiro, e o review achou duas asserções que nunca falhavam: uma conferia 9 cards, que são 9 antes e depois da busca.
+- **Estimar sem contar os specs, de novo.** No M5, a #23 fechou com +624 contra ~290, a #24 com +1242 contra ~560 e a #26 com +1697 contra ~520.
 
 ## 🔄 O que eu faria diferente
 
@@ -54,3 +61,5 @@
 - Tirar o pior caso de todos os ramos do algoritmo, e não da fixture.
 - Antes de apagar um `return` antecipado que a mutação não pega, medir o custo do caminho mais comum.
 - Escolher dados de teste que separem as variantes do algoritmo (todas as palavras, qualquer uma, só a primeira), e não só os que dão o resultado esperado.
+- Pedir, para cada asserção de E2E, o mutante que derruba aquela linha, e clicar um item que não seja o primeiro da lista.
+- Medir no plano quantas linhas o E2E de estilo vai custar quando a issue fixa CSS declaração por declaração.
