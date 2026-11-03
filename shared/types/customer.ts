@@ -63,3 +63,7 @@ export interface ICustomerListResponse {
   totalPages: number
   facets: ICustomerFacets
 }
+
+export interface ICustomerDetailResponse {
+  customer: ICustomer
+}

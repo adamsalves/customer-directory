@@ -23,7 +23,7 @@ test('the page opens on the error from the server HTML, and retry loads the list
   // each run starts the build (made by the webServer of playwright.config.ts) with a cache of its
   // own: a server kept alive by UI mode or --repeat-each would already have the list. Port and
   // source switch are per worker, so runs in parallel (--repeat-each) do not meet. The
-  // "[customers] source failed" in the log is the failure, on purpose.
+  // "[loadCustomers] source failed" in the log is the failure, on purpose.
   const worker = String(testInfo.parallelIndex)
   const port = FLAKY_APP_PORT + testInfo.parallelIndex
   const appURL = `http://localhost:${String(port)}`
