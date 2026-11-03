@@ -575,6 +575,277 @@ for (const { width, card } of [
   })
 }
 
+// The sort select (#29, ADR-0013) is one control that is in the HTML twice and shown once, by CSS
+// (ADR-0014), so a reader finds one combobox: the pill in the bar of the sheet below 960px and the
+// select in the card of the toolbar from 960px, where the bar is out of the page. 959px is the edge.
+for (const { width, inBar } of [
+  { width: 959, inBar: true },
+  { width: 960, inBar: false },
+]) {
+  test(`the sort select is in ${inBar ? 'the bar' : 'the card'} at ${String(width)}px`, async ({
+    page,
+  }) => {
+    await openList(page, width)
+    const inTheBar = page
+      .getByTestId('filter-sheet__bar--div')
+      .getByTestId('sort-select__root--label')
+    const inTheCard = page
+      .getByTestId('list-toolbar__root--div')
+      .getByTestId('sort-select__root--label')
+
+    await expect(inTheBar).toBeVisible({ visible: inBar })
+    await expect(inTheCard).toBeVisible({ visible: !inBar })
+    await expect(page.getByRole('combobox', { name: /^Ordenar/ })).toHaveCount(1)
+  })
+}
+
+async function expectLooks(target: Locator, looks: Record<string, string>) {
+  for (const [property, value] of Object.entries(looks)) {
+    await expect(target, property).toHaveCSS(property, value)
+  }
+}
+
+// The pill in the bar, the prototype's: 44px tall like the button beside it, so the bar keeps its 61px.
+// It takes what the button leaves, up to 280px, at the end of the bar (the padding of the page from the
+// edge), 1px of border and 14px of padding before "Ordenar:", which is 14px bold, 4px before the select.
+// The select fills the rest up to the 36px the chevron has at the end, and the chevron is 12px in from
+// the border, centered, and lets the click through. The select ends in an ellipsis, so the longest
+// order gives way before the pill does.
+for (const theme of ['light', 'dark']) {
+  for (const { width, inset } of [
+    { width: 375, inset: 16 },
+    { width: 768, inset: 24 },
+  ]) {
+    test(`the sort select is a pill in the bar at ${String(width)}px in the ${theme} theme`, async ({
+      page,
+      context,
+    }) => {
+      await openListIn(page, context, theme, width)
+      await page.evaluate(() => document.fonts.ready.then(() => undefined))
+      const bar = page.getByTestId('filter-sheet__bar--div')
+      const pill = bar.getByTestId('sort-select__root--label')
+      const select = pill.getByTestId('sort-select__select--select')
+      const caption = pill.getByTestId('sort-select__caption--text')
+      const chevron = pill.getByTestId('sort-select__chevron--icon')
+      const strong = await colorOfToken(page, '--text-strong')
+      const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
+
+      await expect(select).toHaveAccessibleName('Ordenar:')
+      await expect(caption).toHaveText('Ordenar:')
+      const barBox = await boxOf(bar)
+      const triggerBox = await boxOf(bar.getByTestId('filter-sheet__open--button'))
+      const pillBox = await boxOf(pill)
+      const captionBox = await boxOf(caption)
+      const selectBox = await boxOf(select)
+      const chevronBox = await boxOf(chevron)
+      const chevronHit = await chevron.evaluate((el) => {
+        const { x, y, width, height } = el.getBoundingClientRect()
+        return document.elementFromPoint(x + width / 2, y + height / 2)?.closest('svg') ?? null
+      })
+
+      expect(barBox.height).toBeCloseTo(61, 1)
+      expect(pillBox.height).toBeCloseTo(44, 1)
+      expect(pillBox.y - barBox.y).toBeCloseTo(8, 1)
+      expect(pillBox.x + pillBox.width).toBeCloseTo(width - inset, 1)
+      expect(pillBox.width).toBeCloseTo(Math.min(280, width - 2 * inset - 8 - triggerBox.width), 1)
+      expect(captionBox.x - pillBox.x).toBeCloseTo(1 + 14, 1)
+      expect(selectBox.x - (captionBox.x + captionBox.width)).toBeCloseTo(4, 1)
+      expect(pillBox.x + pillBox.width - (selectBox.x + selectBox.width)).toBeCloseTo(36 + 1, 1)
+      expect(selectBox.height).toBeCloseTo(42, 1)
+      expect(chevronBox).toMatchObject({ width: 18, height: 18 })
+      expect(pillBox.x + pillBox.width - (chevronBox.x + chevronBox.width)).toBeCloseTo(12 + 1, 1)
+      expect(chevronBox.y + chevronBox.height / 2).toBeCloseTo(pillBox.y + pillBox.height / 2, 1)
+      expect(chevronHit).toBeNull()
+      await expectLooks(pill, {
+        display: 'flex',
+        position: 'relative',
+        'align-items': 'center',
+        'column-gap': '4px',
+        'flex-grow': '0',
+        'flex-shrink': '1',
+        'flex-basis': '280px',
+        'min-width': '0px',
+        'padding-left': '14px',
+        'padding-right': '36px',
+        'border-top-width': '1px',
+        'border-top-style': 'solid',
+        'border-top-color': await colorOfToken(page, '--border-strong'),
+        'border-top-left-radius': '22px',
+        'background-color': await colorOfToken(page, '--surface'),
+        color: strong,
+        'font-size': '14px',
+        cursor: 'pointer',
+      })
+      await expectLooks(caption, { 'font-size': '14px', 'font-weight': '700', color: strong })
+      await expectLooks(select, {
+        appearance: 'none',
+        'border-top-width': '0px',
+        'background-color': 'rgba(0, 0, 0, 0)',
+        color: strong,
+        'font-size': '14px',
+        'font-family': font,
+        'padding-top': '0px',
+        'padding-left': '0px',
+        'flex-grow': '1',
+        'min-width': '0px',
+        'text-overflow': 'ellipsis',
+        cursor: 'pointer',
+      })
+      await expectLooks(chevron, { position: 'absolute', color: strong })
+      // The copy of the card is out of the page, and so out of the accessibility tree
+      await expect(
+        page.getByTestId('list-toolbar__root--div').getByTestId('sort-select__root--label'),
+      ).toBeHidden()
+      await expect(page.getByRole('combobox', { name: 'Ordenar por:', exact: true })).toHaveCount(0)
+    })
+  }
+
+  // The select has no box of its own to ring: the ring is the pill's, as the global one is (2px, 2px away,
+  // in the color of the links), and only for the keyboard
+  test(`the focus ring of the sort pill is the pill's in the ${theme} theme`, async ({
+    page,
+    context,
+  }) => {
+    await openListIn(page, context, theme, 375)
+    const bar = page.getByTestId('filter-sheet__bar--div')
+    const pill = bar.getByTestId('sort-select__root--label')
+    const select = pill.getByTestId('sort-select__select--select')
+    await expect(pill).toHaveCSS('outline-style', 'none')
+
+    await bar.getByTestId('filter-sheet__open--button').focus()
+    await page.keyboard.press('Tab')
+
+    await expect(select).toBeFocused()
+    await expectLooks(pill, {
+      'outline-style': 'solid',
+      'outline-width': '2px',
+      'outline-offset': '2px',
+      'outline-color': await colorOfToken(page, '--link'),
+    })
+    await expect(select).toHaveCSS('outline-style', 'none')
+  })
+
+  // The select of the card, the prototype's too: "Ordenar por:" in 14px bold at the far end of the card
+  // (1px of border and 15px of padding from its edge), 6px before a select with 8px of padding above and
+  // under and 6px before its text, flat and with 4px of radius for the hover, and the chevron 8px in
+  // from the end of the select, over its 36px of padding on that side. The count is at the other end.
+  test(`the sort select is in the card of the toolbar at 1280px in the ${theme} theme`, async ({
+    page,
+    context,
+  }) => {
+    await openListIn(page, context, theme, 1280)
+    await page.evaluate(() => document.fonts.ready.then(() => undefined))
+    const toolbar = page.getByTestId('list-toolbar__root--div')
+    const group = toolbar.getByTestId('sort-select__root--label')
+    const select = group.getByTestId('sort-select__select--select')
+    const caption = group.getByTestId('sort-select__caption--text')
+    const chevron = group.getByTestId('sort-select__chevron--icon')
+    const strong = await colorOfToken(page, '--text-strong')
+    const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
+
+    await expect(select).toHaveAccessibleName('Ordenar por:')
+    await expect(caption).toHaveText('Ordenar por:')
+    const card = await boxOf(toolbar)
+    const groupBox = await boxOf(group)
+    const captionBox = await boxOf(caption)
+    const selectBox = await boxOf(select)
+    const chevronBox = await boxOf(chevron)
+    const countBox = await boxOf(toolbar.getByTestId('list-toolbar__count--text'))
+    const chevronHit = await chevron.evaluate((el) => {
+      const { x, y, width, height } = el.getBoundingClientRect()
+      return document.elementFromPoint(x + width / 2, y + height / 2)?.tagName
+    })
+
+    expect(card.x + card.width - (groupBox.x + groupBox.width)).toBeCloseTo(1 + 15, 1)
+    expect(groupBox.y + groupBox.height / 2).toBeCloseTo(card.y + card.height / 2, 1)
+    expect(countBox.x - card.x).toBeCloseTo(1 + 15, 1)
+    expect(captionBox.x).toBeCloseTo(groupBox.x, 1)
+    expect(selectBox.x - (captionBox.x + captionBox.width)).toBeCloseTo(6, 1)
+    expect(captionBox.y + captionBox.height / 2).toBeCloseTo(selectBox.y + selectBox.height / 2, 1)
+    expect(chevronBox).toMatchObject({ width: 18, height: 18 })
+    expect(selectBox.x + selectBox.width - (chevronBox.x + chevronBox.width)).toBeCloseTo(8, 1)
+    expect(chevronBox.y + chevronBox.height / 2).toBeCloseTo(selectBox.y + selectBox.height / 2, 1)
+    expect(chevronHit).toBe('SELECT')
+    await expectLooks(group, {
+      display: 'flex',
+      position: 'relative',
+      'align-items': 'center',
+      'column-gap': '6px',
+      color: strong,
+      'font-size': '14px',
+    })
+    await expectLooks(caption, { 'font-size': '14px', 'font-weight': '700', color: strong })
+    await expectLooks(select, {
+      appearance: 'none',
+      'border-top-width': '0px',
+      'border-top-left-radius': '4px',
+      'background-color': 'rgba(0, 0, 0, 0)',
+      color: strong,
+      'font-size': '14px',
+      'font-family': font,
+      'padding-top': '8px',
+      'padding-bottom': '8px',
+      'padding-left': '6px',
+      'padding-right': '36px',
+      cursor: 'pointer',
+    })
+    await expectLooks(chevron, { position: 'absolute', color: strong })
+    // The bar is out of the page from 960px, and its copy with it
+    await expect(page.getByTestId('filter-sheet__bar--div')).toBeHidden()
+    await expect(page.getByRole('combobox', { name: 'Ordenar:', exact: true })).toHaveCount(0)
+  })
+}
+
+// Hover only where a pointer can hover (ADR-0013): the desktop project has a mouse, the mobile one a
+// touch screen, which (hover: hover) does not match
+test('the sort select of the card reacts to hover only with a mouse', async ({
+  page,
+  isMobile,
+}) => {
+  await openList(page, 1280)
+  const select = page
+    .getByTestId('list-toolbar__root--div')
+    .getByTestId('sort-select__select--select')
+  await expect(select).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+
+  await select.hover()
+
+  await expect(select).toHaveCSS(
+    'background-color',
+    isMobile ? 'rgba(0, 0, 0, 0)' : await colorOfToken(page, '--surface-alt'),
+  )
+})
+
+// The card has the count at one end and the select at the other while they fit with the 24px between
+// them. When they do not, the select goes under the count, 8px below it, at the start of its line.
+test('the select of the card goes under the count when the card is too narrow for both', async ({
+  page,
+}) => {
+  await openList(page, 1280)
+  await page.evaluate(() => document.fonts.ready.then(() => undefined))
+  const toolbar = page.getByTestId('list-toolbar__root--div')
+  const count = toolbar.getByTestId('list-toolbar__count--text')
+  const group = toolbar.getByTestId('sort-select__root--label')
+  const [countWidth, groupWidth] = [(await boxOf(count)).width, (await boxOf(group)).width]
+  // The room both need on a line: the border and the padding of each side, and the gap between them
+  const needed = 2 * (1 + 15) + countWidth + 24 + groupWidth
+  const resizeTo = (width: number) =>
+    toolbar.evaluate((el, value) => {
+      el.style.inlineSize = `${String(value)}px`
+    }, width)
+
+  await resizeTo(needed + 4)
+  const fits = { card: await boxOf(toolbar), count: await boxOf(count), group: await boxOf(group) }
+  expect(fits.group.y + fits.group.height / 2).toBeCloseTo(fits.count.y + fits.count.height / 2, 1)
+  expect(fits.group.x - (fits.count.x + fits.count.width)).toBeCloseTo(24 + 4, 1)
+  expect(fits.card.x + fits.card.width - (fits.group.x + fits.group.width)).toBeCloseTo(1 + 15, 1)
+
+  await resizeTo(needed - 4)
+  const wraps = { card: await boxOf(toolbar), count: await boxOf(count), group: await boxOf(group) }
+  expect(wraps.group.y - (wraps.count.y + wraps.count.height)).toBeCloseTo(8, 1)
+  expect(wraps.group.x).toBeCloseTo(wraps.card.x + 1 + 15, 1)
+})
+
 // An error leaves the count empty, and the results start where they did with the text. Below 960px
 // that is a line and 16px under the bar of the sheet and its 12px, which the empty line keeps (else
 // the margins collapse through it and the results jump up under the bar). From 960px it is 16px under
