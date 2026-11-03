@@ -28,6 +28,7 @@ Como usei IA neste projeto. A pasta é atualizada ao fim de cada milestone.
 | M3 · Listagem paginada | guards do payload, BFF com cache, card, lista pela URL, skeleton, paginação, rolagem e foco, erro com retry e E2E da lista            | [prompts](prompts.md#m3--listagem-paginada), [registro](registro.md#m3--listagem-paginada), [learnings](learnings.md) |
 | M4 · Busca             | busca sem acento no BFF, campo no header ligado à URL, estado vazio com "Limpar" e E2E da busca                                       | [prompts](prompts.md#m4--busca), [registro](registro.md#m4--busca), [learnings](learnings.md)                         |
 | M5 · Filtros           | filtros e contagens no BFF, painel desktop, chips removíveis, estado em voo compartilhado, sheet mobile com pílulas e E2E dos filtros | [prompts](prompts.md#m5--filtros), [registro](registro.md#m5--filtros), [learnings](learnings.md)                     |
+| M6 · Ordenação         | ordenação no BFF com collator pt-BR, toolbar com a contagem ao vivo, select na barra e no cartão e E2E da ordenação                   | [prompts](prompts.md#m6--ordenação), [registro](registro.md#m6--ordenação), [learnings](learnings.md)                 |
 
 ## Arquivos
 

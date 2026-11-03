@@ -29,6 +29,11 @@
   - uma escolha cancelada no caminho deixava a caixa marcada, porque o Vue não reescreve `checked` (#24);
   - escritas em voo de componentes diferentes se cancelavam, e virou uma issue própria antes dos chips (#90);
   - um duplo clique removia dois chips, e o mesmo defeito apareceu no gatilho do sheet (#25, #26).
+- **No M6, o review achou o que só aparecia fora da fixture ou no toque.** Exemplos:
+  - o nome inteiro, montado por fora das partes, divergia do sobrenome com o primeiro nome vazio, caso que a fixture não tem (#28);
+  - a troca de página escondia a contagem nova sob a barra sticky (#103);
+  - tocar no chevron da pílula de ordenação não abria a lista, porque o toque caía no rótulo (#29).
+- **Refutar com prova antes de corrigir.** Um achado dizia que a escolha feita antes da hidratação ficava na tela. Um E2E que segurava os scripts mostrou que o Vue reescreve o `:selected`, e a correção não entrou (#29).
 - **Conferir no preview.** O Alto Contraste das pílulas passava nos testes com valores computados certos, e só o preview mostrou o rótulo sumindo (#96).
 - **Dividir quando a issue cresce.** A paginação (#16) passou do teto; rolagem e foco viraram a #71 e a #72, cada uma com review próprio.
 
@@ -48,6 +53,7 @@
 - **Apagar código porque a mutação sobreviveu.** Na #19, o `return` da busca em branco saiu porque não mudava a saída. Era o atalho da chamada mais comum, e sem ele a listagem dobrava os 200 nomes a cada pedido. O segundo review o trouxe de volta.
 - **Mutação que só pergunta "algum teste falha?".** No E2E dos filtros (#27), o chip que remove o primeiro estado passava porque todo teste clicava o primeiro, e o review achou duas asserções que nunca falhavam: uma conferia 9 cards, que são 9 antes e depois da busca.
 - **Estimar sem contar os specs, de novo.** No M5, a #23 fechou com +624 contra ~290, a #24 com +1242 contra ~560 e a #26 com +1697 contra ~520.
+- **Estimar sem contar os specs, ainda.** No M6, a #103 fechou com +425 contra ~200 e a #29 com +884 contra ~300, quase tudo E2E de estilo. O E2E da ordenação (#30) ficou abaixo: +64 contra ~100.
 
 ## 🔄 O que eu faria diferente
 
