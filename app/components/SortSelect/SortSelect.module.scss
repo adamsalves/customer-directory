@@ -47,16 +47,18 @@
 }
 
 // In the bar of the sheet, below 960px, the filter button's twin: a pill 44px tall, the project's touch
-// target, that takes what the button leaves, up to 280px, and sits at the end of the bar. The padding
-// on the end is the chevron's room. The select fills the rest and ends in an ellipsis, so the longest
-// order ("Cadastro mais recente") gives way before the pill does.
+// target, that takes what the button leaves, up to 280px, and sits at the end of the bar. The select
+// fills the rest up to the border and ends in an ellipsis, so the longest order ("Cadastro mais
+// recente") gives way before the pill does. The chevron's room is the select's own padding, not the
+// pill's, so a tap on the chevron lands on the select and opens it (the prototype pads the label,
+// where a tap only focuses the select; ADR-0013).
 .Bar {
   flex: 0 1 280px;
   gap: 4px;
   min-inline-size: 0;
   block-size: 44px;
   margin-inline-start: auto;
-  padding-inline: 14px 36px;
+  padding-inline-start: 14px;
   border: 1px solid var(--border-strong);
   border-radius: 22px;
   background: var(--surface);
@@ -69,7 +71,8 @@
   block-size: 100%;
 
   // Firefox pads a select by 1px 4px by default, flat or not; Chromium does not
-  padding: 0;
+  padding-block: 0;
+  padding-inline: 0 36px;
   text-overflow: ellipsis;
 }
 

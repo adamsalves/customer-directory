@@ -608,8 +608,8 @@ async function expectLooks(target: Locator, looks: Record<string, string>) {
 // The pill in the bar, the prototype's: 44px tall like the button beside it, so the bar keeps its 61px.
 // It takes what the button leaves, up to 280px, at the end of the bar (the padding of the page from the
 // edge), 1px of border and 14px of padding before "Ordenar:", which is 14px bold, 4px before the select.
-// The select fills the rest up to the 36px the chevron has at the end, and the chevron is 12px in from
-// the border, centered, and lets the click through. The select ends in an ellipsis, so the longest
+// The select fills the rest up to the border, with 36px of padding at the end for the chevron, which is
+// 12px in from the border, centered, and lets the click through to the select. The select ends in an ellipsis, so the longest
 // order gives way before the pill does.
 for (const theme of ['light', 'dark']) {
   for (const { width, inset } of [
@@ -640,7 +640,7 @@ for (const theme of ['light', 'dark']) {
       const chevronBox = await boxOf(chevron)
       const chevronHit = await chevron.evaluate((el) => {
         const { x, y, width, height } = el.getBoundingClientRect()
-        return document.elementFromPoint(x + width / 2, y + height / 2)?.closest('svg') ?? null
+        return document.elementFromPoint(x + width / 2, y + height / 2)?.tagName
       })
 
       expect(barBox.height).toBeCloseTo(61, 1)
@@ -650,12 +650,12 @@ for (const theme of ['light', 'dark']) {
       expect(pillBox.width).toBeCloseTo(Math.min(280, width - 2 * inset - 8 - triggerBox.width), 1)
       expect(captionBox.x - pillBox.x).toBeCloseTo(1 + 14, 1)
       expect(selectBox.x - (captionBox.x + captionBox.width)).toBeCloseTo(4, 1)
-      expect(pillBox.x + pillBox.width - (selectBox.x + selectBox.width)).toBeCloseTo(36 + 1, 1)
+      expect(pillBox.x + pillBox.width - (selectBox.x + selectBox.width)).toBeCloseTo(1, 1)
       expect(selectBox.height).toBeCloseTo(42, 1)
       expect(chevronBox).toMatchObject({ width: 18, height: 18 })
       expect(pillBox.x + pillBox.width - (chevronBox.x + chevronBox.width)).toBeCloseTo(12 + 1, 1)
       expect(chevronBox.y + chevronBox.height / 2).toBeCloseTo(pillBox.y + pillBox.height / 2, 1)
-      expect(chevronHit).toBeNull()
+      expect(chevronHit).toBe('SELECT')
       await expectLooks(pill, {
         display: 'flex',
         position: 'relative',
@@ -666,7 +666,7 @@ for (const theme of ['light', 'dark']) {
         'flex-basis': '280px',
         'min-width': '0px',
         'padding-left': '14px',
-        'padding-right': '36px',
+        'padding-right': '0px',
         'border-top-width': '1px',
         'border-top-style': 'solid',
         'border-top-color': await colorOfToken(page, '--border-strong'),
@@ -686,6 +686,7 @@ for (const theme of ['light', 'dark']) {
         'font-family': font,
         'padding-top': '0px',
         'padding-left': '0px',
+        'padding-right': '36px',
         'flex-grow': '1',
         'min-width': '0px',
         'text-overflow': 'ellipsis',
