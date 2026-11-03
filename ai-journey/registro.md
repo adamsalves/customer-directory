@@ -478,7 +478,7 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 
 ## M7 · Detalhe
 
-### #31 · BFF do detalhe por slug com 404 · [PR #?](…)
+### #31 · BFF do detalhe por slug com 404 · [PR #109](https://github.com/adamsalves/customer-directory/pull/109)
 
 - **Decidido:** [#31](https://github.com/adamsalves/customer-directory/issues/31) · ADR-0004 (a rota e o 404 com `createError`), ADR-0005 (o 502 nasce fora da função cacheada), ADR-0006 (o slug é a chave). Sem ADR nova: a rota, o 404 e o 502 já estão nas três, e só a frase da ADR-0005 sobre onde fica a conversão mudou. A rota entrega só `{ customer }`; `position`, `total`, `prev`, `next` e `related`, que a ADR-0004 lista, ficam para o M8.
 - **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/31#issuecomment-6611127911) · estimativa ~80 linhas
