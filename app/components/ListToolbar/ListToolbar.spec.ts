@@ -8,6 +8,8 @@ import ListToolbar from './ListToolbar.vue'
 
 const ROOT = '[data-testid="list-toolbar__root--div"]'
 const COUNT = '[data-testid="list-toolbar__count--text"]'
+const SORT = '[data-testid="sort-select__root--label"]'
+const SORT_CAPTION = '[data-testid="sort-select__caption--text"]'
 // Every way an element goes live: aria-live, and the roles that are live by themselves, which a
 // search for aria-live alone would miss
 const LIVE_REGIONS = '[aria-live], [role=status], [role=alert], [role=log]'
@@ -77,6 +79,18 @@ describe('ListToolbar', () => {
     expect(count.element.tagName).toBe('P')
     expect(count.attributes()).toMatchObject({ role: 'status', 'aria-live': 'polite' })
     expect(wrapper.findAll(LIVE_REGIONS)).toHaveLength(1)
+  })
+
+  // The card has the count at one end and the sort select at the other: CSS shows the select from
+  // 960px, and below it the one in the bar of the sheet is the control
+  it('holds the sort select of the card, after the count', async () => {
+    const wrapper = await mountSuspended(ListToolbar, {
+      props: { response: undefined, status: 'idle' },
+    })
+
+    expect(wrapper.get(ROOT).findAll(SORT)).toHaveLength(1)
+    expect(wrapper.get(COUNT).element.nextElementSibling).toBe(wrapper.get(SORT).element)
+    expect(wrapper.get(SORT_CAPTION).text()).toBe('Ordenar por:')
   })
 
   // A page change scrolls back to the toolbar, and finds it by this id (resultsScroll.ts)

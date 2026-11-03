@@ -48,12 +48,14 @@ function clearSearchAndFilters() {
         <FilterPanel :facets="data?.facets" @clear="clearSearchAndFilters" />
       </aside>
       <div data-testid="customers__column--div">
-        <!-- The bar that opens the sheet of the filters, below 960px. The first thing in the column, so
-             it sticks under the header for the whole column. -->
-        <FilterSheet :total="data?.total" :facets="data?.facets" />
+        <!-- The bar that opens the sheet of the filters, below 960px, and holds the sort select there.
+             The first thing in the column, so it sticks under the header for the whole column. -->
+        <FilterSheet :total="data?.total" :facets="data?.facets">
+          <SortSelect variant="bar" />
+        </FilterSheet>
         <!-- Outside the results too: the count stays through the skeleton, saying it is loading, and a
-             page change scrolls back to it, so the new count is in sight. A card from 960px and a
-             line under the bar below it, by CSS (ADR-0014) -->
+             page change scrolls back to it, so the new count is in sight. A card from 960px, with the
+             sort select in it, and a line under the bar below it, by CSS (ADR-0014) -->
         <ListToolbar :response="data" :status="status" />
         <!-- Outside the results, so the chips stay through the skeleton and the focus a removal leaves
              on the next chip is not lost when the list reloads -->

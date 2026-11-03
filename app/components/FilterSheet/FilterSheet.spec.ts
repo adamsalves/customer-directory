@@ -6,6 +6,7 @@ import type { ICustomerFacets } from '#shared/types/customer'
 import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import FilterSheet from './FilterSheet.vue'
 
+const BAR = '[data-testid="filter-sheet__bar--div"]'
 const OPEN = '[data-testid="filter-sheet__open--button"]'
 const BADGE = '[data-testid="filter-sheet__badge--text"]'
 const DIALOG = '[data-testid="filter-sheet__root--dialog"]'
@@ -126,6 +127,19 @@ describe('FilterSheet bar', () => {
     expect(button.attributes('aria-expanded')).toBeUndefined()
     expect(button.text()).toBe('Filtros')
     expect(button.get('svg').attributes('aria-hidden')).toBe('true')
+  })
+
+  // The page puts the sort select there (#29): at the end of the bar, after the button
+  it('holds what the page puts in it, after the button', async () => {
+    const wrapper = await mountSuspended(FilterSheet, {
+      route: '/customers',
+      props: { total: 20, facets },
+      slots: { default: '<i data-testid="filter-sheet__slotted--icon"></i>' },
+    })
+    const slotted = wrapper.get('[data-testid="filter-sheet__slotted--icon"]').element
+
+    expect(wrapper.get(BAR).element.contains(slotted)).toBe(true)
+    expect(wrapper.get(OPEN).element.nextElementSibling).toBe(slotted)
   })
 
   // The route is a frame behind a pick: the badge follows the write on its way, as the panel does

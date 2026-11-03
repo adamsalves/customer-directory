@@ -91,6 +91,9 @@ const SHEET = '[data-testid="filter-sheet__root--dialog"]'
 const SHEET_OPEN = '[data-testid="filter-sheet__open--button"]'
 const SHEET_APPLY = '[data-testid="filter-sheet__apply--button"]'
 const CHIP = '[data-testid="filter-chips__chip--button"]'
+const SORT_CAPTION = '[data-testid="sort-select__caption--text"]'
+const SORT_SELECT = '[data-testid="sort-select__select--select"]'
+const SORT_ROOT = '[data-testid="sort-select__root--label"]'
 const GENDER = '[data-testid="filter-panel__gender--radio"]'
 
 // A page left mounted by an earlier test would refetch on the next test's navigation
@@ -691,6 +694,48 @@ describe('customers page', () => {
     expect(toolbar.nextElementSibling).toBe(chips)
     expect(wrapper.get(RESULTS).element.contains(chips)).toBe(false)
     expect(wrapper.get(FILTERS).element.contains(chips)).toBe(false)
+  })
+
+  // The sort select is in the HTML twice, as the filters are, and CSS shows one (#29, ADR-0014): the
+  // pill that the page puts in the bar of the sheet, and the select in the card of the toolbar. Vue
+  // writes what it draws as selected as an attribute too, which is what is read here.
+  it('puts the sort select in the bar of the sheet and in the toolbar, both on the order of the URL', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?sort=young' })
+    const bar = wrapper.get(BAR)
+    const toolbar = wrapper.get(TOOLBAR)
+
+    expect(wrapper.findAll(SORT_ROOT)).toHaveLength(2)
+    expect(bar.get(SORT_CAPTION).text()).toBe('Ordenar:')
+    expect(toolbar.get(SORT_CAPTION).text()).toBe('Ordenar por:')
+    for (const select of [bar.get(SORT_SELECT), toolbar.get(SORT_SELECT)]) {
+      expect(
+        select.findAll('option[selected]').map((option) => option.attributes('value')),
+      ).toEqual(['young'])
+    }
+  })
+
+  it('asks the BFF for the order in the URL', async () => {
+    await mountSuspended(CustomersPage, { route: '/customers?sort=old' })
+
+    expect(requests.map(String)).toEqual(['sort=old'])
+  })
+
+  // A pick in the bar is a write like any other: the BFF is asked again from page 1, and the select of
+  // the toolbar follows
+  it('asks the BFF again for the order picked in the bar, from page 1, and the toolbar follows', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2&sort=old' })
+
+    await wrapper.get(BAR).get(SORT_SELECT).setValue('young')
+
+    await vi.waitFor(() => {
+      expect(requests.map(String)).toEqual(['page=2&sort=old', 'sort=young'])
+    })
+    expect(
+      wrapper
+        .get(TOOLBAR)
+        .findAll(`${SORT_SELECT} option[selected]`)
+        .map((option) => option.attributes('value')),
+    ).toEqual(['young'])
   })
 
   // The one live region of the page (the route announcer is app.vue's, and the error alert is not
