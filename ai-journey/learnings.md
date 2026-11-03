@@ -52,8 +52,9 @@
 - **Verde por sorte, de novo.** No E2E da #18, as repetições do `--repeat-each` rodaram em paralelo, colidiram na porta e passaram mesmo assim. Só a saída de erro mostrou.
 - **Apagar código porque a mutação sobreviveu.** Na #19, o `return` da busca em branco saiu porque não mudava a saída. Era o atalho da chamada mais comum, e sem ele a listagem dobrava os 200 nomes a cada pedido. O segundo review o trouxe de volta.
 - **Mutação que só pergunta "algum teste falha?".** No E2E dos filtros (#27), o chip que remove o primeiro estado passava porque todo teste clicava o primeiro, e o review achou duas asserções que nunca falhavam: uma conferia 9 cards, que são 9 antes e depois da busca.
+- **Recusar um achado sem rodar o mutante.** No E2E da ordenação (#30), recusei ler o HTML do servidor no reload achando que o `useFetch` reaproveita o payload do SSR. A mutação mostrou que um SSR que ignora o `sort` muda a chave, o cliente refaz a busca e corrige a lista, e nenhuma linha via.
 - **Estimar sem contar os specs, de novo.** No M5, a #23 fechou com +624 contra ~290, a #24 com +1242 contra ~560 e a #26 com +1697 contra ~520.
-- **Estimar sem contar os specs, ainda.** No M6, a #103 fechou com +425 contra ~200 e a #29 com +884 contra ~300, quase tudo E2E de estilo. O E2E da ordenação (#30) ficou abaixo: +64 contra ~100.
+- **Estimar sem contar os specs, ainda.** No M6, a #103 fechou com +425 contra ~200 e a #29 com +884 contra ~300, quase tudo E2E de estilo. O E2E da ordenação (#30) ficou perto: +115 contra ~100, depois do review.
 
 ## 🔄 O que eu faria diferente
 
