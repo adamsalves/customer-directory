@@ -166,14 +166,14 @@ describe('FilterPanel states', () => {
   })
 
   // The push is the history entry that back takes back (ADR-0007). A pick starts over from page 1 and
-  // keeps the page size, an unpick keeps the other picks.
+  // keeps the page size and the order, an unpick keeps the other picks.
   it.each([
     {
-      name: 'pushes the state picked, from page 1, keeping the page size',
-      route: '/customers?page=3&perPage=18',
+      name: 'pushes the state picked, from page 1, keeping the page size and the order',
+      route: '/customers?page=3&perPage=18&sort=old',
       picked: true,
-      query: { perPage: '18', states: 'bahia' },
-      url: '/customers?perPage=18&states=bahia',
+      query: { perPage: '18', states: 'bahia', sort: 'old' },
+      url: '/customers?perPage=18&states=bahia&sort=old',
     },
     {
       name: 'takes a state out when it is unpicked, keeping the others',
@@ -448,11 +448,11 @@ describe('FilterPanel gender', () => {
   it.each([
     {
       name: 'pushes the gender picked, from page 1, keeping the rest of the list state',
-      route: '/customers?page=2&states=bahia&search=ana',
+      route: '/customers?page=2&states=bahia&search=ana&sort=old',
       before: 'all',
       value: 'female',
-      query: { search: 'ana', states: 'bahia', gender: 'female' },
-      url: '/customers?search=ana&states=bahia&gender=female',
+      query: { search: 'ana', states: 'bahia', gender: 'female', sort: 'old' },
+      url: '/customers?search=ana&states=bahia&gender=female&sort=old',
     },
     {
       name: 'leaves the gender out of the URL when Todos is picked again',

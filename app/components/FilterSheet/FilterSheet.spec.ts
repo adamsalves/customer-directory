@@ -366,7 +366,7 @@ describe('FilterSheet clear button', () => {
   // push that back takes back (ADR-0007).
   it('clears the states and the gender, keeps the rest, and pushes', async () => {
     const wrapper = await mountSheet(
-      '/customers?page=2&perPage=18&search=ana&states=bahia,sao-paulo&gender=female',
+      '/customers?page=2&perPage=18&search=ana&states=bahia,sao-paulo&gender=female&sort=old',
     )
     const { push, replace } = spyOnRouter()
 
@@ -375,11 +375,11 @@ describe('FilterSheet clear button', () => {
     expect(wrapper.get(CLEAR).attributes('aria-disabled')).toBeUndefined()
 
     await wrapper.get(CLEAR).trigger('click')
-    await urlIs('/customers?perPage=18&search=ana')
+    await urlIs('/customers?perPage=18&search=ana&sort=old')
 
     expect(push).toHaveBeenCalledExactlyOnceWith({
       path: '/customers',
-      query: { perPage: '18', search: 'ana' },
+      query: { perPage: '18', search: 'ana', sort: 'old' },
     })
     expect(replace).not.toHaveBeenCalled()
     // It follows the write: nothing left to clear

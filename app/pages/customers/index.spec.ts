@@ -548,10 +548,11 @@ describe('customers page', () => {
   })
 
   // The panel's button is the empty state's: the same page function, so the same history entry, the
-  // same page size and the same focus. It is the one on screen when a filter alone finds someone.
-  it('clears the search and the filters from the panel, keeping the page size', async () => {
+  // same page size and order and the same focus. It is the one on screen when a filter alone finds
+  // someone.
+  it('clears the search and the filters from the panel, keeping the page size and the order', async () => {
     const wrapper = await mountSuspended(CustomersPage, {
-      route: '/customers?search=ana&page=3&perPage=18&states=bahia&gender=female',
+      route: '/customers?search=ana&page=3&perPage=18&states=bahia&gender=female&sort=old',
       attachTo: document.body,
     })
     const router = useRouter()
@@ -563,12 +564,12 @@ describe('customers page', () => {
 
     await wrapper.get(PANEL_CLEAR).trigger('click')
     await vi.waitFor(() => {
-      expect(useRoute().fullPath).toBe('/customers?perPage=18')
+      expect(useRoute().fullPath).toBe('/customers?perPage=18&sort=old')
     })
 
     expect(replace).toHaveBeenCalledExactlyOnceWith({
       path: '/customers',
-      query: { perPage: '18' },
+      query: { perPage: '18', sort: 'old' },
     })
     expect(push).not.toHaveBeenCalled()
     // The button is gone with the filters, and the focus it held is somewhere that stays

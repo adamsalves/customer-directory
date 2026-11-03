@@ -87,20 +87,20 @@ describe('FilterChips', () => {
 })
 
 describe('FilterChips removal', () => {
-  // The removal starts over from page 1 and keeps the rest of the list state, the page size included.
-  // A filter's is a push: that history entry is what back takes back (ADR-0007).
+  // The removal starts over from page 1 and keeps the rest of the list state, the page size and the
+  // order included. A filter's is a push: that history entry is what back takes back (ADR-0007).
   it.each([
     {
       name: 'a state, keeping the others',
-      route: '/customers?page=3&search=ana&states=bahia,sao-paulo&gender=female',
+      route: '/customers?page=3&search=ana&states=bahia,sao-paulo&gender=female&sort=old',
       chip: 'Remover filtro Bahia',
-      url: '/customers?search=ana&states=sao-paulo&gender=female',
+      url: '/customers?search=ana&states=sao-paulo&gender=female&sort=old',
     },
     {
       name: 'the gender',
-      route: '/customers?page=3&perPage=18&search=ana&states=bahia&gender=female',
+      route: '/customers?page=3&perPage=18&search=ana&states=bahia&gender=female&sort=old',
       chip: 'Remover filtro Feminino',
-      url: '/customers?perPage=18&search=ana&states=bahia',
+      url: '/customers?perPage=18&search=ana&states=bahia&sort=old',
     },
   ])('writes the list without $name, from page 1, as a push', async ({ route, chip, url }) => {
     const wrapper = await mountChips(route)
@@ -118,14 +118,14 @@ describe('FilterChips removal', () => {
   // Like the field and both clear buttons: back does not pass through the search again (ADR-0013)
   it('writes the list without the search, from page 1, as a replace', async () => {
     const wrapper = await mountChips(
-      '/customers?page=3&perPage=18&search=ana&states=bahia&gender=female',
+      '/customers?page=3&perPage=18&search=ana&states=bahia&gender=female&sort=old',
     )
     const router = useRouter()
     const push = vi.spyOn(router, 'push')
     const replace = vi.spyOn(router, 'replace')
 
     await chipNamed(wrapper, 'Remover busca ana').trigger('click')
-    await urlIs('/customers?perPage=18&states=bahia&gender=female')
+    await urlIs('/customers?perPage=18&states=bahia&gender=female&sort=old')
 
     expect(replace).toHaveBeenCalledOnce()
     expect(push).not.toHaveBeenCalled()
