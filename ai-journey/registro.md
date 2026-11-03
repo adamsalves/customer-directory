@@ -457,7 +457,7 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - **Conferido** no servidor de dev, contra `docs/design/` a 375, 768 e 1280px, nos dois temas: a pílula com 234,8×44 a 375px e o grupo do cartão com 267,9×32 a 1280px, como no protótipo. A 320px, com o badge "4" e `sort=recent`, o select mostra "Cad…" sem rolagem horizontal. A árvore de acessibilidade tem um `combobox` só por largura. Escolher grava `?sort=last` e o foco fica no select; um Voltar durante o voo devolve as duas cópias à URL. Sem aviso de hidratação.
 - **Pendente:** o E2E do fluxo de ordenação (#30). Leitor de tela não conferido. O dono conferiu a pílula no iPhone, e o toque no chevron abre a lista; tocar no rótulo "Ordenar:" só foca o select. As setas com o select fechado (#107). O `SortSelect` é mais um que repete `pending() ?? query.value`, para a #95.
 
-### #30 · E2E da ordenação no desktop e no mobile · PR a abrir
+### #30 · E2E da ordenação no desktop e no mobile · [PR #108](https://github.com/adamsalves/customer-directory/pull/108)
 
 - **Decidido:** [#30](https://github.com/adamsalves/customer-directory/issues/30). Só testes, sem ADR. O measurer achou os dois critérios sem cobertura: o E2E da #29 só fixa layout e estilo do select, e nenhum teste escolhe uma ordem, lê `?sort=` ou confere o primeiro card. A fixture do E2E tem 20 clientes, não os 200 da fonte. Ficam de fora "Mais novos", "Mais velhos" e "Recente", que os critérios não pedem e que a fixture não separa: nenhuma busca com estados dá as seis ordens com primeiros cards diferentes.
 - **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/30#issuecomment-6605162245) · estimativa ~100 linhas de spec
