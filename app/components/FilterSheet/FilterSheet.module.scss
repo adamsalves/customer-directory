@@ -2,9 +2,10 @@
 // the segmented gender inside the sheet are the panel's (#96).
 
 // Sticky under the header, as the first thing in the results column: 61px tall (8px, the button of
-// 44px, 8px and the border), which is --toolbar-size in base.scss. It bleeds to the edges of the
-// screen through the padding of <main>. From 960px the panel is in the page and the bar is not: out
-// of the accessibility tree and of the tab order, not just out of sight (ADR-0014).
+// 44px, 8px and the border), which is --toolbar-size in base.scss. The sort select (#29) is the other
+// item of the bar, at its end and 44px tall too, so it adds nothing to the height. It bleeds to the
+// edges of the screen through the padding of <main>. From 960px the panel is in the page and the bar
+// is not: out of the accessibility tree and of the tab order, not just out of sight (ADR-0014).
 .Bar {
   position: sticky;
   inset-block-start: var(--header-size);

@@ -69,6 +69,10 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | "membro(s)" na contagem e no "Carregando membros…"  | "cliente(s)"; "de 1 cliente" no singular   | ADR-0020                                        |
 | duas regiões vivas, trocadas pela largura (`vw`)    | uma região viva; o layout é do CSS         | um anúncio só; mesmo HTML em qualquer largura   |
 | "Erro ao carregar" na região da contagem            | região vazia no erro                       | o `ErrorState` já anuncia com `role="alert"`    |
+| `<label for="ordem">` e `id` no select              | o `<label>` envolve o select, sem `id`     | há duas cópias do select (barra e cartão)       |
+| hover do select de ordem em qualquer ponteiro       | só com `(hover: hover)`                    | toque não deixa o select preso no hover         |
+| anel de foco no select, dentro da pílula            | anel na pílula (`:has(:focus-visible)`)    | o select da pílula não tem caixa própria        |
+| pílula com o espaço do chevron no `<label>`         | o espaço é padding do próprio `<select>`   | tocar no chevron abre a lista, não só foca      |
 
 ## Consequências
 

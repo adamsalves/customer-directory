@@ -52,15 +52,15 @@ describe('PaginationNav', () => {
     }
   })
 
-  it('links the other pages by query, keeping the page size and leaving page 1 out', async () => {
-    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18')
+  it('links the other pages by query, keeping the page size and the order and leaving page 1 out', async () => {
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18&sort=old')
     const links = wrapper.get(FULL).findAll(PAGE_LINK)
 
     expect(links.map((link) => [link.attributes('aria-label'), link.attributes('href')])).toEqual([
-      ['Página 1', '/customers?perPage=18'],
-      ['Página 2', '/customers?page=2&perPage=18'],
-      ['Página 4', '/customers?page=4&perPage=18'],
-      ['Página 8', '/customers?page=8&perPage=18'],
+      ['Página 1', '/customers?perPage=18&sort=old'],
+      ['Página 2', '/customers?page=2&perPage=18&sort=old'],
+      ['Página 4', '/customers?page=4&perPage=18&sort=old'],
+      ['Página 8', '/customers?page=8&perPage=18&sort=old'],
     ])
   })
 
@@ -101,15 +101,15 @@ describe('PaginationNav', () => {
   })
 
   it('links the arrows to the previous and the next page', async () => {
-    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=27')
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=27&sort=old')
 
     expect(wrapper.get(PREV_LINK).attributes()).toMatchObject({
       'aria-label': 'Página anterior',
-      href: '/customers?page=2&perPage=27',
+      href: '/customers?page=2&perPage=27&sort=old',
     })
     expect(wrapper.get(NEXT_LINK).attributes()).toMatchObject({
       'aria-label': 'Próxima página',
-      href: '/customers?page=4&perPage=27',
+      href: '/customers?page=4&perPage=27&sort=old',
     })
   })
 
@@ -172,13 +172,13 @@ describe('PaginationNav', () => {
     expect(selected.map((option) => option.text())).toEqual(['27'])
   })
 
-  it('goes back to page 1 with the new page size', async () => {
-    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18')
+  it('goes back to page 1 with the new page size, keeping the order', async () => {
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18&sort=old')
 
     await wrapper.get(SELECT).setValue('27')
 
     await vi.waitFor(() => {
-      expect(useRoute().fullPath).toBe('/customers?perPage=27')
+      expect(useRoute().fullPath).toBe('/customers?perPage=27&sort=old')
     })
   })
 

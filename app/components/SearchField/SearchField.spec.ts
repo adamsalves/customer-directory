@@ -149,8 +149,8 @@ describe('SearchField', () => {
 
 describe('SearchField writing the URL', () => {
   // The wait of the first key would run out at 300ms, but the second key restarts it at 200ms
-  it('writes once, 300ms after the last key, from page 1 and with the page size kept', async () => {
-    const wrapper = await mountField('/customers?page=3&perPage=18')
+  it('writes once, 300ms after the last key, from page 1 and with the page size and the order kept', async () => {
+    const wrapper = await mountField('/customers?page=3&perPage=18&sort=old')
     const { replace } = spyOnRouter()
 
     await wrapper.get(INPUT).setValue('a')
@@ -162,7 +162,7 @@ describe('SearchField writing the URL', () => {
     vi.advanceTimersByTime(1)
 
     expect(replace).toHaveBeenCalledOnce()
-    await urlIs('/customers?perPage=18&search=an')
+    await urlIs('/customers?perPage=18&search=an&sort=old')
   })
 
   it('writes the search trimmed and leaves the field as it was typed', async () => {

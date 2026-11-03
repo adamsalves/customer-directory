@@ -76,6 +76,15 @@ describe('useListQuery', () => {
     expect(query.value).toStrictEqual(next)
   })
 
+  // The order is no filter and no reset: a change that leaves it out leaves it where it is
+  it('keeps the order of the URL when the change leaves it out', async () => {
+    await navigateTo('/customers?page=3&sort=old')
+
+    await useListQuery().setQuery({ page: 2 })
+
+    expect(useRoute().fullPath).toBe('/customers?page=2&sort=old')
+  })
+
   // A new object would make useFetch refetch the same page
   it('keeps the same query when only the hash or an unknown key changes', async () => {
     await navigateTo('/customers?page=2')

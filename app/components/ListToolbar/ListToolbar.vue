@@ -32,5 +32,7 @@ const text = computed(() => {
     <p role="status" aria-live="polite" :class="S.Count" data-testid="list-toolbar__count--text">
       {{ text }}
     </p>
+    <!-- The card holds the sort select from 960px; below it the select is in the bar of the sheet -->
+    <SortSelect variant="card" />
   </div>
 </template>

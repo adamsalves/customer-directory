@@ -6,6 +6,7 @@ import type { ICustomerFacets } from '#shared/types/customer'
 import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import FilterSheet from './FilterSheet.vue'
 
+const BAR = '[data-testid="filter-sheet__bar--div"]'
 const OPEN = '[data-testid="filter-sheet__open--button"]'
 const BADGE = '[data-testid="filter-sheet__badge--text"]'
 const DIALOG = '[data-testid="filter-sheet__root--dialog"]'
@@ -126,6 +127,19 @@ describe('FilterSheet bar', () => {
     expect(button.attributes('aria-expanded')).toBeUndefined()
     expect(button.text()).toBe('Filtros')
     expect(button.get('svg').attributes('aria-hidden')).toBe('true')
+  })
+
+  // The page puts the sort select there (#29): at the end of the bar, after the button
+  it('holds what the page puts in it, after the button', async () => {
+    const wrapper = await mountSuspended(FilterSheet, {
+      route: '/customers',
+      props: { total: 20, facets },
+      slots: { default: '<i data-testid="filter-sheet__slotted--icon"></i>' },
+    })
+    const slotted = wrapper.get('[data-testid="filter-sheet__slotted--icon"]').element
+
+    expect(wrapper.get(BAR).element.contains(slotted)).toBe(true)
+    expect(wrapper.get(OPEN).element.nextElementSibling).toBe(slotted)
   })
 
   // The route is a frame behind a pick: the badge follows the write on its way, as the panel does
@@ -366,7 +380,7 @@ describe('FilterSheet clear button', () => {
   // push that back takes back (ADR-0007).
   it('clears the states and the gender, keeps the rest, and pushes', async () => {
     const wrapper = await mountSheet(
-      '/customers?page=2&perPage=18&search=ana&states=bahia,sao-paulo&gender=female',
+      '/customers?page=2&perPage=18&search=ana&states=bahia,sao-paulo&gender=female&sort=old',
     )
     const { push, replace } = spyOnRouter()
 
@@ -375,11 +389,11 @@ describe('FilterSheet clear button', () => {
     expect(wrapper.get(CLEAR).attributes('aria-disabled')).toBeUndefined()
 
     await wrapper.get(CLEAR).trigger('click')
-    await urlIs('/customers?perPage=18&search=ana')
+    await urlIs('/customers?perPage=18&search=ana&sort=old')
 
     expect(push).toHaveBeenCalledExactlyOnceWith({
       path: '/customers',
-      query: { perPage: '18', search: 'ana' },
+      query: { perPage: '18', search: 'ana', sort: 'old' },
     })
     expect(replace).not.toHaveBeenCalled()
     // It follows the write: nothing left to clear

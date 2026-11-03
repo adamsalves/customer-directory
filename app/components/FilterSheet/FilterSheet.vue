@@ -127,6 +127,8 @@ function clear() {
         {{ count }}
       </span>
     </button>
+    <!-- What else the bar holds, at its end: the sort select (#29) -->
+    <slot />
   </div>
   <!-- Beside the bar and not in it: CSS takes the bar out of the page from 960px, and a sheet that is
        open then stays (ADR-0014) -->

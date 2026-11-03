@@ -1,0 +1,104 @@
+// Measures of the prototype's sort select (v2, ADR-0013): one control in two looks (SortSelect.vue).
+// The label holds the select, so it names it and there is no id to repeat in the second copy. The
+// select is flat (appearance: none) and the chevron is the browser's own arrow redrawn over its end,
+// letting the click through.
+.Root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.Caption {
+  font-weight: 700;
+}
+
+.Select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.Chevron {
+  position: absolute;
+  pointer-events: none;
+}
+
+// In the card of the toolbar, from 960px: out of the page below it, where the pill in the bar of the
+// sheet is the control, so it is out of the accessibility tree and the tab order too (ADR-0014). Flat,
+// with its own padding to hold the chevron.
+.Card {
+  display: none;
+  gap: 6px;
+}
+
+.Card .Select {
+  padding-block: 8px;
+  padding-inline: 6px 36px;
+  border-radius: 4px;
+}
+
+.Card .Chevron {
+  inset-inline-end: 8px;
+}
+
+// In the bar of the sheet, below 960px, the filter button's twin: a pill 44px tall, the project's touch
+// target, that takes what the button leaves, up to 280px, and sits at the end of the bar. The select
+// fills the rest up to the border and ends in an ellipsis, so the longest order ("Cadastro mais
+// recente") gives way before the pill does. The chevron's room is the select's own padding, not the
+// pill's, so a tap on the chevron lands on the select and opens it (the prototype pads the label,
+// where a tap only focuses the select; ADR-0013).
+.Bar {
+  flex: 0 1 280px;
+  gap: 4px;
+  min-inline-size: 0;
+  block-size: 44px;
+  margin-inline-start: auto;
+  padding-inline-start: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.Bar .Select {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  block-size: 100%;
+
+  // Firefox pads a select by 1px 4px by default, flat or not; Chromium does not
+  padding-block: 0;
+  padding-inline: 0 36px;
+  text-overflow: ellipsis;
+}
+
+.Bar .Chevron {
+  inset-inline-end: 12px;
+}
+
+// The select has no box of its own to ring: the focus ring is the pill's
+.Bar:has(.Select:focus-visible) {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.Bar .Select:focus-visible {
+  outline: none;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave the select in that state (ADR-0013)
+@media (hover: hover) {
+  .Card .Select:hover {
+    background: var(--surface-alt);
+  }
+}
+
+@media (width >= 960px) {
+  .Card {
+    display: flex;
+  }
+}
