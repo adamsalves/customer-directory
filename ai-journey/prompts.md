@@ -269,3 +269,49 @@ Nas pílulas, o segmento marcado sumia no Alto Contraste, e o indicador dava 1,0
 
 **Abordagem final:**
 O fundo só fecha o sheet se a pressão e a soltura caem nele, o duplo clique é ignorado em captura e o `scrollbar-gutter: stable` fica na própria trava. As pílulas usam os mesmos checkbox e rádios do painel, com o input fora da vista, e o estado marcado sai de `:has(:checked)`. No Alto Contraste, o segmento ativo vai a `Highlight` com `forced-color-adjust: none`, e o E2E lê os pixels do nome. O E2E clica o chip do segundo estado e cada asserção tem um mutante que a derruba.
+
+## M6 · Ordenação
+
+### 🔧 Prompt: Ordenar no BFF
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+Ordenação no `/api/customers` com as seis ordens do protótipo, collator pt-BR e a chave `sort` na URL ([#28](https://github.com/adamsalves/customer-directory/issues/28), ADR-0004, ADR-0021).
+
+**O que aconteceu:**
+As datas são ordenadas pelo timestamp e não pela idade, que empata em 194 dos 200 registros. O sobrenome precisou do truque do protótipo, uma palavra na frente antes do `titleCase`: sem ele, "da Cruz" virava "Da Cruz" em 7 dos 20 clientes da fixture. A mutação matou 31 de 32 mutantes. Ela também mostrou que zerar o `sort` em seis escritores da lista (busca, chips, painel, paginação…) passava na suíte inteira, porque nenhum teste partia de uma URL com `sort`. Isso virou critério da #29. O review achou o nome inteiro montado por um terceiro `titleCase`, que só batia com as partes na fixture. Com o primeiro nome vazio, saía "Da Cruz" ao lado do sobrenome "da Cruz".
+
+**Abordagem final:**
+Uma tabela de comparadores sobre `Intl.Collator('pt-BR', { sensitivity: 'base' })`, aplicada depois dos filtros e antes do corte da página. O `toSorted` evita reordenar o array do cache. `name` passou a ser o primeiro nome mais o sobrenome. A ordem padrão é "Nome" e não aparece na URL.
+
+### 🔧 Prompt: A contagem e o select
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+A toolbar com "Exibindo X–Y de N clientes" anunciada ao leitor de tela ([#103](https://github.com/adamsalves/customer-directory/issues/103)) e o select "Ordenar por" no cartão do desktop e na barra do sheet no mobile ([#29](https://github.com/adamsalves/customer-directory/issues/29)). A issue foi dividida em duas porque a estimativa dava ~490 linhas.
+
+**O que aconteceu:**
+Mesmo dividida, a #103 fechou com +425 contra ~200 e a #29 com +884 contra ~300, quase tudo E2E que fixa o estilo nos dois temas. Aprovei a exceção ao teto na #29.
+
+- No review da toolbar, a troca de página deixava a contagem nova sob a barra sticky, ao contrário do `goPage` do protótipo.
+- No review do select, tocar no chevron da pílula não abria a lista. O espaço do ícone era padding do rótulo, e o toque só focava o select.
+- Outro achado dizia que uma escolha feita antes da hidratação ficava na tela. Um E2E que segurava os scripts mostrou que o Vue reescreve o `:selected` ao hidratar, e a correção não entrou.
+- A mutação mostrou que o `watch` do painel de filtros, de uma issue anterior, sobrevive à suíte unitária inteira ([#105](https://github.com/adamsalves/customer-directory/issues/105)).
+
+**Abordagem final:**
+Um `<p role="status">` sempre no DOM, para que só o texto mude. É um elemento só, que o CSS mostra como linha abaixo de 960px e como cartão acima. A troca de página rola até a toolbar e deixa o foco nos resultados. O `SortSelect` é um `<select>` nativo com as duas variantes no HTML, uma visível por largura, e o espaço do chevron é padding do próprio select. A escolha volta à página 1, e os sete escritores da lista ganharam testes que partem de `sort=old`.
+
+### 🔧 Prompt: E2E da ordenação
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+Um E2E em que ordenar por sobrenome e por Z–A muda o primeiro card, com `?sort=` na URL junto com busca e filtros ([#30](https://github.com/adamsalves/customer-directory/issues/30)).
+
+**O que aconteceu:**
+A medição usou o `queryCustomers` real para achar uma busca com estados que deixa poucos clientes em três ordens diferentes. Ela também mostrou que a fixture de 20 não separa as seis ordens. Na primeira versão, o mutante que tira o desempate pelo primeiro nome sobrevivia, porque a fonte já trazia os dois "Jesus" na ordem certa. O review apontou um par na ordem inversa, os "Nunes", e Goiás entrou no filtro. O review também pediu para ler o HTML do servidor no reload. Recusei porque achava que o `useFetch` reaproveitava o payload do SSR, mas a mutação mostrou o contrário: um SSR que ignora o `sort` gera outra chave, o cliente refaz a busca e corrige a lista, e nenhuma linha via. O PR fechou com +115 contra ~100.
+
+**Abordagem final:**
+No desktop, o teste confere os 5 nomes em cada ordem, e não só o primeiro, para que uma escolha que perca a busca ou um estado mude a contagem. No reload, ele lê a ordem dos cards no HTML do servidor. No mobile, ele parte da página 2 e espera os 9 primeiros em Z–A a partir de Quévin Cavalcanti, o último dos 20. Se o Z–A invertesse só a página, viria Bartolomeu Martins. A pílula da barra é conferida depois da escolha e depois de um reload. Cada linha do spec tem um mutante que a derruba.
