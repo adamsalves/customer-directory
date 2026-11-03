@@ -14,12 +14,45 @@ const cardSelect = (page: Page) =>
 const barSelect = (page: Page) =>
   page.getByTestId('filter-sheet__bar--div').getByTestId('sort-select__select--select')
 
-// "e" and three states leave 4 of the 20 customers, in three different orders. The surname order
-// and Z–A differ only in the two Jesus: Melânia comes first by surname, Oceano in Z–A.
-const FILTERED = '/customers?search=e&states=espirito-santo,parana,santa-catarina'
-const BY_NAME = ['Alejandra Rodrigues', 'Apolo Nunes', 'Melânia Jesus', 'Oceano Jesus']
-const BY_SURNAME = ['Melânia Jesus', 'Oceano Jesus', 'Apolo Nunes', 'Alejandra Rodrigues']
-const BY_NAME_DESC = ['Oceano Jesus', 'Melânia Jesus', 'Apolo Nunes', 'Alejandra Rodrigues']
+// "e" and four states leave 5 of the 20 customers, in three different orders, and two pairs share a
+// surname. Jesus: Melânia comes first by surname, Oceano in Z–A. Nunes: the source has Ariela before
+// Apolo, in reverse alphabetical order, so only the first-name tie-break of the surname order puts
+// Apolo first.
+const FILTERED = '/customers?search=e&states=espirito-santo,goias,parana,santa-catarina'
+const BY_NAME = [
+  'Alejandra Rodrigues',
+  'Apolo Nunes',
+  'Ariela Nunes',
+  'Melânia Jesus',
+  'Oceano Jesus',
+]
+const BY_SURNAME = [
+  'Melânia Jesus',
+  'Oceano Jesus',
+  'Apolo Nunes',
+  'Ariela Nunes',
+  'Alejandra Rodrigues',
+]
+const BY_NAME_DESC = [
+  'Oceano Jesus',
+  'Melânia Jesus',
+  'Ariela Nunes',
+  'Apolo Nunes',
+  'Alejandra Rodrigues',
+]
+
+// Page 1 of all 20 customers from Z to A, nine to a page
+const PAGE_1_BY_NAME_DESC = [
+  'Quévin Cavalcanti',
+  'Odélia Moura',
+  'Oceano Jesus',
+  'Nêuton Novaes',
+  'Melchior da Cunha',
+  'Melânia Jesus',
+  'Marilene da Rocha',
+  'Girão da Rosa',
+  'Gilda Pires',
+]
 
 test('the card select sorts the filtered list, keeps the search and the states, and a reload keeps the order', async ({
   page,
@@ -30,7 +63,7 @@ test('the card select sorts the filtered list, keeps the search and the states, 
   await waitForHydration(page)
   await expect(names(page)).toHaveText(BY_NAME)
 
-  // The names are the whole list of 4, so a pick that dropped the search or a state shows in them
+  // The names are the whole list of 5, so a pick that dropped the search or a state shows in them
   await cardSelect(page).selectOption('last')
   await expect(page).toHaveURL(`${FILTERED}&sort=last`)
   await expect(names(page)).toHaveText(BY_SURNAME)
@@ -59,6 +92,7 @@ test('the bar select sorts the whole list and starts over from page 1', async ({
   await barSelect(page).selectOption('name-desc')
 
   await expect(page).toHaveURL('/customers?sort=name-desc')
+  await expect(barSelect(page)).toHaveValue('name-desc')
   // Z–A starts at the last of all 20; reversing only page 1 would start at Bartolomeu Martins
-  await expect(names(page).first()).toHaveText('Quévin Cavalcanti')
+  await expect(names(page)).toHaveText(PAGE_1_BY_NAME_DESC)
 })
