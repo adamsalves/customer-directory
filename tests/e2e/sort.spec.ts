@@ -13,6 +13,13 @@ const cardSelect = (page: Page) =>
   page.getByTestId('list-toolbar__root--div').getByTestId('sort-select__select--select')
 const barSelect = (page: Page) =>
   page.getByTestId('filter-sheet__bar--div').getByTestId('sort-select__select--select')
+// The names of the cards in a server HTML, in order. Each name is in it twice, in its card and in
+// the payload, so only the markup of the heading says which order the cards have
+const htmlNames = (html: string) =>
+  Array.from(
+    html.matchAll(/data-testid="customer-card__name--heading"[^>]*>([^<]*)</g),
+    ([, name]) => name,
+  )
 
 // "e" and four states leave 5 of the 20 customers, in three different orders, and two pairs share a
 // surname. Jesus: Melânia comes first by surname, Oceano in Z–A. Nunes: the source has Ariela before
@@ -72,8 +79,13 @@ test('the card select sorts the filtered list, keeps the search and the states, 
   await expect(page).toHaveURL(`${FILTERED}&sort=name-desc`)
   await expect(names(page)).toHaveText(BY_NAME_DESC)
 
-  await page.reload()
-  // The server HTML has the order already; the client must keep it
+  const response = await page.reload()
+  if (!response) throw new Error('the reload has no response')
+  // The server HTML has the order already. It is read apart from the page: a client whose request
+  // differs from the server's fetches again on hydration, so the page alone can hide a server that
+  // ignored the sort
+  expect(htmlNames(await response.text())).toEqual(BY_NAME_DESC)
+  // The client must keep it
   await waitForHydration(page)
 
   await expect(page).toHaveURL(`${FILTERED}&sort=name-desc`)
@@ -95,4 +107,9 @@ test('the bar select sorts the whole list and starts over from page 1', async ({
   await expect(barSelect(page)).toHaveValue('name-desc')
   // Z–A starts at the last of all 20; reversing only page 1 would start at Bartolomeu Martins
   await expect(names(page)).toHaveText(PAGE_1_BY_NAME_DESC)
+
+  // A reload leaves nothing on its way to put the select back, so it must come drawn from the URL
+  await page.reload()
+  await waitForHydration(page)
+  await expect(barSelect(page)).toHaveValue('name-desc')
 })
