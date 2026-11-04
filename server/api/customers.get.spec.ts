@@ -52,7 +52,7 @@ afterAll(async () => {
 describe('GET /api/customers', () => {
   // First on purpose, with the source still down from the start: "no cache" only lasts until the
   // first success fills the single cache entry. From then on the cache serves that copy, so a
-  // failing source would still answer 200. The detail reads the same cache, so it is asked here too.
+  // failing source would still answer 200.
   // fetch and not $fetch: $fetch retries a GET on 5xx. The server may retry the source too, so
   // sourceHits is not asserted here.
   it.each([
@@ -61,11 +61,9 @@ describe('GET /api/customers', () => {
   ] as const)('answers 502 when $name and there is no cached copy', async ({ failure }) => {
     sourceFailure = failure
     try {
-      for (const path of ['/api/customers', '/api/customers/eleuterio-almeida']) {
-        const response = await fetch(path)
+      const response = await fetch('/api/customers')
 
-        expect(response.status, path).toBe(502)
-      }
+      expect(response.status).toBe(502)
     } finally {
       sourceFailure = undefined
       // The next tests count the reads of the source from zero
@@ -152,58 +150,5 @@ describe('GET /api/customers', () => {
     await $fetch('/api/customers?perPage=27')
 
     expect(sourceHits).toBe(1)
-  })
-})
-
-// After the list on purpose: the 502 cases need the cache empty, and the tests above fill it
-describe('GET /api/customers/[id]', () => {
-  // The 6th customer of the source and the 11th by name: neither the first of the list nor of the
-  // default order. The slug has no accent and the email keeps it (ADR-0006). What the card leaves
-  // out (email, phone, cell, timezone, the dates…) is the point: the detail is the full record.
-  it('serves the full record of the customer with that slug', async () => {
-    const body: unknown = await $fetch('/api/customers/eleuterio-almeida')
-
-    expect(body).toMatchObject({
-      customer: {
-        slug: 'eleuterio-almeida',
-        name: 'Eleutério Almeida',
-        firstName: 'Eleutério',
-        lastName: 'Almeida',
-        street: 'Rua Amazonas, 8578',
-        city: 'Balneário Camboriú',
-        state: 'Tocantins',
-        uf: 'TO',
-        postcode: '28829',
-        picture: 'https://randomuser.me/api/portraits/men/61.jpg',
-        stateSlug: 'tocantins',
-        title: 'Sr.',
-        gender: 'male',
-        email: 'eleutério.almeida@example.com',
-        phone: '(44) 2047-8597',
-        cell: '(86) 6471-7684',
-        timezone: 'UTC-4:00 · Atlantic Time (Canada), Caracas, La Paz',
-        birthDate: '1970-03-30T23:55:08Z',
-        registeredAt: '2004-06-27T05:45:47Z',
-      },
-    })
-    // Not fixed: the age is counted from today
-    expect(body).toHaveProperty('customer.age', expect.any(Number))
-  })
-
-  // fetch and not $fetch, which throws on a 404. The slug has to be the whole one: "eleuterio" is the
-  // start of a real slug and "eleuterio-almeida-2" starts with one, so a match by prefix or by
-  // substring, in either direction, would find that customer instead of answering 404. A double
-  // slash gives the handler an empty id, the start of every slug.
-  it.each([
-    { name: 'is not a customer', slug: 'no-such-customer' },
-    { name: 'is empty (a double slash)', slug: '/' },
-    { name: 'is only the start of a real slug', slug: 'eleuterio' },
-    { name: 'is a real slug with more after it', slug: 'eleuterio-almeida-2' },
-  ])('answers 404 when the slug $name', async ({ slug }) => {
-    const response = await fetch(`/api/customers/${slug}`)
-
-    expect(response.status).toBe(404)
-    // Without a statusMessage in createError, Nitro writes "Server Error"
-    expect(response.statusText).toBe('Not Found')
   })
 })

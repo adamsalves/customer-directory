@@ -26,7 +26,7 @@ npm run test:e2e    # playwright
 
 ## 3. Architecture map
 
-- `server/` — BFF. `api/` holds thin handlers; `utils/` holds **pure functions** (`queryCustomers`, `normalizeCustomer`, `parseRawCustomers`) plus the cached S3 fetch.
+- `server/` — BFF. `api/` holds thin handlers; `utils/` holds **pure functions** (`queryCustomers`, `normalizeCustomer`, `parseRawCustomers`) plus the cached S3 fetch (`fetchCustomers`, and `loadCustomers`, which turns its source failure into a 502).
 - `shared/` — types and utils used by both sides (`listQuery`, `brazilianStates`, `pageList`).
 - `app/` — pages, layouts, components (`app/components/Name/Name.vue` + `Name.module.scss`), composables.
 - **State:** the URL is the source of truth for the list (search, filters, sort, page). Server state lives in `useFetch`. `useState` is only for theme and toast. No global store (ADR-0007).
