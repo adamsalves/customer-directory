@@ -494,3 +494,25 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - **Review (`/code-review`):** 7 achados, nenhum bug com os dados de hoje. Aplicados: os testes do detalhe saíram do `customers.get.spec.ts` para um spec ao lado do handler (AGENTS.md §5; custa um build a mais, ~6 s), e o mapa do AGENTS.md §3 passou a citar `fetchCustomers` e `loadCustomers` em `server/utils/`. Adiado para a #32: a idade calculada no `normalizeCustomer` fica congelada na cópia em cache, então a página passa a contá-la a partir de `birthDate` (critério acrescentado na issue). Recusados: slug duplicado (já pendente abaixo), slug vazio (nenhum e-mail da fonte estática chega a ele), `%2D` sem `decode` (o NuxtLink manda o slug em ASCII) e um tipo de resposta mais estreito que o `ICustomer` (o TS não tira campos em runtime; rever na #32).
 - **Pendente:** a rota ainda não tem consumidor: a página é a #32. Ela entrega só `{ customer }`; `position`, `total`, `prev`, `next` e `related` da ADR-0004 ficam para o M8. Colisão de slug no S3 real não verificada: a ADR-0006 diz que os 200 slugs do payload real são distintos, mas só a fixture de 20 tem teste, e com dois registros no mesmo slug o `find` devolveria sempre o primeiro.
   - **Achado fora do escopo** ([#110](https://github.com/adamsalves/customer-directory/issues/110)): uma resposta da fonte cortada no meio do corpo chega como `TypeError: terminated`, que o ofetch lança fora do `FetchError`. O `isSourceFailure` não a reconhece, e a lista e o detalhe responderiam 500 em vez de 502. Visto com o ofetch isolado, não reproduzido no servidor.
+
+### #111 · Avatar com iniciais quando a foto falha · [PR #112](https://github.com/adamsalves/customer-directory/pull/112)
+
+- **Decidido:** [#111](https://github.com/adamsalves/customer-directory/issues/111) · ADR-0013 (uma linha: o protótipo não tem fallback de avatar) · ADR-0014 (as iniciais acompanham o tamanho só com CSS). A #32 pedia o fallback no hero e no card. Ele saiu dela para caber no teto de linhas, como a #92 saiu da #25, e o hero vai usar o componente.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/111#issuecomment-6629980511) · estimativa ~170 linhas
+- **Como:**
+  - **`CustomerAvatar`:** círculo com `--muted-bg` e a foto. Se ela falha, entram as iniciais: 1ª letra do primeiro e do último nome, em maiúsculas; uma letra só para nome de uma palavra.
+  - **Falha antes da hidratação:** o `error` de uma foto que falha no HTML do SSR dispara antes de existir quem ouça. O `onMounted` cobre esse caso conferindo `complete && naturalWidth === 0`. Uma foto `lazy` fora da tela ainda não foi pedida e segue `complete === false`, então fica foto. No Chrome, os erros vieram em ~120–160 ms e os listeners em ~400 ms; depois de trocar de página, quem pega é o `@error`.
+  - **Tamanho:** o pai dá o tamanho pela classe que cai na raiz (80/64px no card). As iniciais seguem em `40cqi` sobre `container-type: inline-size`. Com a foto carregada, o card ficou igual ao da `main` pixel a pixel.
+  - **Iniciais:** `aria-hidden`; o `alt` da foto vem do pai. A cor é `--text-strong` sobre `--muted-bg`: 10,19:1 no claro e 11,68:1 no escuro. O `--text-muted` reprovaria no claro (4,42:1).
+  - **Testes e o happy-dom:** com `enableImageFileLoading: false`, o happy-dom diz que toda `<img>` está `complete` e com `naturalWidth` 0, ou seja, quebrada. Sem stub, 3 testes do card perdiam a foto. Os specs que esperam a foto fazem stub de `naturalWidth`, e o do avatar cobre a tabela de `complete` × `naturalWidth` inteira. O testid `customer-card__avatar--image` deu lugar aos do avatar, e o E2E do layout da lista passou a medir a raiz.
+- **Resultado:** +276 −28 sem este registro (estimativa ~170; linhas tocadas: código 122, specs 181, docs 1). Os specs passaram da conta: a tabela de iniciais e a de `complete` × `naturalWidth` não estavam no plano. Suíte: 792 testes unitários (eram 774), 3 rodadas sem falha. Lint, typecheck e o E2E completo verdes (294 passaram, 14 pulados).
+  - **Mutação:** 41 mutantes, todos mortos no fim. Sobreviveram 5 aos testes do plano:
+    - `split(' ')` no lugar de `\s+`: ganhou o caso do espaço sem quebra;
+    - as classes da raiz, da foto e das iniciais: ganharam um teste de classe;
+    - a classe do card no avatar: ganhou um teste de classe no card.
+    - As declarações de CSS foram mutadas uma a uma no Chrome. Nenhuma tem E2E; fica para a #36.
+  - **Review (`/review`):** aprovado sem achado obrigatório. Recusados:
+    - zerar o `failed` quando o `src` muda: não chega à tela, porque o card tem `:key` por slug e o `NuxtPage` remonta a página por `id`;
+    - stub global de imagem num `setupFiles`: esconderia o caminho do `onMounted`, e a falta do stub já aparece sozinha;
+    - tirar `display: block` e `inline-size: 100%` da foto, redundantes num flex: ficam como segurança.
+- **Pendente:** o hero da #32 passa um `alt` não vazio ("Foto de {nome}"), e com a foto quebrada as iniciais escondidas não o anunciam. Fica um comentário `ponytail:` no componente, para decidir na #32. Sem E2E do fallback (#36).
