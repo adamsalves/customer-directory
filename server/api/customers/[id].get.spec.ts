@@ -82,8 +82,6 @@ describe('GET /api/customers/[id]', () => {
         registeredAt: '2004-06-27T05:45:47Z',
       },
     })
-    // Not fixed: the age is counted from today
-    expect(body).toHaveProperty('customer.age', expect.any(Number))
   })
 
   // fetch and not $fetch, which throws on a 404. The slug has to be the whole one: "eleuterio" is the

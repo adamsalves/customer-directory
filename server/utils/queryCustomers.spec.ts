@@ -331,7 +331,7 @@ describe('queryCustomers with filters', () => {
 
 describe('queryCustomers sorted', () => {
   // A page of 54 holds the 20, so the whole order shows. No two customers share a birth or sign-up
-  // date, and 4 pairs are born in the same year, where `age` (whole years) can tie.
+  // date, and 4 pairs are born in the same year, where whole years can tie.
   it.each(ORDERS)('lists the customers in the order of sort=$sort', ({ sort, names }) => {
     const result = queryCustomers(all, query({ sort, perPage: 54 }))
 

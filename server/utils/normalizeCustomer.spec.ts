@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { ICustomer, IRawCustomer } from '#shared/types/customer'
 import customers from '../../tests/fixtures/customers.json'
 import { normalizeCustomer } from './normalizeCustomer'
@@ -8,9 +8,7 @@ import { parseRawCustomers } from './parseRawCustomers'
 type TTextField = 'name' | 'firstName' | 'lastName' | 'street' | 'city'
 type TFixtureText = { index: number; field: TTextField; expected: string }
 type TEditedText = { field: 'street' | 'city'; value: string; expected: string }
-type TAgeCase = { when: string; now: string; age: number; index?: number; dob?: string }
 
-const NOW = new Date('2026-06-15T12:00:00Z')
 const raws = parseRawCustomers(customers)
 
 // A copy of fixture record `index`, so a test can edit it
@@ -21,10 +19,10 @@ function rawAt(index: number): IRawCustomer {
 }
 
 // Record 0 (or `index`) after `edit`, normalized
-function normalizeEdited(edit: (raw: IRawCustomer) => void, index = 0, now = NOW): ICustomer {
+function normalizeEdited(edit: (raw: IRawCustomer) => void, index = 0): ICustomer {
   const raw = rawAt(index)
   edit(raw)
-  return normalizeCustomer(raw, now)
+  return normalizeCustomer(raw)
 }
 
 // Text rules seen on the fixture: lowercase particles, numerals, d', street reorder
@@ -60,37 +58,9 @@ const editedText: TEditedText[] = [
   { field: 'street', value: '2a travessa', expected: '2a Travessa' },
 ]
 
-// Record 0 was born on 1974-05-16 and record 5 on 1970-03-30T23:55:08Z (UTC dates). The rows
-// that cross a day, month or year at UTC are the ones a local-time getter would get wrong.
-const ageCases: TAgeCase[] = [
-  { when: 'the day before the birthday', now: '2026-05-15T23:59:59Z', age: 51 },
-  { when: 'the birthday, before the birth time', now: '2026-05-16T00:00:00Z', age: 52 },
-  { when: 'the day after the birthday', now: '2026-05-17T00:00:00Z', age: 52 },
-  { when: 'an earlier month with a later day', now: '2026-03-20T00:00:00Z', age: 51 },
-  { when: 'a later month with an earlier day', now: '2026-08-01T00:00:00Z', age: 52 },
-  { when: 'the UTC birthday in any local zone', index: 5, now: '2026-03-30T00:00:00Z', age: 56 },
-  { when: 'the first UTC day of the year', now: '2027-01-01T01:00:00Z', age: 52 },
-  {
-    when: 'a UTC new year birth, a day early',
-    dob: '1990-01-01T01:00:00Z',
-    now: '2026-12-31T12:00:00Z',
-    age: 36,
-  },
-  {
-    when: 'a UTC new year birth, on the day',
-    dob: '1990-01-01T01:00:00Z',
-    now: '2027-01-01T12:00:00Z',
-    age: 37,
-  },
-]
-
 describe('normalizeCustomer', () => {
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('turns a raw record into what the UI renders', () => {
-    expect(normalizeCustomer(rawAt(0), NOW)).toEqual({
+    expect(normalizeCustomer(rawAt(0))).toEqual({
       slug: 'alejandra-rodrigues',
       name: 'Alejandra Rodrigues',
       firstName: 'Alejandra',
@@ -109,13 +79,12 @@ describe('normalizeCustomer', () => {
       cell: '(54) 3190-3469',
       timezone: 'UTC+3:00 · Baghdad, Riyadh, Moscow, St. Petersburg',
       birthDate: '1974-05-16T14:46:15Z',
-      age: 52,
       registeredAt: '2013-03-06T16:09:16Z',
     })
   })
 
   it.each(fixtureText)('writes $field of record $index as "$expected"', (row) => {
-    expect(normalizeCustomer(rawAt(row.index), NOW)[row.field]).toBe(row.expected)
+    expect(normalizeCustomer(rawAt(row.index))[row.field]).toBe(row.expected)
   })
 
   // The source can send an empty first name: the particle stays lowercase in `name` too
@@ -177,7 +146,7 @@ describe('normalizeCustomer', () => {
     { index: 12, timezone: 'UTC-3:00 · Brazil, Buenos Aires, Georgetown' },
     { index: 17, timezone: 'UTC+0:00 · Western Europe Time, London, Lisbon, Casablanca' },
   ])('writes the timezone of record $index as "$timezone"', ({ index, timezone }) => {
-    expect(normalizeCustomer(rawAt(index), NOW).timezone).toBe(timezone)
+    expect(normalizeCustomer(rawAt(index)).timezone).toBe(timezone)
   })
 
   it.each([
@@ -197,26 +166,8 @@ describe('normalizeCustomer', () => {
   })
 
   it('gives every fixture record a different slug', () => {
-    const slugs = raws.map((raw) => normalizeCustomer(raw, NOW).slug)
+    const slugs = raws.map((raw) => normalizeCustomer(raw).slug)
 
     expect(new Set(slugs).size).toBe(raws.length)
-  })
-
-  it.each(ageCases)('computes the age on $when', ({ now, age, index, dob }) => {
-    const customer = normalizeEdited(
-      (raw) => {
-        if (dob) raw.dob.date = dob
-      },
-      index,
-      new Date(now),
-    )
-
-    expect(customer.age).toBe(age)
-  })
-
-  it('computes the age from the current date when none is given', () => {
-    vi.setSystemTime(new Date('2026-05-15T12:00:00Z'))
-
-    expect(normalizeCustomer(rawAt(0)).age).toBe(51)
   })
 })
