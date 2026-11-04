@@ -29,11 +29,15 @@ const callHref = computed(() => `tel:+55${props.customer.cell.replace(/\D/g, '')
 
 <template>
   <section :class="S.Hero" data-testid="customer-hero__root--section">
+    <!-- On screen at load and the likely LCP: no lazy loading and high priority, as the first card of
+         the list (ADR-0013 has the row) -->
     <CustomerAvatar
       :src="customer.picture"
       :name="customer.name"
       :alt="`Foto de ${customer.name}`"
       :size="128"
+      loading="eager"
+      fetchpriority="high"
       :class="S.Avatar"
     />
     <div :class="S.Text" data-testid="customer-hero__text--div">

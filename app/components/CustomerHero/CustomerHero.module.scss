@@ -146,7 +146,18 @@
     inline-size: 100%;
   }
 
+  // 16px of padding, not the 20px of the row: beside its icon "Enviar e-mail" is 113px wide, and a
+  // column of the grid at 375px has 114px of room
   .Action {
     block-size: 48px;
+    padding-inline: 16px;
+  }
+}
+
+// Below 375px not even the 16px fit "Enviar e-mail" and its icon in half the row: one button over
+// the other
+@media (width < 375px) {
+  .Actions {
+    grid-template-columns: 1fr;
   }
 }

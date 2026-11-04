@@ -75,6 +75,8 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | pílula com o espaço do chevron no `<label>`         | o espaço é padding do próprio `<select>`   | tocar no chevron abre a lista, não só foca      |
 | foto do avatar sem fallback                         | iniciais sobre `--muted-bg` se ela falha   | a foto que falha deixava o círculo vazio (#111) |
 | `tel:` só com os dígitos do celular                 | `tel:+55` e os dígitos do celular          | o +55 faz a ligação valer de qualquer país      |
+| "Enviar e-mail" quebra no hífen a 375px             | padding 16px no mobile, 1 coluna < 375px   | o rótulo cabe numa linha                        |
+| foto do hero com `loading="lazy"`                   | `eager` e `fetchpriority="high"`           | acima da dobra e provável LCP, como o 1º card   |
 
 ## Consequências
 

@@ -191,6 +191,14 @@ describe('CustomerHero', () => {
     })
   })
 
+  // Above the fold and the likely LCP, as the first card of the list: no lazy loading, high priority
+  it('loads the photo eagerly and with high priority', async () => {
+    const image = (await mountHero(eleuterio)).get(IMAGE)
+
+    expect(image.attributes('loading')).toBe('eager')
+    expect(image.attributes('fetchpriority')).toBe('high')
+  })
+
   it('falls back to the initials of the name when the photo fails', async () => {
     const wrapper = await mountHero(eleuterio)
 
