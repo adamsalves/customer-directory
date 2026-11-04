@@ -14,19 +14,15 @@ withDefaults(
 
 <template>
   <article :class="S.Card" data-testid="customer-card__root--article">
-    <span :class="S.Avatar">
-      <img
-        :src="customer.picture"
-        alt=""
-        width="80"
-        height="80"
-        decoding="async"
-        :loading="loading"
-        :fetchpriority="fetchpriority"
-        :class="S.Image"
-        data-testid="customer-card__avatar--image"
-      />
-    </span>
+    <CustomerAvatar
+      :src="customer.picture"
+      :name="customer.name"
+      alt=""
+      :size="80"
+      :loading="loading"
+      :fetchpriority="fetchpriority"
+      :class="S.Avatar"
+    />
     <div :class="S.Text">
       <h2 :class="S.Name" data-testid="customer-card__name--heading">{{ customer.name }}</h2>
       <p :class="S.Street" data-testid="customer-card__street--text">{{ customer.street }}</p>

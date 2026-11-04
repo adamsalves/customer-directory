@@ -73,6 +73,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | hover do select de ordem em qualquer ponteiro       | só com `(hover: hover)`                    | toque não deixa o select preso no hover         |
 | anel de foco no select, dentro da pílula            | anel na pílula (`:has(:focus-visible)`)    | o select da pílula não tem caixa própria        |
 | pílula com o espaço do chevron no `<label>`         | o espaço é padding do próprio `<select>`   | tocar no chevron abre a lista, não só foca      |
+| foto do avatar sem fallback                         | iniciais sobre `--muted-bg` se ela falha   | a foto que falha deixava o círculo vazio (#111) |
 
 ## Consequências
 

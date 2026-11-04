@@ -26,7 +26,7 @@ for (const { width, row } of [
 
     // The name is beside the avatar in a row and under it in a column
     const card = cards(page).first()
-    const avatar = await card.getByTestId('customer-card__avatar--image').boundingBox()
+    const avatar = await card.getByTestId('customer-avatar__root--span').boundingBox()
     const name = await card.getByTestId('customer-card__name--heading').boundingBox()
     if (!avatar || !name) throw new Error('the card is not rendered')
     const beside = name.x >= avatar.x + avatar.width && name.y < avatar.y + avatar.height

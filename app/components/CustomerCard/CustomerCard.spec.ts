@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ICustomerCard } from '#shared/types/customer'
 import CustomerCard from './CustomerCard.vue'
 
@@ -14,10 +14,22 @@ const customer: ICustomerCard = {
   picture: 'https://randomuser.me/api/portraits/women/18.jpg',
 }
 
-const IMAGE = '[data-testid="customer-card__avatar--image"]'
+const AVATAR = '[data-testid="customer-avatar__root--span"]'
+const IMAGE = '[data-testid="customer-avatar__photo--image"]'
+const INITIALS = '[data-testid="customer-avatar__initials--text"]'
 const ROW = '[data-testid="customer-card__location--row"]'
 
 describe('CustomerCard', () => {
+  // happy-dom loads no image and reports every one as broken (complete, no width): the avatar would
+  // swap the photo for the initials on mount. This photo loaded.
+  beforeEach(() => {
+    vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(80)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('names the customer in a heading inside an article and shows the street', async () => {
     const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
     const name = wrapper.get('[data-testid="customer-card__name--heading"]')
@@ -81,6 +93,23 @@ describe('CustomerCard', () => {
 
     expect(image.attributes('loading')).toBe('eager')
     expect(image.attributes('fetchpriority')).toBe('high')
+  })
+
+  // The card sizes the avatar (80px, 64px in a row) with a class that lands on the avatar root, next
+  // to the one of the avatar itself
+  it('puts the class that sizes the avatar on its root', async () => {
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
+
+    expect(wrapper.get(AVATAR).classes()).toHaveLength(2)
+  })
+
+  it('falls back to the initials of the name when the photo fails', async () => {
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
+
+    await wrapper.get(IMAGE).trigger('error')
+
+    expect(wrapper.find(IMAGE).exists()).toBe(false)
+    expect(wrapper.get(INITIALS).text()).toBe('AR')
   })
 
   it('hides the chevron from assistive technology', async () => {
