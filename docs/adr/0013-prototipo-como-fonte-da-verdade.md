@@ -74,6 +74,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | anel de foco no select, dentro da pílula            | anel na pílula (`:has(:focus-visible)`)    | o select da pílula não tem caixa própria        |
 | pílula com o espaço do chevron no `<label>`         | o espaço é padding do próprio `<select>`   | tocar no chevron abre a lista, não só foca      |
 | foto do avatar sem fallback                         | iniciais sobre `--muted-bg` se ela falha   | a foto que falha deixava o círculo vazio (#111) |
+| `tel:` só com os dígitos do celular                 | `tel:+55` e os dígitos do celular          | o +55 faz a ligação valer de qualquer país      |
 
 ## Consequências
 

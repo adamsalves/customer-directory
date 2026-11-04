@@ -51,15 +51,6 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '')
 }
 
-// Full years on UTC dates: the source dates are UTC
-function yearsSince(iso: string, now: Date): number {
-  const date = new Date(iso)
-  const years = now.getUTCFullYear() - date.getUTCFullYear()
-  const months = now.getUTCMonth() - date.getUTCMonth()
-  const birthdayPending = months < 0 || (months === 0 && now.getUTCDate() < date.getUTCDate())
-  return birthdayPending ? years - 1 : years
-}
-
 // "0:00" -> "UTC+0:00": the source drops the sign of a zero offset
 function formatTimezone({ offset, description }: IRawCustomer['location']['timezone']): string {
   const sign = offset.startsWith('-') || offset.startsWith('+') ? '' : '+'
@@ -67,7 +58,7 @@ function formatTimezone({ offset, description }: IRawCustomer['location']['timez
 }
 
 // Raw record (lowercase, no id) -> what the UI renders (ADR-0004); slug from the email (ADR-0006).
-export function normalizeCustomer(raw: IRawCustomer, now = new Date()): ICustomer {
+export function normalizeCustomer(raw: IRawCustomer): ICustomer {
   const { name, location } = raw
   const stateSlug = slugify(location.state)
   const state = BRAZILIAN_STATES.find(({ slug }) => slug === stateSlug)
@@ -95,7 +86,6 @@ export function normalizeCustomer(raw: IRawCustomer, now = new Date()): ICustome
     cell: raw.cell,
     timezone: formatTimezone(location.timezone),
     birthDate: raw.dob.date,
-    age: yearsSince(raw.dob.date, now),
     registeredAt: raw.registered.date,
   }
 }

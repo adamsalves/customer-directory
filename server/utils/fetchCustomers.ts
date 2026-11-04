@@ -10,11 +10,10 @@ export const fetchCustomers = defineCachedFunction(
   async () => {
     // External data enters as unknown (ADR-0016): no type argument on $fetch
     const payload: unknown = await $fetch(useRuntimeConfig().customersUrl, { timeout: 10_000 })
-    // An arrow, not `.map(normalizeCustomer)`: the index would land in its `now` parameter
-    return parseRawCustomers(payload).map((raw) => normalizeCustomer(raw))
+    return parseRawCustomers(payload).map(normalizeCustomer)
   },
   // Bump `integrity` when the shape of ICustomer changes: the entry on disk (dev) outlives a
   // restart, and Nitro would serve the old shape for up to 1h (2: `stateSlug`, #23; 3: `firstName`
-  // and `lastName`, #28)
-  { name: 'customers', maxAge: 60 * 60, swr: true, integrity: 'customer-3' },
+  // and `lastName`, #28; 4: no `age`, #32)
+  { name: 'customers', maxAge: 60 * 60, swr: true, integrity: 'customer-4' },
 )

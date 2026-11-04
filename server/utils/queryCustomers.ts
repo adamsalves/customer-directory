@@ -51,9 +51,9 @@ function filterByStates(customers: ICustomer[], states: string[]): ICustomer[] {
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' })
 
 // One comparator per order. The surname is the whole of it ("da Cruz" is among the Ds, as in the
-// prototype), and the first name breaks a tie. The dates go by the ISO timestamp, not by `age`: whole
-// years tie for 194 of the 200 customers. What still ties keeps the order of the source (the sort is
-// stable).
+// prototype), and the first name breaks a tie. The dates go by the ISO timestamp, not by whole
+// years: those tie for 194 of the 200 customers. What still ties keeps the order of the source (the
+// sort is stable).
 const COMPARATORS: Record<IListQuery['sort'], (a: ICustomer, b: ICustomer) => number> = {
   name: (a, b) => collator.compare(a.name, b.name),
   'name-desc': (a, b) => collator.compare(b.name, a.name),

@@ -1,0 +1,4 @@
+// The cards' entrance, without a fill mode: the box already is where the animation ends
+.Article {
+  animation: global(jsm-in) 0.22s ease-out;
+}

@@ -42,7 +42,6 @@ export interface ICustomer extends ICustomerCard {
   cell: string
   timezone: string
   birthDate: string // ISO 8601
-  age: number
   registeredAt: string // ISO 8601
 }
 

@@ -1,0 +1,152 @@
+// Measures of the prototype's detail hero. Same markup in every width (ADR-0014): a row from 640px,
+// a column centered below it.
+.Hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  align-items: center;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+}
+
+// The size of the avatar; its shape and the photo are CustomerAvatar's
+.Avatar {
+  flex: 0 0 auto;
+  inline-size: 128px;
+  block-size: 128px;
+}
+
+.Text {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+.Kicker {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.Name {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.Location {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.Tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+  margin: 0;
+  margin-block-start: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.Tag {
+  display: flex;
+  align-items: center;
+  block-size: 28px;
+  padding-inline: 12px;
+  border-radius: 14px;
+  background: var(--surface-alt);
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.Actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// The color is set on both, so it wins over the `a` and `a:hover` colors of the base layer. The focus
+// ring is the one of the base layer.
+.Action {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  block-size: 44px;
+  padding-inline: 20px;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.Primary {
+  background: var(--primary-bg);
+  color: var(--primary-text);
+}
+
+.Secondary {
+  border: 1px solid var(--text-strong);
+  background: var(--surface);
+  color: var(--text-strong);
+}
+
+// Hover only where a pointer can hover, so a tap does not leave a button in that state (ADR-0013)
+@media (hover: hover) {
+  .Primary:hover {
+    background: var(--primary-bg-hover);
+  }
+
+  .Secondary:hover {
+    background: var(--surface-alt);
+  }
+}
+
+@media (width < 640px) {
+  .Hero {
+    flex-direction: column;
+    padding-block: 28px 20px;
+    padding-inline: 20px;
+    text-align: center;
+  }
+
+  .Avatar {
+    inline-size: 112px;
+    block-size: 112px;
+  }
+
+  .Text {
+    flex: 0 0 auto;
+    inline-size: 100%;
+  }
+
+  .Name {
+    font-size: 26px;
+  }
+
+  .Tags {
+    justify-content: center;
+  }
+
+  .Actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    inline-size: 100%;
+  }
+
+  .Action {
+    block-size: 48px;
+  }
+}

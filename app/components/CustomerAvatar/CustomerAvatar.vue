@@ -15,9 +15,8 @@ const props = withDefaults(
   { loading: 'lazy', fetchpriority: undefined },
 )
 
-// ponytail: the initials are hidden from assistive technology, which suits a decorative photo
-// (alt="", the card) but leaves one with an alt unnamed once it fails (the detail of the prototype
-// has one, "Foto de <name>"); give the root role="img" and the alt as its aria-label then.
+// The initials are hidden from assistive technology, an alt included: with the photo gone there is
+// nothing left to describe, and the name is in the heading next to it (the card's, the hero's).
 const failed = ref(false)
 const imageRef = useTemplateRef('image')
 
