@@ -71,7 +71,7 @@ const RESULTS = '[data-testid="customers__results--section"]'
 const SKELETON = '[data-testid="customers__skeleton--list"]'
 const LIST = '[data-testid="customers__list--list"]'
 const CARD = '[data-testid="customer-card__root--article"]'
-const IMAGE = '[data-testid="customer-card__avatar--image"]'
+const IMAGE = '[data-testid="customer-avatar__photo--image"]'
 const NAV = '[data-testid="pagination__root--nav"]'
 const ERROR = '[data-testid="error-state__message--alert"]'
 const RETRY = '[data-testid="error-state__retry--button"]'
@@ -262,6 +262,9 @@ describe('customers page', () => {
   })
 
   it('loads the first row of images eagerly and only the first with high priority', async () => {
+    // happy-dom loads no image and reports every one as broken, so the avatars would swap them for
+    // the initials on mount. These loaded.
+    vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(80)
     const wrapper = await mountSuspended(CustomersPage, { route: '/customers?page=2' })
     const images = wrapper.findAll(IMAGE)
 
