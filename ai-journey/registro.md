@@ -614,4 +614,4 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
     - `if (import.meta.client)` em volta do hook: o servidor nunca dispara esse hook, e o comentário já diz isso;
     - listeners que se acumulam entre os casos do spec: o plugin roda uma vez só por ambiente de teste, e o `beforeEach` já devolve o esquema antes de limpar o estado;
     - o spec quebraria com `hookOnce`: é hipotético, e trocar a forma de assinar o hook é mudança de comportamento no ambiente de teste.
-- **Pendente:** o listener na página de erro só será conferido no navegador na #34 (E2E do toggle no erro).
+- **Pendente:** E2E do tema na página de erro (#34). Conferido à mão no Chrome, sem preview da Vercel: num erro durante a navegação dentro do app, o `data-theme` fica no `<html>` e segue o sistema.
