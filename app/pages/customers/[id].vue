@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { serializeListQuery } from '#shared/utils/listQuery'
 import { yearsSince } from '#shared/utils/yearsSince'
 import { GENDERS } from '~/utils/genders'
 import { telHref } from '~/utils/telHref'
@@ -25,6 +26,12 @@ if (error.value || !data.value) {
   })
 }
 const { customer } = data.value
+
+// The way back is the list state the address carries, which the card's link put there. A key the list
+// does not know is dropped and a value it does not accept falls to the default, so `?foo=1&page=abc`
+// goes back to the plain list.
+const { query } = useListQuery()
+const back = computed(() => ({ path: LIST_PATH, query: serializeListQuery(query.value) }))
 
 // The photo is the large one and already absolute, so it needs no base URL
 const title = `${customer.name} · Juntos Somos Mais`
@@ -63,93 +70,127 @@ async function copyEmail() {
 </script>
 
 <template>
-  <article
-    aria-labelledby="customer-name"
-    :class="S.Article"
-    data-testid="customer-detail__root--article"
-  >
-    <CustomerHero :customer="customer" />
-    <div :class="S.Sections" data-testid="customer-detail__sections--div">
-      <CustomerInfoSection heading="Contato">
-        <div>
-          <dt>E-mail</dt>
-          <dd :class="S.EmailValue" data-testid="customer-detail__email--value">
-            <a :href="`mailto:${customer.email}`" data-testid="customer-detail__email--link">{{
-              customer.email
-            }}</a>
-            <!-- The title is the name and the tooltip; an aria-label next to it would make the same
-                 text the description too, read twice -->
-            <button
-              type="button"
-              title="Copiar e-mail"
-              :class="S.CopyButton"
-              data-testid="customer-detail__copy--button"
-              @click="copyEmail"
-            >
-              <svg
-                aria-hidden="true"
-                data-testid="customer-detail__copy--icon"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              >
-                <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-                <path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"></path>
-              </svg>
-            </button>
-          </dd>
+  <div>
+    <!-- Below 640px "Voltar" is the way back, as in the prototype, which has no trail there -->
+    <AppBreadcrumb
+      hide-on-mobile
+      :items="[
+        { label: 'Home', to: '/customers' },
+        { label: 'Clientes', to: back },
+        { label: `Detalhes · ${customer.name}` },
+      ]"
+    />
+    <div :class="S.Page">
+      <NuxtLink :to="back" :class="S.Back" data-testid="customer-detail__back--link">
+        <svg
+          aria-hidden="true"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          data-testid="customer-detail__back--icon"
+        >
+          <path d="M15 6l-6 6 6 6"></path>
+        </svg>
+        Voltar para a lista
+      </NuxtLink>
+      <article
+        aria-labelledby="customer-name"
+        :class="S.Article"
+        data-testid="customer-detail__root--article"
+      >
+        <CustomerHero :customer="customer" />
+        <div :class="S.Sections" data-testid="customer-detail__sections--div">
+          <CustomerInfoSection heading="Contato">
+            <div>
+              <dt>E-mail</dt>
+              <dd :class="S.EmailValue" data-testid="customer-detail__email--value">
+                <a :href="`mailto:${customer.email}`" data-testid="customer-detail__email--link">{{
+                  customer.email
+                }}</a>
+                <!-- The title is the name and the tooltip; an aria-label next to it would make the same
+                     text the description too, read twice -->
+                <button
+                  type="button"
+                  title="Copiar e-mail"
+                  :class="S.CopyButton"
+                  data-testid="customer-detail__copy--button"
+                  @click="copyEmail"
+                >
+                  <svg
+                    aria-hidden="true"
+                    data-testid="customer-detail__copy--icon"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                    <path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"></path>
+                  </svg>
+                </button>
+              </dd>
+            </div>
+            <div>
+              <dt>Celular</dt>
+              <dd :class="S.Tabular" data-testid="customer-detail__cell--value">
+                <a :href="cellHref" data-testid="customer-detail__cell--link">{{
+                  customer.cell
+                }}</a>
+              </dd>
+            </div>
+            <div>
+              <dt>Telefone</dt>
+              <dd :class="S.Tabular" data-testid="customer-detail__phone--value">
+                <a :href="phoneHref" data-testid="customer-detail__phone--link">{{
+                  customer.phone
+                }}</a>
+              </dd>
+            </div>
+          </CustomerInfoSection>
+          <CustomerInfoSection heading="Endereço">
+            <div>
+              <dt>Logradouro</dt>
+              <dd>{{ customer.street }}</dd>
+            </div>
+            <div>
+              <dt>Cidade / Estado</dt>
+              <dd>{{ cityState }}</dd>
+            </div>
+            <div>
+              <dt>CEP</dt>
+              <dd :class="S.Tabular" data-testid="customer-detail__postcode--value">
+                {{ customer.postcode }}
+              </dd>
+            </div>
+            <div>
+              <dt>Fuso horário</dt>
+              <dd>{{ customer.timezone }}</dd>
+            </div>
+          </CustomerInfoSection>
+          <CustomerInfoSection heading="Dados pessoais">
+            <div>
+              <dt>Data de nascimento</dt>
+              <dd>{{ birth }}</dd>
+            </div>
+            <div>
+              <dt>Gênero</dt>
+              <dd>{{ gender }}</dd>
+            </div>
+            <div>
+              <dt>Cliente desde</dt>
+              <dd>{{ registered }}</dd>
+            </div>
+          </CustomerInfoSection>
         </div>
-        <div>
-          <dt>Celular</dt>
-          <dd :class="S.Tabular" data-testid="customer-detail__cell--value">
-            <a :href="cellHref" data-testid="customer-detail__cell--link">{{ customer.cell }}</a>
-          </dd>
-        </div>
-        <div>
-          <dt>Telefone</dt>
-          <dd :class="S.Tabular" data-testid="customer-detail__phone--value">
-            <a :href="phoneHref" data-testid="customer-detail__phone--link">{{ customer.phone }}</a>
-          </dd>
-        </div>
-      </CustomerInfoSection>
-      <CustomerInfoSection heading="Endereço">
-        <div>
-          <dt>Logradouro</dt>
-          <dd>{{ customer.street }}</dd>
-        </div>
-        <div>
-          <dt>Cidade / Estado</dt>
-          <dd>{{ cityState }}</dd>
-        </div>
-        <div>
-          <dt>CEP</dt>
-          <dd :class="S.Tabular" data-testid="customer-detail__postcode--value">
-            {{ customer.postcode }}
-          </dd>
-        </div>
-        <div>
-          <dt>Fuso horário</dt>
-          <dd>{{ customer.timezone }}</dd>
-        </div>
-      </CustomerInfoSection>
-      <CustomerInfoSection heading="Dados pessoais">
-        <div>
-          <dt>Data de nascimento</dt>
-          <dd>{{ birth }}</dd>
-        </div>
-        <div>
-          <dt>Gênero</dt>
-          <dd>{{ gender }}</dd>
-        </div>
-        <div>
-          <dt>Cliente desde</dt>
-          <dd>{{ registered }}</dd>
-        </div>
-      </CustomerInfoSection>
+      </article>
     </div>
-  </article>
+  </div>
 </template>

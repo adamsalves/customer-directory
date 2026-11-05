@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from 'vue-router'
 import S from './AppBreadcrumb.module.scss'
 
-// `to` is the target of an intermediate step; the last item is always the current page.
+// `to` is the target of an intermediate step; the last item is always the current page. A location
+// with a query too: the step back to the list keeps the list state.
 export interface IBreadcrumbItem {
   label: string
-  to?: string
+  to?: RouteLocationRaw
 }
 
 defineProps<{
