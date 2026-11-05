@@ -5,6 +5,10 @@
   inset-block-end: calc(24px + env(safe-area-inset-bottom));
   inset-inline-start: 50%;
   z-index: 40;
+
+  // With left: 50% the box would shrink to half the screen and wrap the text below ~365px (ADR-0013)
+  inline-size: max-content;
+  max-inline-size: calc(100% - 32px);
   transform: translateX(-50%);
   pointer-events: none;
 }
