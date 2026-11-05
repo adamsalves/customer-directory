@@ -2,6 +2,7 @@
 import type { ICustomer } from '#shared/types/customer'
 import { yearsSince } from '#shared/utils/yearsSince'
 import { GENDERS } from '~/utils/genders'
+import { telHref } from '~/utils/telHref'
 import S from './CustomerHero.module.scss'
 
 const props = defineProps<{ customer: ICustomer }>()
@@ -23,8 +24,7 @@ const tags = computed(() => {
   ]
 })
 
-// "(54) 3190-3469" -> "tel:+555431903469": with the country code the call works from any phone
-const callHref = computed(() => `tel:+55${props.customer.cell.replace(/\D/g, '')}`)
+const callHref = computed(() => telHref(props.customer.cell))
 </script>
 
 <template>

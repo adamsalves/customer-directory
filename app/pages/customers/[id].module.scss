@@ -1,4 +1,25 @@
 // The cards' entrance, without a fill mode: the box already is where the animation ends
 .Article {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   animation: global(jsm-in) 0.22s ease-out;
+}
+
+// As many sections in a row as keep 240px each, the rest below them (ADR-0014: CSS only)
+.Sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+}
+
+// The digits of a phone and of a postcode all take the same width
+.Tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+// An e-mail has no space to break at: it breaks anywhere, and does not push the section out of its
+// column
+.EmailValue {
+  overflow-wrap: anywhere;
 }
