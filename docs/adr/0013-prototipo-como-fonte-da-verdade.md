@@ -80,8 +80,12 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | toast sem contorno                                  | `outline` transparente de 1px no balão     | no Alto Contraste a sombra some e sobra a borda |
 | toast com no máximo metade da tela (`left: 50%`)    | `max-content`, até 16px de cada borda      | "Não foi possível copiar" quebrava em 360px     |
 | botão de copiar de 40px em qualquer largura         | 44px abaixo de 960px                       | alvo de toque do projeto: 44px                  |
+| só a tela de "membro não encontrado" (404)          | "Algo deu errado" para o que não é 404     | a fonte fora do ar não é link desatualizado     |
+| role="alert" no bloco, link incluso                 | role="alert" só no título e no texto       | o rótulo do link não é parte do anúncio         |
+| 404 com a trilha e "Voltar para a lista"            | só o bloco do erro, em error.vue           | a trilha e o "Voltar" são da página do cliente  |
 
 ## Consequências
 
 - A conferência visual de cada PR é feita contra `docs/design/`, nos dois temas.
 - Novo desvio = nova linha nesta tabela.
+- O erro que não é 404 tem texto nosso, que o protótipo não tem: "Algo deu errado" e "Não foi possível abrir esta página. Tente novamente em instantes."

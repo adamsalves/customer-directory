@@ -89,6 +89,9 @@ const PHONE_VALUE = '[data-testid="customer-detail__phone--value"]'
 const PHONE = '[data-testid="customer-detail__phone--link"]'
 const POSTCODE_VALUE = '[data-testid="customer-detail__postcode--value"]'
 
+const metaContent = (property: string) =>
+  document.head.querySelector(`meta[property="${property}"]`)?.getAttribute('content')
+
 // A page left mounted by an earlier test would fetch again on the next test's navigation
 enableAutoUnmount(afterEach)
 
@@ -144,6 +147,17 @@ describe('customer page', () => {
 
     expect(labelledBy).toBeTruthy()
     expect(wrapper.get(NAME).attributes('id')).toBe(labelledBy)
+  })
+
+  // What a shared link shows: the name of the customer, and the photo
+  it('titles the page with the name of the customer and shares the photo', async () => {
+    await mountSuspended(CustomerPage, { route: '/customers/alejandra-rodrigues' })
+
+    await vi.waitFor(() => {
+      expect(document.title).toBe('Alejandra Rodrigues · Juntos Somos Mais')
+    })
+    expect(metaContent('og:title')).toBe('Alejandra Rodrigues · Juntos Somos Mais')
+    expect(metaContent('og:image')).toBe('https://randomuser.me/api/portraits/women/18.jpg')
   })
 
   it('asks the BFF for the customer of the slug in the address', async () => {

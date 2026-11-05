@@ -166,6 +166,15 @@ describe('customers page', () => {
     )
   })
 
+  // The prototype's title, with "clientes" (ADR-0020)
+  it('titles the page', async () => {
+    await mountSuspended(CustomersPage)
+
+    await vi.waitFor(() => {
+      expect(document.title).toBe('Lista de clientes · Juntos Somos Mais')
+    })
+  })
+
   it('opens with the Home > Clientes trail', async () => {
     const wrapper = await mountSuspended(CustomersPage)
 

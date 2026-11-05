@@ -7,6 +7,8 @@ import S from './index.module.scss'
 // the likely LCP, gets high priority.
 const EAGER_IMAGES = 4
 
+useSeoMeta({ title: 'Lista de clientes · Juntos Somos Mais' })
+
 const { query, setQuery } = useListQuery()
 // The canonical keys only, as in the page URL: the defaults and an empty search stay out
 const apiQuery = computed(() => serializeListQuery(query.value))

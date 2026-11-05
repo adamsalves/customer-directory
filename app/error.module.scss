@@ -1,0 +1,54 @@
+// Measures of the prototype's not-found screen (detailNotFound)
+.ErrorPage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding-block: 64px;
+  padding-inline: 24px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 2px;
+  text-align: center;
+}
+
+.Message {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.Title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.Text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.Link {
+  display: flex;
+  align-items: center;
+  block-size: 44px;
+  margin-block-start: 8px;
+  padding-block: 0;
+  padding-inline: 24px;
+  border-radius: 22px;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave the link in that state (ADR-0013)
+@media (hover: hover) {
+  .Link:hover {
+    background: var(--primary-bg-hover);
+  }
+}
