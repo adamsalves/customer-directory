@@ -583,4 +583,13 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Resultado:** +139 −3 sem este registro (estimativa ~150; código 73, specs 64, docs 1). Suíte: 857 testes unitários (eram 851), 3 rodadas sem falha. Lint e typecheck verdes.
   - **Mutação:** 17 mutantes, todos mortos no fim. Sobreviveu 1 aos testes do plano: o toast de sucesso antes do `await`, que faria "E-mail copiado" piscar numa escrita que depois falha. Ganhou o teste da escrita pendente. Cada declaração de CSS foi tirada no Chrome e muda alguma medida. As exceções são `padding: 0` e `border: 0`, que só trocam o valor da UA sem mudar o retângulo e ficam como no protótipo.
   - **Chrome:** em 320, 375, 768, 959, 960 e 1280px nos dois temas. Em 1280px, o recorte do botão é igual ao protótipo por pixel, normal e com hover. O clique real mostra o toast, e colar dá o e-mail.
-- **Pendente:** E2E do botão (critério na #36). Safari e leitor de tela não conferidos.
+  - **Review (`/code-review`):** 8 achados, nenhum bloqueante. Aplicados:
+    - o botão perdeu o `aria-label` e ficou só com o `title`: com os dois, o Chrome expunha "Copiar e-mail" como nome e também como descrição, que o leitor de tela pode ler duas vezes; sozinho, o `title` dá o nome e mantém o tooltip do protótipo;
+    - o ícone ganhou `data-testid` e o spec deixou de selecionar por `svg` (AGENTS.md §5).
+  - Recusados:
+    - toast igual seguido não se anuncia de novo: já estava registrado como pendente na #114 (o protótipo faz o mesmo), e a correção é no `useToast`, fora desta issue;
+    - botão inerte antes da hidratação: o resto da página interativa (tema, busca, filtros) também depende dela, e um `ClientOnly` faria o botão surgir depois e empurrar a linha;
+    - margem negativa que leva o círculo do hover e o anel para fora da linha: é o desenho do protótipo, conferido por pixel; o que cobre é o espaço vazio da entrelinha;
+    - CSS sem teste unitário: o Vitest não carrega SCSS, e o E2E do botão já é critério da #36;
+    - bloco de botão de ícone repetido e um token de alvo de toque: o padrão do projeto é CSS por componente, com `@media (width < 960px)` literal (ADR-0013); juntar os botões é refatoração à parte.
+- **Pendente:** E2E do botão (critério na #36). O `AppThemeToggle` repete o par `aria-label` + `title` com o mesmo texto. Safari e leitor de tela não conferidos.

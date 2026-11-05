@@ -73,9 +73,10 @@ async function copyEmail() {
             <a :href="`mailto:${customer.email}`" data-testid="customer-detail__email--link">{{
               customer.email
             }}</a>
+            <!-- The title is the name and the tooltip; an aria-label next to it would make the same
+                 text the description too, read twice -->
             <button
               type="button"
-              aria-label="Copiar e-mail"
               title="Copiar e-mail"
               :class="S.CopyButton"
               data-testid="customer-detail__copy--button"
@@ -83,6 +84,7 @@ async function copyEmail() {
             >
               <svg
                 aria-hidden="true"
+                data-testid="customer-detail__copy--icon"
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"

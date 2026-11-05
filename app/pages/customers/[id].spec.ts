@@ -82,6 +82,7 @@ const HEADING = '[data-testid="customer-info-section__heading--heading"]'
 const EMAIL_VALUE = '[data-testid="customer-detail__email--value"]'
 const EMAIL = '[data-testid="customer-detail__email--link"]'
 const COPY = '[data-testid="customer-detail__copy--button"]'
+const COPY_ICON = '[data-testid="customer-detail__copy--icon"]'
 const CELL_VALUE = '[data-testid="customer-detail__cell--value"]'
 const CELL = '[data-testid="customer-detail__cell--link"]'
 const PHONE_VALUE = '[data-testid="customer-detail__phone--value"]'
@@ -270,10 +271,10 @@ describe('copy e-mail button', () => {
 
     expect(copy.attributes()).toMatchObject({
       type: 'button',
-      'aria-label': 'Copiar e-mail',
       title: 'Copiar e-mail',
     })
-    expect(copy.findAll('svg').map((icon) => icon.attributes('aria-hidden'))).toEqual(['true'])
+    expect(copy.attributes('aria-label')).toBeUndefined()
+    expect(copy.get(COPY_ICON).attributes('aria-hidden')).toBe('true')
   })
 
   it('copies the e-mail and says so in the toast', async () => {
