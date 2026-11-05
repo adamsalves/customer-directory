@@ -23,6 +23,8 @@ const tags = computed(() => {
     uf || state,
   ]
 })
+
+const callHref = computed(() => telHref(props.customer.cell))
 </script>
 
 <template>
@@ -74,11 +76,7 @@ const tags = computed(() => {
         </svg>
         Enviar e-mail
       </a>
-      <a
-        :href="telHref(customer.cell)"
-        :class="[S.Action, S.Secondary]"
-        data-testid="customer-hero__call--link"
-      >
+      <a :href="callHref" :class="[S.Action, S.Secondary]" data-testid="customer-hero__call--link">
         <svg
           aria-hidden="true"
           width="18"

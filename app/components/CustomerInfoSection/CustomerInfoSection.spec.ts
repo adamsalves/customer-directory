@@ -8,7 +8,7 @@ const LIST = '[data-testid="customer-info-section__list--list"]'
 
 const mountSection = () =>
   mountSuspended(CustomerInfoSection, {
-    props: { heading: 'Contato', id: 'sec-contact' },
+    props: { heading: 'Contato' },
     slots: { default: '<div><dt>E-mail</dt><dd>a@example.com</dd></div>' },
   })
 
@@ -20,8 +20,8 @@ describe('CustomerInfoSection', () => {
     expect(wrapper.get(ROOT).element.tagName).toBe('SECTION')
     expect(heading.element.tagName).toBe('H2')
     expect(heading.text()).toBe('Contato')
-    expect(heading.attributes('id')).toBe('sec-contact')
-    expect(wrapper.get(ROOT).attributes('aria-labelledby')).toBe('sec-contact')
+    expect(heading.attributes('id')).toBeTruthy()
+    expect(wrapper.get(ROOT).attributes('aria-labelledby')).toBe(heading.attributes('id'))
   })
 
   // The id is the heading's: on the root too it would be in the page twice

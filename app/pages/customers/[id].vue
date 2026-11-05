@@ -39,6 +39,8 @@ const cityState = `${customer.city} · ${customer.state}${customer.uf ? ` (${cus
 const age = yearsSince(customer.birthDate, new Date())
 const birth = `${date(customer.birthDate)} (${String(age)} anos)`
 const registered = `${date(customer.registeredAt)} · ${monthYear(customer.registeredAt)}`
+const cellHref = telHref(customer.cell)
+const phoneHref = telHref(customer.phone)
 const gender = GENDERS.find(({ value }) => value === customer.gender)?.label ?? '—'
 
 // The template names the article by the heading of the hero (id "customer-name", in CustomerHero)
@@ -52,7 +54,7 @@ const gender = GENDERS.find(({ value }) => value === customer.gender)?.label ?? 
   >
     <CustomerHero :customer="customer" />
     <div :class="S.Sections" data-testid="customer-detail__sections--div">
-      <CustomerInfoSection id="sec-contact" heading="Contato">
+      <CustomerInfoSection heading="Contato">
         <div>
           <dt>E-mail</dt>
           <dd :class="S.EmailValue" data-testid="customer-detail__email--value">
@@ -64,21 +66,17 @@ const gender = GENDERS.find(({ value }) => value === customer.gender)?.label ?? 
         <div>
           <dt>Celular</dt>
           <dd :class="S.Tabular" data-testid="customer-detail__cell--value">
-            <a :href="telHref(customer.cell)" data-testid="customer-detail__cell--link">{{
-              customer.cell
-            }}</a>
+            <a :href="cellHref" data-testid="customer-detail__cell--link">{{ customer.cell }}</a>
           </dd>
         </div>
         <div>
           <dt>Telefone</dt>
           <dd :class="S.Tabular" data-testid="customer-detail__phone--value">
-            <a :href="telHref(customer.phone)" data-testid="customer-detail__phone--link">{{
-              customer.phone
-            }}</a>
+            <a :href="phoneHref" data-testid="customer-detail__phone--link">{{ customer.phone }}</a>
           </dd>
         </div>
       </CustomerInfoSection>
-      <CustomerInfoSection id="sec-address" heading="Endereço">
+      <CustomerInfoSection heading="Endereço">
         <div>
           <dt>Logradouro</dt>
           <dd>{{ customer.street }}</dd>
@@ -98,7 +96,7 @@ const gender = GENDERS.find(({ value }) => value === customer.gender)?.label ?? 
           <dd>{{ customer.timezone }}</dd>
         </div>
       </CustomerInfoSection>
-      <CustomerInfoSection id="sec-personal" heading="Dados pessoais">
+      <CustomerInfoSection heading="Dados pessoais">
         <div>
           <dt>Data de nascimento</dt>
           <dd>{{ birth }}</dd>
