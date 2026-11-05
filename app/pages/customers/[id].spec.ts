@@ -53,9 +53,39 @@ registerEndpoint('/api/customers/source-down', (event) => {
 // A 204: no error, and nothing to show
 registerEndpoint('/api/customers/no-body', () => null)
 
+// The same customer with the fields the sections have a rule for. 01:00 UTC is still the evening
+// before in America/Sao_Paulo, the zone of the specs: dates read in it come a day early, and the
+// registration one a month early. A state outside the 27 has no UF. The type has two genders, so the
+// third is set by Reflect.
+registerEndpoint('/api/customers/night-owl', () => ({
+  customer: {
+    ...customer,
+    birthDate: '1974-05-16T01:00:00Z',
+    registeredAt: '2013-03-01T01:00:00Z',
+  },
+}))
+registerEndpoint('/api/customers/atlantis', () => ({
+  customer: { ...customer, state: 'Atlantis', uf: '' },
+}))
+registerEndpoint('/api/customers/stranger', () => {
+  const stranger = { ...customer }
+  Reflect.set(stranger, 'gender', 'other')
+  return { customer: stranger }
+})
+
 const ARTICLE = '[data-testid="customer-detail__root--article"]'
 const HERO = '[data-testid="customer-hero__root--section"]'
 const NAME = '[data-testid="customer-hero__name--heading"]'
+const SECTIONS = '[data-testid="customer-detail__sections--div"]'
+const SECTION = '[data-testid="customer-info-section__root--section"]'
+const HEADING = '[data-testid="customer-info-section__heading--heading"]'
+const EMAIL_VALUE = '[data-testid="customer-detail__email--value"]'
+const EMAIL = '[data-testid="customer-detail__email--link"]'
+const CELL_VALUE = '[data-testid="customer-detail__cell--value"]'
+const CELL = '[data-testid="customer-detail__cell--link"]'
+const PHONE_VALUE = '[data-testid="customer-detail__phone--value"]'
+const PHONE = '[data-testid="customer-detail__phone--link"]'
+const POSTCODE_VALUE = '[data-testid="customer-detail__postcode--value"]'
 
 // A page left mounted by an earlier test would fetch again on the next test's navigation
 enableAutoUnmount(afterEach)
@@ -75,8 +105,26 @@ beforeEach(() => {
 
 afterEach(async () => {
   await clearError()
+  vi.useRealTimers()
   vi.restoreAllMocks()
 })
+
+// Only the Date is frozen: mountSuspended waits on promises and timers that have to keep running.
+// The day is ten weeks before the birthday (05-16): the age is 51, where the difference of the two
+// years gives 52.
+async function mountPage(slug = 'alejandra-rodrigues') {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-03-05T12:00:00Z'))
+  return mountSuspended(CustomerPage, { route: `/customers/${slug}` })
+}
+
+// What each label of the page says: "Gênero" -> "Feminino"
+function valuesByLabel(wrapper: Awaited<ReturnType<typeof mountPage>>) {
+  const values = wrapper.findAll('dd')
+  return Object.fromEntries(
+    wrapper.findAll('dt').map((label, index) => [label.text(), values[index]?.text()]),
+  )
+}
 
 describe('customer page', () => {
   it('renders the hero of the customer the BFF gave, inside an article', async () => {
@@ -123,5 +171,87 @@ describe('customer page', () => {
 
   it('shows the error page with a 500 when the BFF answers with nothing to show', async () => {
     expect(await errorOf('no-body')).toMatchObject({ status: 500 })
+  })
+})
+
+describe('customer page sections', () => {
+  it('lists the contact, the address and the personal data, in that order', async () => {
+    const sections = (await mountPage()).findAll(SECTION)
+
+    expect(
+      sections.map((section) => ({
+        heading: section.get(HEADING).text(),
+        labels: section.findAll('dt').map((label) => label.text()),
+        values: section.findAll('dd').map((value) => value.text()),
+      })),
+    ).toEqual([
+      {
+        heading: 'Contato',
+        labels: ['E-mail', 'Celular', 'Telefone'],
+        values: ['alejandra.rodrigues@example.com', '(54) 3190-3469', '(09) 7033-7406'],
+      },
+      {
+        heading: 'Endereço',
+        labels: ['Logradouro', 'Cidade / Estado', 'CEP', 'Fuso horário'],
+        values: [
+          'Rua Santa Catarina, 3833',
+          'Umuarama · Santa Catarina (SC)',
+          '43646',
+          'UTC+3:00 · Baghdad, Riyadh, Moscow, St. Petersburg',
+        ],
+      },
+      {
+        heading: 'Dados pessoais',
+        labels: ['Data de nascimento', 'Gênero', 'Cliente desde'],
+        values: ['16/05/1974 (51 anos)', 'Feminino', '06/03/2013 · março de 2013'],
+      },
+    ])
+  })
+
+  // aria-labelledby takes the first element with the id: a repeated one would name two sections alike
+  it('gives each section a heading id of its own', async () => {
+    const ids = (await mountPage()).findAll(HEADING).map((heading) => heading.attributes('id'))
+
+    expect(new Set(ids).size).toBe(3)
+  })
+
+  // The cell and the phone are two numbers, so that a link made of one of them fails
+  it('links the e-mail, the cell and the phone', async () => {
+    const wrapper = await mountPage()
+
+    expect(wrapper.get(EMAIL).attributes('href')).toBe('mailto:alejandra.rodrigues@example.com')
+    expect(wrapper.get(CELL).attributes('href')).toBe('tel:+555431903469')
+    expect(wrapper.get(PHONE).attributes('href')).toBe('tel:+550970337406')
+  })
+
+  it('reads the dates on UTC', async () => {
+    expect(valuesByLabel(await mountPage('night-owl'))).toMatchObject({
+      'Data de nascimento': '16/05/1974 (51 anos)',
+      'Cliente desde': '01/03/2013 · março de 2013',
+    })
+  })
+
+  it('leaves the UF and its parentheses out when the state has none', async () => {
+    expect(valuesByLabel(await mountPage('atlantis'))).toMatchObject({
+      'Cidade / Estado': 'Umuarama · Atlantis',
+    })
+  })
+
+  it('shows a dash for a gender the filter has no label for', async () => {
+    expect(valuesByLabel(await mountPage('stranger'))).toMatchObject({ Gênero: '—' })
+  })
+
+  // CSS Modules hash the class names (_Sections_1a2b3c) and happy-dom applies no CSS: what can be
+  // seen here is that each part carries the class its rule is written for
+  it.each([
+    { part: 'sections', selector: SECTIONS, rule: 'Sections' },
+    { part: 'e-mail', selector: EMAIL_VALUE, rule: 'EmailValue' },
+    { part: 'cell', selector: CELL_VALUE, rule: 'Tabular' },
+    { part: 'phone', selector: PHONE_VALUE, rule: 'Tabular' },
+    { part: 'postcode', selector: POSTCODE_VALUE, rule: 'Tabular' },
+  ])('gives the $part the class of its rule', async ({ selector, rule }) => {
+    const classes = (await mountPage()).get(selector).classes()
+
+    expect(classes).toEqual([expect.stringMatching(new RegExp(`^_${rule}_`))])
   })
 })

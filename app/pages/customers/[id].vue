@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { yearsSince } from '#shared/utils/yearsSince'
+import { GENDERS } from '~/utils/genders'
+import { telHref } from '~/utils/telHref'
 import S from './[id].module.scss'
 
 // `[id]` is one segment, so one string: String() only settles the type, which also allows the list
@@ -22,6 +25,22 @@ if (error.value || !data.value) {
   })
 }
 const { customer } = data.value
+
+// The dates of the source are UTC and are read on UTC, as in yearsSince: at 01:00Z it is still the
+// day before in Brazil, and the server may be in another zone than the browser
+const date = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+const monthYear = (iso: string) =>
+  new Date(iso).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+
+// A state outside the 27 has no UF, and then no parentheses
+const cityState = `${customer.city} · ${customer.state}${customer.uf ? ` (${customer.uf})` : ''}`
+// Counted when the page renders, as in the hero: a count made by the BFF would stay frozen in the
+// copy it caches (ADR-0005)
+const age = yearsSince(customer.birthDate, new Date())
+const birth = `${date(customer.birthDate)} (${String(age)} anos)`
+const registered = `${date(customer.registeredAt)} · ${monthYear(customer.registeredAt)}`
+const gender = GENDERS.find(({ value }) => value === customer.gender)?.label ?? '—'
+
 // The template names the article by the heading of the hero (id "customer-name", in CustomerHero)
 </script>
 
@@ -32,5 +51,67 @@ const { customer } = data.value
     data-testid="customer-detail__root--article"
   >
     <CustomerHero :customer="customer" />
+    <div :class="S.Sections" data-testid="customer-detail__sections--div">
+      <CustomerInfoSection id="sec-contact" heading="Contato">
+        <div>
+          <dt>E-mail</dt>
+          <dd :class="S.EmailValue" data-testid="customer-detail__email--value">
+            <a :href="`mailto:${customer.email}`" data-testid="customer-detail__email--link">{{
+              customer.email
+            }}</a>
+          </dd>
+        </div>
+        <div>
+          <dt>Celular</dt>
+          <dd :class="S.Tabular" data-testid="customer-detail__cell--value">
+            <a :href="telHref(customer.cell)" data-testid="customer-detail__cell--link">{{
+              customer.cell
+            }}</a>
+          </dd>
+        </div>
+        <div>
+          <dt>Telefone</dt>
+          <dd :class="S.Tabular" data-testid="customer-detail__phone--value">
+            <a :href="telHref(customer.phone)" data-testid="customer-detail__phone--link">{{
+              customer.phone
+            }}</a>
+          </dd>
+        </div>
+      </CustomerInfoSection>
+      <CustomerInfoSection id="sec-address" heading="Endereço">
+        <div>
+          <dt>Logradouro</dt>
+          <dd>{{ customer.street }}</dd>
+        </div>
+        <div>
+          <dt>Cidade / Estado</dt>
+          <dd>{{ cityState }}</dd>
+        </div>
+        <div>
+          <dt>CEP</dt>
+          <dd :class="S.Tabular" data-testid="customer-detail__postcode--value">
+            {{ customer.postcode }}
+          </dd>
+        </div>
+        <div>
+          <dt>Fuso horário</dt>
+          <dd>{{ customer.timezone }}</dd>
+        </div>
+      </CustomerInfoSection>
+      <CustomerInfoSection id="sec-personal" heading="Dados pessoais">
+        <div>
+          <dt>Data de nascimento</dt>
+          <dd>{{ birth }}</dd>
+        </div>
+        <div>
+          <dt>Gênero</dt>
+          <dd>{{ gender }}</dd>
+        </div>
+        <div>
+          <dt>Cliente desde</dt>
+          <dd>{{ registered }}</dd>
+        </div>
+      </CustomerInfoSection>
+    </div>
   </article>
 </template>

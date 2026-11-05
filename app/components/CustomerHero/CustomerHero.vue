@@ -2,6 +2,7 @@
 import type { ICustomer } from '#shared/types/customer'
 import { yearsSince } from '#shared/utils/yearsSince'
 import { GENDERS } from '~/utils/genders'
+import { telHref } from '~/utils/telHref'
 import S from './CustomerHero.module.scss'
 
 const props = defineProps<{ customer: ICustomer }>()
@@ -22,9 +23,6 @@ const tags = computed(() => {
     uf || state,
   ]
 })
-
-// "(54) 3190-3469" -> "tel:+555431903469": with the country code the call works from any phone
-const callHref = computed(() => `tel:+55${props.customer.cell.replace(/\D/g, '')}`)
 </script>
 
 <template>
@@ -76,7 +74,11 @@ const callHref = computed(() => `tel:+55${props.customer.cell.replace(/\D/g, '')
         </svg>
         Enviar e-mail
       </a>
-      <a :href="callHref" :class="[S.Action, S.Secondary]" data-testid="customer-hero__call--link">
+      <a
+        :href="telHref(customer.cell)"
+        :class="[S.Action, S.Secondary]"
+        data-testid="customer-hero__call--link"
+      >
         <svg
           aria-hidden="true"
           width="18"
