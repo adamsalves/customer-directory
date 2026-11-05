@@ -615,3 +615,20 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
     - listeners que se acumulam entre os casos do spec: o plugin roda uma vez só por ambiente de teste, e o `beforeEach` já devolve o esquema antes de limpar o estado;
     - o spec quebraria com `hookOnce`: é hipotético, e trocar a forma de assinar o hook é mudança de comportamento no ambiente de teste.
 - **Pendente:** E2E do tema na página de erro (#34). Conferido à mão no Chrome, sem preview da Vercel: num erro durante a navegação dentro do app, o `data-theme` fica no `<html>` e segue o sistema.
+
+### #34 · Página de erro e SEO
+
+- **Decidido:** [#34](https://github.com/adamsalves/customer-directory/issues/34) · ADR-0002, ADR-0013, ADR-0020. A ligação do tema saiu antes, na #119, para a página de erro já nascer com ela. O texto do erro que não é 404 ("Algo deu errado" + "Não foi possível abrir esta página. Tente novamente em instantes.") não está no protótipo e foi aprovado no plano.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/34#issuecomment-6664849874) · estimativa ~250 linhas
+- **Como:**
+  - **`app/error.vue`:** dentro do `<NuxtLayout>`, porque o `app.vue` não renderiza no erro; assim voltam o header, o toggle e o toast. Com `status === 404` mostra o texto do protótipo; nos outros casos, o genérico. O link "Ver lista de clientes" é um `NuxtLink`: a navegação que chega ao destino já limpa o erro, sem `clearError`.
+  - **`role="alert"` só no título e no texto**, com o link fora, como no `ErrorState`. O protótipo põe o alerta no bloco todo (desvio na ADR-0013).
+  - **Tamanhos em px:** o `tokens.scss` só tem cores e sombras, e o `tokens.spec.ts` trava os nomes do protótipo. As cores vêm todas de `var(--…)`, como no `EmptyState` e no `ErrorState`.
+  - **SEO:** `useSeoMeta` na lista ("Lista de clientes · Juntos Somos Mais"), no detalhe ("{Nome} · Juntos Somos Mais", com `og:title` e a foto `large` em `og:image`) e no erro. A description do protótipo, com "clientes", fica no `nuxt.config` e vale para todas as páginas. Sem `titleTemplate` global, para não brigar com o "Erro: " do `ErrorState`.
+  - **Todo 404 é "Cliente não encontrado"**, inclusive `/foo`. Decidido depois da implementação: os 404 que chegam por link são de cliente, e o link leva à lista. Uma tela "Página não encontrada" seria uma terceira, fora do protótipo (desvio na ADR-0013).
+  - **E2E:** `request.get` com `Accept: text/html` prova o status 404 e o HTML do servidor, porque o `nuxt-error-page` interno ainda lê `statusCode`. Sem esse header, o erro sai como JSON. Com cookie `dark`, o 404 sai com `data-theme="dark"`. O toggle na página de erro parte sem cookie e com o sistema escuro: com cookie `dark`, o rótulo do toggle é igual no servidor e no cliente, e o `waitForHydration` não provaria a hidratação.
+- **Resultado:** +327 −2 sem este registro (estimativa ~250; os specs e os E2E somam 245). Suíte: 868 testes unitários, 4 rodadas sem falha; E2E 304 verdes. Lint e typecheck verdes.
+  - **Mutação:** todos os mutantes morreram em algum teste. No E2E sobreviveram dois, que morrem no unitário: `notFound` sempre verdadeiro (o E2E só passa pelo 404) e o link para `/` (que redireciona para a lista). A description do `nuxt.config` só é coberta pelo E2E.
+  - **Chrome:** geometria e estilos iguais aos da tela "Não encontrado" do protótipo em 375, 768 e 1280px. As cores do tema escuro foram conferidas a 1280px. Na navegação no cliente, um slug inexistente mostra o 404, e "Ver lista de clientes" volta à lista.
+  - **Produção da #119** (feaf717) conferida antes do review: o tema segue o sistema sem cookie, o cookie vence o sistema e o 404 mantém o tema.
+- **Pendente:** na #36, E2E do erro genérico com a fonte fora do ar (502) e da jornada lista → cliente inexistente → volta à lista; os dois critérios foram acrescentados à issue.

@@ -83,6 +83,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | só a tela de "membro não encontrado" (404)          | "Algo deu errado" para o que não é 404     | a fonte fora do ar não é link desatualizado     |
 | role="alert" no bloco, link incluso                 | role="alert" só no título e no texto       | o rótulo do link não é parte do anúncio         |
 | 404 com a trilha e "Voltar para a lista"            | só o bloco do erro, em error.vue           | a trilha e o "Voltar" são da página do cliente  |
+| 404 só na página do membro                          | todo 404 diz "Cliente não encontrado"      | só o slug do cliente chega por link             |
 
 ## Consequências
 
