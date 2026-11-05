@@ -1,0 +1,22 @@
+// Centered the way the prototype does it (left: 50% and translateX). At 40: over the header (20),
+// under the skip link (50). It never takes a click: the toast is a notice, not a control.
+.Region {
+  position: fixed;
+  inset-block-end: calc(24px + env(safe-area-inset-bottom));
+  inset-inline-start: 50%;
+  z-index: 40;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.Bubble {
+  display: block;
+  padding-block: 12px;
+  padding-inline: 20px;
+  border-radius: 24px;
+  background: var(--inverse-bg);
+  color: var(--inverse-text);
+  font-size: 14px;
+  box-shadow: var(--shadow-toast);
+  animation: global(jsm-in) 0.18s ease-out;
+}
