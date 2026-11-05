@@ -16,7 +16,7 @@ const { data, error } = await useFetch(`/api/customers/${encodeURIComponent(slug
 })
 
 // The status of the page is the one the BFF gave (404 for a slug that is no customer, 502 for the
-// source down), and `fatal` takes the whole screen. The error page itself is #34.
+// source down), and `fatal` takes the whole screen, for error.vue.
 if (error.value || !data.value) {
   throw createError({
     status: error.value?.status ?? 500,
@@ -25,6 +25,10 @@ if (error.value || !data.value) {
   })
 }
 const { customer } = data.value
+
+// The photo is the large one and already absolute, so it needs no base URL
+const title = `${customer.name} · Juntos Somos Mais`
+useSeoMeta({ title, ogTitle: title, ogImage: customer.picture })
 
 // The dates of the source are UTC and are read on UTC, as in yearsSince: at 01:00Z it is still the
 // day before in Brazil, and the server may be in another zone than the browser

@@ -9,7 +9,8 @@ O repositório se chama `customer-directory` e o código já fala em `customer` 
 
 ## Decisão
 
-- A interface usa **cliente(s)**: URL pública `/clientes` e `/clientes/[id]`, título "Diretório de clientes", H1 "Lista de clientes".
+- A interface usa **cliente(s)**: URL pública `/clientes` e `/clientes/[id]`, título da lista "Lista de clientes · Juntos Somos Mais" (o do protótipo, com "clientes"), H1 "Lista de clientes". O título "Diretório de clientes" do `nuxt.config` fica como o padrão da página que não define o seu.
+- A descrição, a mesma em todas as páginas, é a do protótipo com "clientes": "Diretório de clientes Juntos Somos Mais: busque por nome, filtre por estado e veja os detalhes de cada cliente." O título do detalhe é "{Nome} · Juntos Somos Mais".
 - Os arquivos de página ficam em `pages/customers/`, e o caminho público continua vindo de `definePageMeta({ path })` (ADR-0017).
 - O breadcrumb da lista diz "Home › Clientes" (o protótipo diz "Usuários"). Os demais textos do protótipo não mudam.
 - Os arquivos `docs/design/diretorio-de-membros*.html` mantêm o nome, porque são o export do Claude Design.

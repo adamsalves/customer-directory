@@ -12,7 +12,17 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'pt-BR' },
+      // What a page that sets no title of its own has. The list and the customer set theirs, and the
+      // error page too (ADR-0020).
       title: 'Diretório de clientes',
+      // The prototype's, with "clientes" (ADR-0020): every page has it
+      meta: [
+        {
+          name: 'description',
+          content:
+            'Diretório de clientes Juntos Somos Mais: busque por nome, filtre por estado e veja os detalhes de cada cliente.',
+        },
+      ],
       // Sets the system theme before the first paint when there is no cookie yet (ADR-0011).
       // `critical` sorts it right after charset/viewport, ahead of every stylesheet and bundle.
       script: [{ innerHTML: THEME_SCRIPT, tagPriority: 'critical' }],
