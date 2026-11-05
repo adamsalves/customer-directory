@@ -593,3 +593,16 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
     - CSS sem teste unitário: o Vitest não carrega SCSS, e o E2E do botão já é critério da #36;
     - bloco de botão de ícone repetido e um token de alvo de toque: o padrão do projeto é CSS por componente, com `@media (width < 960px)` literal (ADR-0013); juntar os botões é refatoração à parte.
 - **Pendente:** E2E do botão (critério na #36). O `AppThemeToggle` repete o par `aria-label` + `title` com o mesmo texto. Safari e leitor de tela não conferidos.
+
+### #119 · Ligação do tema num plugin
+
+- **Decidido:** [#119](https://github.com/adamsalves/customer-directory/issues/119) · ADR-0011. Separada da #34, que estimava ~400 linhas. O Nuxt não renderiza o `app.vue` na página de erro e o desmonta num erro no cliente, levando junto o `data-theme` (achado do review do #10).
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/119#issuecomment-6664849428) · estimativa ~150 linhas
+- **Como:**
+  - **`app/plugins/theme.ts`:** plugin universal com o `useHead` do `data-theme`. No cliente, adota a preferência do sistema e passa a acompanhá-la. Como o plugin vive o app inteiro, o listener não é removido. O `app.vue` ficou só com o template.
+  - **`app:suspense:resolve`, não `app:mounted`:** o plano previa `app:mounted`. Só que ele dispara logo que o `mount()` retorna, antes de o layout assíncrono (e o toggle dentro dele) hidratar. No dev, 8 de 8 carregamentos deram mismatch de hidratação no `title` do toggle. O `app:suspense:resolve` sai quando a hidratação termina, o mesmo momento do antigo `onMounted`. Com ele, 0 avisos em 18 carregamentos (sem cookie, `light` e `dark`). No build de produção, o rótulo troca depois da hidratação, como antes, e o console fica limpo, inclusive com o chunk do layout atrasado 600 ms e a CPU 6× mais lenta.
+  - **Spec:** `app.spec.ts` virou `plugins/theme.spec.ts`. O plugin roda uma vez no boot do ambiente de teste, então cada caso chama o `callHook('app:suspense:resolve')` sobre o estado que preparou. Ganhou um 5º caso: o hook `app:mounted` sozinho não adota a preferência. Sem ele, voltar para `app:mounted` passaria na suíte inteira.
+- **Resultado:** +68 −38 sem este registro (estimativa ~150; código +24 −28, spec +44 −10). Suíte: 858 testes unitários, 3 rodadas sem falha; E2E 294 verdes. Lint e typecheck verdes.
+  - **Mutação:** 16 mutantes, todos mortos no fim. Sobreviveu 1 aos testes antigos: adotar o sistema mesmo com escolha salva. Com isso, o caso "escolha salva vence o sistema" passou a abrir com o sistema escuro.
+  - **Build de produção:** um 404 com cookie `dark` já devolve `<html data-theme="dark">`, base da #34.
+- **Pendente:** o listener na página de erro só será conferido no navegador na #34 (E2E do toggle no erro).
