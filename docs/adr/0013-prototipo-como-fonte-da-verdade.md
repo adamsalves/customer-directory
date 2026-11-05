@@ -84,6 +84,8 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | role="alert" no bloco, link incluso                 | role="alert" só no título e no texto       | o rótulo do link não é parte do anúncio         |
 | 404 com a trilha e "Voltar para a lista"            | só o bloco do erro, em error.vue           | a trilha e o "Voltar" são da página do cliente  |
 | 404 só na página do membro                          | todo 404 diz "Cliente não encontrado"      | slug do cliente chega por link (até a #122)     |
+| o card inteiro é o `<a>`                            | `<a>` no nome, com `::after` sobre o card  | o nome acessível é só o nome do cliente         |
+| "Voltar para a lista" de 36px em qualquer largura   | 44px abaixo de 960px (raio de 22px)        | único caminho de volta no mobile (sem trilha)   |
 
 ## Consequências
 

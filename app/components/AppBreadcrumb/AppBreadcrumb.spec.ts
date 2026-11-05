@@ -27,6 +27,25 @@ describe('AppBreadcrumb', () => {
     ])
   })
 
+  // The step back to the list carries the list state: a location, not only a path
+  it('resolves the target of a step given as a location with a query', async () => {
+    const wrapper = await mountSuspended(AppBreadcrumb, {
+      props: {
+        items: [
+          { label: 'Home', to: '/customers' },
+          { label: 'Clientes', to: { path: '/customers', query: { page: '2', sort: 'old' } } },
+          { label: 'Detalhes' },
+        ],
+      },
+    })
+    const links = wrapper.findAll('[data-testid="breadcrumb__item--link"]')
+
+    expect(links.map((link) => link.attributes('href'))).toEqual([
+      '/customers',
+      '/customers?page=2&sort=old',
+    ])
+  })
+
   // mountSuspended stubs RouterLink, so the active-link aria-current is covered in tests/e2e
   it('marks only the last item as the current page', async () => {
     const wrapper = await mountSuspended(AppBreadcrumb, { props: { items } })

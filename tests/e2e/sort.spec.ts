@@ -14,10 +14,10 @@ const cardSelect = (page: Page) =>
 const barSelect = (page: Page) =>
   page.getByTestId('filter-sheet__bar--div').getByTestId('sort-select__select--select')
 // The names of the cards in a server HTML, in order. Each name is in it twice, in its card and in
-// the payload, so only the markup of the heading says which order the cards have
+// the payload, so only the markup of the link in the heading says which order the cards have
 const htmlNames = (html: string) =>
   Array.from(
-    html.matchAll(/data-testid="customer-card__name--heading"[^>]*>([^<]*)</g),
+    html.matchAll(/data-testid="customer-card__name--link"[^>]*>([^<]*)</g),
     ([, name]) => name,
   )
 

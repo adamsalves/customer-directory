@@ -1,3 +1,37 @@
+// "Voltar" and the article, 16px apart as in the prototype. The trail above has its own margin.
+.Page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// The pill of the prototype, 36px tall (44px below 960px, at the end), pulled 8px out of the column so
+// the chevron lines up with the page. The color is set on the link, so it wins over the `a` and
+// `a:hover` colors of the base layer.
+.Back {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  align-self: flex-start;
+
+  // min-: with text-only zoom the label wraps, and the pill grows with it instead of spilling
+  min-block-size: 36px;
+  margin-inline-start: -8px;
+  padding-inline: 8px 14px;
+  border-radius: 18px;
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave the link in that state (ADR-0013)
+@media (hover: hover) {
+  .Back:hover {
+    background: var(--surface-alt);
+  }
+}
+
 // The cards' entrance, without a fill mode: the box already is where the animation ends
 .Article {
   display: flex;
@@ -51,12 +85,18 @@
   }
 }
 
-// 44px below 960px, the touch target of the project (ADR-0013). The margin grows with the button,
-// so the row stays 32px tall.
+// 44px below 960px, the touch target of the project (ADR-0013). The margin of the button grows with
+// it, so the row stays 32px tall. The link back is 44px too, and its radius is half the height: on a
+// phone the trail is out, and this is the only way back.
 @media (width < 960px) {
   .CopyButton {
     inline-size: 44px;
     block-size: 44px;
     margin-block: -6px;
+  }
+
+  .Back {
+    min-block-size: 44px;
+    border-radius: 22px;
   }
 }

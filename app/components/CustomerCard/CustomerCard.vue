@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from 'vue-router'
 import type { ICustomerCard } from '#shared/types/customer'
 import S from './CustomerCard.module.scss'
 
+// `to` is the customer's page, which carries the list state the page goes back to
 withDefaults(
   defineProps<{
     customer: ICustomerCard
+    to: RouteLocationRaw
     loading?: 'eager' | 'lazy'
     fetchpriority?: 'high'
   }>(),
@@ -24,7 +27,13 @@ withDefaults(
       :class="S.Avatar"
     />
     <div :class="S.Text">
-      <h2 :class="S.Name" data-testid="customer-card__name--heading">{{ customer.name }}</h2>
+      <!-- The link is the name alone, so a reader lists the customers by name, and CSS stretches it
+           over the whole card. Not an <a> around the article: Chrome gives that link no name. -->
+      <h2 :class="S.Name" data-testid="customer-card__name--heading">
+        <NuxtLink :to="to" :class="S.Link" data-testid="customer-card__name--link">{{
+          customer.name
+        }}</NuxtLink>
+      </h2>
       <p :class="S.Street" data-testid="customer-card__street--text">{{ customer.street }}</p>
       <!-- Two lines in the grid, one in the row. CSS shows one of the two: display:none also keeps
            the other out of the accessibility tree, so nothing is read twice (ADR-0014) -->

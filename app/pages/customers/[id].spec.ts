@@ -73,6 +73,11 @@ registerEndpoint('/api/customers/stranger', () => {
   return { customer: stranger }
 })
 
+const TRAIL = '[data-testid="breadcrumb__trail--nav"]'
+const TRAIL_LINK = '[data-testid="breadcrumb__item--link"]'
+const TRAIL_CURRENT = '[data-testid="breadcrumb__item--current"]'
+const BACK = '[data-testid="customer-detail__back--link"]'
+const BACK_ICON = '[data-testid="customer-detail__back--icon"]'
 const ARTICLE = '[data-testid="customer-detail__root--article"]'
 const HERO = '[data-testid="customer-hero__root--section"]'
 const NAME = '[data-testid="customer-hero__name--heading"]'
@@ -190,6 +195,73 @@ describe('customer page', () => {
   })
 })
 
+// The address of the customer carries the list state the card put there (#35). The page reads it
+// through the parser of the list, so the way back is the list state or the plain list, never a copy
+// of whatever the query string had.
+describe('customer page way back', () => {
+  const OPENED_FROM_LIST = '/customers/alejandra-rodrigues?sort=old&perPage=18&page=2'
+  const LIST_STATE = '/customers?page=2&perPage=18&sort=old'
+
+  it('opens a trail of Home, Clientes with the list state, and the customer as the current step', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: OPENED_FROM_LIST })
+    const current = wrapper.get(TRAIL_CURRENT)
+
+    expect(
+      wrapper.findAll(TRAIL_LINK).map((link) => [link.text(), link.attributes('href')]),
+    ).toEqual([
+      ['Home', '/customers'],
+      ['Clientes', LIST_STATE],
+    ])
+    expect(current.text()).toBe('Detalhes · Alejandra Rodrigues')
+    expect(current.attributes('aria-current')).toBe('page')
+  })
+
+  // CSS Modules hash the class names (_HideOnMobile_1a2b3c) and happy-dom applies no media query:
+  // the trail carries the class that hides it below 640px, as the prototype's detail has none there.
+  // That it is hidden at 375px and shown at 1280px is in tests/e2e/customerCardLink.spec.ts.
+  it('hides the trail on mobile', async () => {
+    const trail = (await mountSuspended(CustomerPage, { route: OPENED_FROM_LIST })).get(TRAIL)
+
+    expect(trail.classes().some((name) => name.includes('HideOnMobile'))).toBe(true)
+  })
+
+  it('has a link back to the list with its state, where Clientes goes', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: OPENED_FROM_LIST })
+    const back = wrapper.get(BACK)
+
+    expect(back.text()).toBe('Voltar para a lista')
+    expect(back.attributes('href')).toBe(LIST_STATE)
+    expect(back.attributes('href')).toBe(wrapper.findAll(TRAIL_LINK)[1]?.attributes('href'))
+  })
+
+  // Not in the address of the list: the page goes back to the plain list, a key it does not know
+  // dropped and a value it does not take at its default
+  it('goes back to the plain list from a query the list does not take', async () => {
+    const wrapper = await mountSuspended(CustomerPage, {
+      route: '/customers/alejandra-rodrigues?foo=1&page=abc',
+    })
+
+    expect(wrapper.get(BACK).attributes('href')).toBe('/customers')
+    expect(wrapper.findAll(TRAIL_LINK).map((link) => link.attributes('href'))).toEqual([
+      '/customers',
+      '/customers',
+    ])
+  })
+
+  // The trail, then the link back, then the article it is named by: the link is no part of the
+  // article, and its chevron is only a picture
+  it('puts the trail, then the link back, then the article, with the chevron hidden', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: OPENED_FROM_LIST })
+    const follows = (before: Element, after: Element) =>
+      Boolean(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+    expect(follows(wrapper.get(TRAIL).element, wrapper.get(BACK).element)).toBe(true)
+    expect(follows(wrapper.get(BACK).element, wrapper.get(ARTICLE).element)).toBe(true)
+    expect(wrapper.get(ARTICLE).find(BACK).exists()).toBe(false)
+    expect(wrapper.get(BACK_ICON).attributes('aria-hidden')).toBe('true')
+  })
+})
+
 describe('customer page sections', () => {
   it('lists the contact, the address and the personal data, in that order', async () => {
     const sections = (await mountPage()).findAll(SECTION)
@@ -263,6 +335,7 @@ describe('customer page sections', () => {
     { part: 'sections', selector: SECTIONS, rule: 'Sections' },
     { part: 'e-mail', selector: EMAIL_VALUE, rule: 'EmailValue' },
     { part: 'copy button', selector: COPY, rule: 'CopyButton' },
+    { part: 'link back', selector: BACK, rule: 'Back' },
     { part: 'cell', selector: CELL_VALUE, rule: 'Tabular' },
     { part: 'phone', selector: PHONE_VALUE, rule: 'Tabular' },
     { part: 'postcode', selector: POSTCODE_VALUE, rule: 'Tabular' },

@@ -14,6 +14,11 @@ const customer: ICustomerCard = {
   picture: 'https://randomuser.me/api/portraits/women/18.jpg',
 }
 
+// A location with a query, as the list gives it: the link is only as good as the `to` it is handed
+const to = { path: '/customers/alejandra-rodrigues', query: { perPage: '18', sort: 'old' } }
+
+const NAME = '[data-testid="customer-card__name--heading"]'
+const LINK = '[data-testid="customer-card__name--link"]'
 const AVATAR = '[data-testid="customer-avatar__root--span"]'
 const IMAGE = '[data-testid="customer-avatar__photo--image"]'
 const INITIALS = '[data-testid="customer-avatar__initials--text"]'
@@ -31,8 +36,8 @@ describe('CustomerCard', () => {
   })
 
   it('names the customer in a heading inside an article and shows the street', async () => {
-    const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
-    const name = wrapper.get('[data-testid="customer-card__name--heading"]')
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer, to } })
+    const name = wrapper.get(NAME)
 
     expect(wrapper.get('[data-testid="customer-card__root--article"]').element.tagName).toBe(
       'ARTICLE',
@@ -44,10 +49,30 @@ describe('CustomerCard', () => {
     )
   })
 
+  // The link is the name and nothing more: its text is what a reader lists the customers by. Not an
+  // <a> around the article, which Chrome leaves without a name: the article is still the root.
+  it('links the name, and only the name, to the location it is given', async () => {
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer, to } })
+    const link = wrapper.get(NAME).get(LINK)
+
+    expect(link.element.tagName).toBe('A')
+    expect(link.text()).toBe('Alejandra Rodrigues')
+    expect(link.attributes('href')).toBe('/customers/alejandra-rodrigues?perPage=18&sort=old')
+    expect(wrapper.findAll('a')).toHaveLength(1)
+  })
+
+  // CSS Modules hash the class names (_Link_1a2b3c) and happy-dom applies no CSS: the stretched
+  // ::after, the color and the ring of the link are in tests/e2e/customerCardLink.spec.ts
+  it('gives the link the class of its rule', async () => {
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer, to } })
+
+    expect(wrapper.get(LINK).classes()).toEqual([expect.stringMatching(/^_Link_/)])
+  })
+
   // CSS shows one of the two locations per width (ADR-0014); happy-dom applies no media query,
   // so which one is visible is covered by the E2E (#18)
   it('renders the grid and row versions of the location', async () => {
-    const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer, to } })
     const grid = wrapper.get('[data-testid="customer-card__location--grid"]')
 
     expect(grid.get('[data-testid="customer-card__city--text"]').text()).toBe('Umuarama')
@@ -59,14 +84,14 @@ describe('CustomerCard', () => {
 
   it('falls back to the state name in the row when the state has no UF', async () => {
     const wrapper = await mountSuspended(CustomerCard, {
-      props: { customer: { ...customer, state: 'Atlantis', uf: '' } },
+      props: { customer: { ...customer, state: 'Atlantis', uf: '' }, to },
     })
 
     expect(wrapper.get(ROW).text()).toBe('Umuarama, Atlantis · CEP 43646')
   })
 
   it('renders the avatar as a decorative image with its size reserved', async () => {
-    const image = (await mountSuspended(CustomerCard, { props: { customer } })).get(IMAGE)
+    const image = (await mountSuspended(CustomerCard, { props: { customer, to } })).get(IMAGE)
 
     expect(image.attributes()).toMatchObject({
       src: customer.picture,
@@ -78,7 +103,7 @@ describe('CustomerCard', () => {
   })
 
   it('loads the avatar lazily and without priority by default', async () => {
-    const image = (await mountSuspended(CustomerCard, { props: { customer } })).get(IMAGE)
+    const image = (await mountSuspended(CustomerCard, { props: { customer, to } })).get(IMAGE)
 
     expect(image.attributes('loading')).toBe('lazy')
     expect(image.attributes('fetchpriority')).toBeUndefined()
@@ -87,7 +112,7 @@ describe('CustomerCard', () => {
   it('loads the avatar eagerly and with high priority when asked to', async () => {
     const image = (
       await mountSuspended(CustomerCard, {
-        props: { customer, loading: 'eager', fetchpriority: 'high' },
+        props: { customer, to, loading: 'eager', fetchpriority: 'high' },
       })
     ).get(IMAGE)
 
@@ -98,13 +123,13 @@ describe('CustomerCard', () => {
   // The card sizes the avatar (80px, 64px in a row) with a class that lands on the avatar root, next
   // to the one of the avatar itself
   it('puts the class that sizes the avatar on its root', async () => {
-    const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer, to } })
 
     expect(wrapper.get(AVATAR).classes()).toHaveLength(2)
   })
 
   it('falls back to the initials of the name when the photo fails', async () => {
-    const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer, to } })
 
     await wrapper.get(IMAGE).trigger('error')
 
@@ -113,7 +138,7 @@ describe('CustomerCard', () => {
   })
 
   it('hides the chevron from assistive technology', async () => {
-    const wrapper = await mountSuspended(CustomerCard, { props: { customer } })
+    const wrapper = await mountSuspended(CustomerCard, { props: { customer, to } })
 
     expect(
       wrapper.get('[data-testid="customer-card__chevron--icon"]').attributes('aria-hidden'),
