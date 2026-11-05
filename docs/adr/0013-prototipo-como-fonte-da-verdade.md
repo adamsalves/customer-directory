@@ -77,6 +77,8 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | `tel:` só com os dígitos do celular                 | `tel:+55` e os dígitos do celular          | o +55 faz a ligação valer de qualquer país      |
 | "Enviar e-mail" quebra no hífen a 375px             | padding 16px no mobile, 1 coluna < 375px   | o rótulo cabe numa linha                        |
 | foto do hero com `loading="lazy"`                   | `eager` e `fetchpriority="high"`           | acima da dobra e provável LCP, como o 1º card   |
+| toast sem contorno                                  | `outline` transparente de 1px no balão     | no Alto Contraste a sombra some e sobra a borda |
+| toast com no máximo metade da tela (`left: 50%`)    | `max-content`, até 16px de cada borda      | "Não foi possível copiar" quebrava em 360px     |
 
 ## Consequências
 

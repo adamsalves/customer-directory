@@ -534,3 +534,19 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
     - o `integrity`, que não é exportado.
   - **Review (`/review`):** aprovado sem achado obrigatório. Os testes que faltavam viraram critérios da #36: o slug com `%2F`, a foto que falha antes da hidratação (da #111) e os botões abaixo de 375px. Recusados: o id do H1 como prop (um hero por página, e o spec confere o par) e a remoção do `justify-content: flex-start` redundante.
 - **Pendente:** singular "1 ano" sem tratamento: com os dados de hoje, o tempo de casa vai de 8 a 24 anos e a idade de 29 a 82. Safari, leitor de tela e o `tel:` num celular real não foram conferidos. As seções de informação são a #33; a página 404 e o SEO, a #34.
+
+### #114 · Toast global · [PR #115](https://github.com/adamsalves/customer-directory/pull/115)
+
+- **Decidido:** [#114](https://github.com/adamsalves/customer-directory/issues/114) · ADR-0007 (`useState` só para tema e toast) · ADR-0021 (textos em pt-BR) · ADR-0013 (duas linhas: contorno no Alto Contraste e largura `max-content`). A #33 estimava ~450 linhas e foi dividida; o toast vai primeiro, como a #111 saiu da #32, e a #33 só chama o `useToast`.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/114#issuecomment-6655974526) · estimativa ~150 linhas
+- **Como:**
+  - **`useToast`:** a mensagem fica num `useState`; a vazia quer dizer sem toast. O `show(text)` limpa o timer anterior, grava o texto e agenda a limpeza em 2200 ms, como o `showToast` do protótipo. Quem consome recebe a mensagem `readonly`. O handle do timer fica no módulo, com um comentário `ponytail:`: só o navegador chama `show`, a partir de cliques.
+  - **`AppToast`:** a região `role="status"` está sempre no HTML, vazia, porque o leitor de tela anuncia o que aparece numa região que já conhece. O balão entra com `v-if`. Estilo do protótipo com os tokens `--inverse-bg`, `--inverse-text` e `--shadow-toast`, `global(jsm-in)` e `safe-area-inset-bottom`. O `z-index: 40` fica entre o header (20) e o skip link (50).
+  - **No layout, fora do `<main>`:** as páginas seguem com uma região viva só, e o spec da lista que conta regiões não muda.
+  - **Alto Contraste:** sem a sombra, o balão virava um retângulo `Canvas` sem borda sobre a página. Um `outline` transparente de 1px vira borda sólida `CanvasText` só nesse modo (conferido no Chrome com `forcedColors: active`).
+  - **Largura:** com `left: 50%`, o balão encolhia até a metade da tela, e "Não foi possível copiar" (182px) quebrava abaixo de ~365px, como no protótipo. Com `inline-size: max-content` e `max-inline-size: calc(100% - 32px)`, cabe numa linha em 320px; um texto mais longo para a 16px de cada borda (medido no Chrome com a Roboto).
+- **Resultado:** +223 sem este registro (estimativa ~150; código 67, specs 154, docs 2). Suíte: 834 testes unitários (eram 824), 3 rodadas sem falha. Lint e typecheck verdes.
+  - **Mutação:** 21 mutantes, todos mortos no fim. Sobreviveram 4 aos testes do plano: o `<AppToast />` fora do layout ganhou um spec do layout; o `readonly` ganhou um teste de escrita; as duas classes do SCSS ganharam um teste de classe.
+  - **Review (`/review`):** aprovado sem achado obrigatório. Aplicada a sugestão da largura `max-content` (acima). Mantido o teste do `readonly`, que depende do aviso do Vue em desenvolvimento: sem cast, é o único jeito de matar o mutante.
+  - **Chrome:** posição, cores, sombra, raio e fonte iguais ao protótipo em 375, 768 e 1280px nos dois temas. A única diferença bruta é o `left`, porque o protótipo tem barra de rolagem e o detalhe não.
+- **Pendente:** o CSS do toast só tem medida no Chrome; o E2E virou critério da #36. Duas mensagens iguais seguidas não se anunciam de novo, como no protótipo. O sheet modal cobre o toast, como no protótipo (60 sobre 40).

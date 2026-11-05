@@ -12,5 +12,6 @@ import S from './default.module.scss'
       <slot />
     </main>
     <AppFooter />
+    <AppToast />
   </div>
 </template>
