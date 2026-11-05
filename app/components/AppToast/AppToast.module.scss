@@ -18,5 +18,8 @@
   color: var(--inverse-text);
   font-size: 14px;
   box-shadow: var(--shadow-toast);
+
+  // Invisible until High Contrast drops the shadow: then it is the bubble's only edge (ADR-0013)
+  outline: 1px solid transparent;
   animation: global(jsm-in) 0.18s ease-out;
 }
