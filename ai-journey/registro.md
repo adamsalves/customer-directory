@@ -569,3 +569,18 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
     - um helper de gênero e um `now` único para hero e seções: duas linhas iguais não pedem abstração, e os dois relógios divergem por milissegundos;
     - codificar o e-mail do `mailto:`: vem de antes (hero, #32) e a fonte não traz `?` nem `&` nos e-mails.
 - **Pendente:** botão de copiar (#116, com o patch pronto). E2E do CSS das seções (#36). Safari e leitor de tela não conferidos.
+
+### #116 · Botão de copiar e-mail
+
+- **Decidido:** [#116](https://github.com/adamsalves/customer-directory/issues/116) · ADR-0013 (uma linha: 40px vira 44px abaixo de 960px, o alvo de toque do projeto). Separado da #33, que deu +475 linhas. O código veio de um patch salvo na #33.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/116#issuecomment-6659819813) · estimativa ~150 linhas
+- **Como:**
+  - **`copyEmail`:** `await navigator.clipboard.writeText` dentro de `try`. O `useToast` (#114) diz "E-mail copiado" depois da escrita, e "Não foi possível copiar" se o navegador recusar ou se não houver `navigator.clipboard` (fora de HTTPS).
+  - **Botão:** 40×40 como no protótipo, com `aria-label` e `title`, ícone `aria-hidden` e hover só com ponteiro. Abaixo de 960px vira 44×44, com `margin-block: -6px` no lugar de `-4px`, para a linha do e-mail ficar com 32px nos dois tamanhos (sem a troca da margem, 36px).
+  - **Linha do e-mail:** `dd` flex com `flex-wrap`, como no protótipo. Quando o e-mail e o botão não cabem lado a lado, o botão desce.
+  - **Alto Contraste sem CSS:** o `:focus-visible` global fica em `@layer base`, e um `outline` transparente no módulo, como o do toast, apagaria o anel. Conferido no Chrome: o ícone (`currentColor`) e o anel aparecem nos dois temas.
+  - **Patch:** não tinha linhas `index`, então o `git apply -3` não serviu. O `[id].vue` foi reaplicado à mão, preservando o review da #33.
+- **Resultado:** +139 −3 sem este registro (estimativa ~150; código 73, specs 64, docs 1). Suíte: 857 testes unitários (eram 851), 3 rodadas sem falha. Lint e typecheck verdes.
+  - **Mutação:** 17 mutantes, todos mortos no fim. Sobreviveu 1 aos testes do plano: o toast de sucesso antes do `await`, que faria "E-mail copiado" piscar numa escrita que depois falha. Ganhou o teste da escrita pendente. Cada declaração de CSS foi tirada no Chrome e muda alguma medida. As exceções são `padding: 0` e `border: 0`, que só trocam o valor da UA sem mudar o retângulo e ficam como no protótipo.
+  - **Chrome:** em 320, 375, 768, 959, 960 e 1280px nos dois temas. Em 1280px, o recorte do botão é igual ao protótipo por pixel, normal e com hover. O clique real mostra o toast, e colar dá o e-mail.
+- **Pendente:** E2E do botão (critério na #36). Safari e leitor de tela não conferidos.
