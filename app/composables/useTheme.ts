@@ -19,7 +19,7 @@ export function useTheme() {
     isTheme(cookie.value) ? cookie.value : null,
   )
   // Shared state, not a computed over `cookie`: every useCookie call keeps its own ref and only
-  // hears about the others' writes asynchronously, so a click would not reach app.vue at once.
+  // hears about the others' writes asynchronously, so a click would not reach the plugin at once.
   const hasChoice = useState('theme-chosen', () => isTheme(cookie.value))
 
   function setTheme(next: TTheme) {
