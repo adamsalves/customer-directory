@@ -601,8 +601,17 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
 - **Como:**
   - **`app/plugins/theme.ts`:** plugin universal com o `useHead` do `data-theme`. No cliente, adota a preferência do sistema e passa a acompanhá-la. Como o plugin vive o app inteiro, o listener não é removido. O `app.vue` ficou só com o template.
   - **`app:suspense:resolve`, não `app:mounted`:** o plano previa `app:mounted`. Só que ele dispara logo que o `mount()` retorna, antes de o layout assíncrono (e o toggle dentro dele) hidratar. No dev, 8 de 8 carregamentos deram mismatch de hidratação no `title` do toggle. O `app:suspense:resolve` sai quando a hidratação termina, o mesmo momento do antigo `onMounted`. Com ele, 0 avisos em 18 carregamentos (sem cookie, `light` e `dark`). No build de produção, o rótulo troca depois da hidratação, como antes, e o console fica limpo, inclusive com o chunk do layout atrasado 600 ms e a CPU 6× mais lenta.
-  - **Spec:** `app.spec.ts` virou `plugins/theme.spec.ts`. O plugin roda uma vez no boot do ambiente de teste, então cada caso chama o `callHook('app:suspense:resolve')` sobre o estado que preparou. Ganhou um 5º caso: o hook `app:mounted` sozinho não adota a preferência. Sem ele, voltar para `app:mounted` passaria na suíte inteira.
-- **Resultado:** +68 −38 sem este registro (estimativa ~150; código +24 −28, spec +44 −10). Suíte: 858 testes unitários, 3 rodadas sem falha; E2E 294 verdes. Lint e typecheck verdes.
+  - **Spec:** `app.spec.ts` virou `plugins/theme.spec.ts`. O plugin roda uma vez no boot do ambiente de teste, então cada caso chama o `callHook('app:suspense:resolve')` sobre o estado que preparou. Com isso, voltar para `app:mounted` derruba dois casos ("ignora valor salvo que não é tema" e "adota o sistema ao montar").
+- **Resultado:** +56 −38 sem este registro (estimativa ~150; código +27 −28, spec +29 −10). Suíte: 857 testes unitários, como antes, 3 rodadas sem falha; E2E 294 verdes (8 de 8 no `theme.spec.ts` depois do review). Lint e typecheck verdes.
   - **Mutação:** 16 mutantes, todos mortos no fim. Sobreviveu 1 aos testes antigos: adotar o sistema mesmo com escolha salva. Com isso, o caso "escolha salva vence o sistema" passou a abrir com o sistema escuro.
   - **Build de produção:** um 404 com cookie `dark` já devolve `<html data-theme="dark">`, base da #34.
+  - **Review (`/code-review`):** 8 achados, nenhum grave. Aplicados:
+    - o `MediaQueryList` voltou a ficar no escopo do plugin, como o `let systemTheme` do `app.vue`. Local do hook, só os próprios listeners apontavam para ele, e há motores que já coletaram um objeto assim, calando o listener;
+    - o comentário do plugin dizia "error.vue included", e o `error.vue` só chega na #34;
+    - saiu o 5º caso que o implementer tinha acrescentado ("espera o fim da hidratação"). Ele disparava o `app:mounted` global, que também reexecuta os assinantes do próprio Nuxt (prefetch, restauração de estado), e não protegia nada a mais: o mutante `app:mounted` continua morto sem ele. A frase deste registro que dizia o contrário foi corrigida.
+  - Recusados:
+    - não registrar o listener quando já há escolha salva: economiza um listener e acrescenta um ramo, sem mudar o comportamento;
+    - `if (import.meta.client)` em volta do hook: o servidor nunca dispara esse hook, e o comentário já diz isso;
+    - listeners que se acumulam entre os casos do spec: o plugin roda uma vez só por ambiente de teste, e o `beforeEach` já devolve o esquema antes de limpar o estado;
+    - o spec quebraria com `hookOnce`: é hipotético, e trocar a forma de assinar o hook é mudança de comportamento no ambiente de teste.
 - **Pendente:** o listener na página de erro só será conferido no navegador na #34 (E2E do toggle no erro).

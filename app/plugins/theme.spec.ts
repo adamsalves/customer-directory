@@ -105,19 +105,4 @@ describe('theme plugin', () => {
     expect(useTheme().theme.value).toBe('dark')
     expect(wrapper.get(TOGGLE).attributes('aria-label')).toBe('Ativar tema claro')
   })
-
-  // No other spec sees this: the test environment never hydrates, and a production build patches
-  // the toggle's label silently. Only the dev server warns of the mismatch.
-  it('waits for the end of hydration to adopt the system preference', async () => {
-    setSystemColorScheme('dark', { notify: false })
-    const { theme } = useTheme()
-
-    // app:mounted comes as soon as mount() returns, before the async layout, and the toggle in it,
-    // has hydrated: adopting here makes the toggle hydrate already dark, against the server HTML
-    await useNuxtApp().callHook('app:mounted', useNuxtApp().vueApp)
-    expect(theme.value).toBeNull()
-
-    await endHydration()
-    expect(theme.value).toBe('dark')
-  })
 })

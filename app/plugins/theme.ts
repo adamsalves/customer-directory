@@ -1,7 +1,10 @@
-// A plugin, not app.vue: it applies to every page, error.vue included (the inline script in <head>
-// already does). It lives as long as the app, so the listener below is never removed.
+// A plugin, not app.vue: it applies to every page, the error page included (the inline script in
+// <head> already does). It lives as long as the app, so the listener below is never removed.
 export default defineNuxtPlugin((nuxtApp) => {
   const { theme, hasChoice } = useTheme()
+  // Held here, not as a local of the hook: some engines have collected a MediaQueryList that only
+  // its own listeners pointed to, and the listener went quiet.
+  let systemTheme: MediaQueryList | undefined
 
   // A null theme omits the attribute, and unhead leaves alone the one the inline script in <head>
   // (themeScript.ts) set from the system preference; the hook below adopts the same preference.
@@ -14,7 +17,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   // already put this same preference on <html> before the first paint, so adopting it here changes
   // nothing on screen.
   nuxtApp.hook('app:suspense:resolve', () => {
-    const systemTheme = matchMedia('(prefers-color-scheme: dark)')
+    systemTheme = matchMedia('(prefers-color-scheme: dark)')
     if (theme.value === null) theme.value = systemTheme.matches ? 'dark' : 'light'
     systemTheme.addEventListener('change', (event) => {
       if (!hasChoice.value) theme.value = event.matches ? 'dark' : 'light'
