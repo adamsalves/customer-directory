@@ -287,6 +287,17 @@ describe('copy e-mail button', () => {
     expect(useToast().message.value).toBe('E-mail copiado')
   })
 
+  // A write that has not settled yet may still fail: no toast until it does
+  it('says nothing while the write is pending', async () => {
+    vi.spyOn(navigator.clipboard, 'writeText').mockReturnValue(new Promise(() => undefined))
+    const wrapper = await mountPage()
+
+    await wrapper.get(COPY).trigger('click')
+    await flushPromises()
+
+    expect(useToast().message.value).toBe('')
+  })
+
   // The browser may refuse the write, and outside HTTPS there is no clipboard at all
   it.each([
     {
