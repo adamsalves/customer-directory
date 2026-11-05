@@ -59,6 +59,22 @@ test('the link goes back to the list', async ({ page }) => {
   await expect(page.getByTestId('error-page__root--div')).toHaveCount(0)
 })
 
+// Text-only zoom at 200% takes the 15px label to 30px, and at 375px it wraps: the pill must grow with
+// it, not let the second line spill out of its 44px
+test('the link grows with a label that wraps', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto(MISSING)
+  await page.addStyleTag({ content: '[data-testid="error-page__list--link"] { font-size: 30px }' })
+  const link = page.getByTestId('error-page__list--link')
+
+  const { scrollHeight, clientHeight } = await link.evaluate((element) => ({
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+  }))
+  expect(clientHeight).toBeGreaterThan(44)
+  expect(scrollHeight).toBeLessThanOrEqual(clientHeight)
+})
+
 // The system is dark, so a light page can only come from the click and its cookie
 test('the toggle switches the theme of the 404 page and the cookie keeps it', async ({ page }) => {
   await page.goto(MISSING)

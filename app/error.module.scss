@@ -34,7 +34,9 @@
 .Link {
   display: flex;
   align-items: center;
-  block-size: 44px;
+
+  // min-: with text-only zoom the label wraps, and the pill grows with it instead of spilling
+  min-block-size: 44px;
   margin-block-start: 8px;
   padding-block: 0;
   padding-inline: 24px;
