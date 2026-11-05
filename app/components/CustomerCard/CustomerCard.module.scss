@@ -1,5 +1,7 @@
 // Same markup in every width (ADR-0014): a centered card from 640px, a row below it.
 .Card {
+  // The link's ::after is positioned against the card
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -18,7 +20,8 @@
   transition:
     box-shadow 0.2s ease,
     border-color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    background-color 0.15s ease;
 }
 
 // The size of the avatar; its shape and the photo are CustomerAvatar's
@@ -40,6 +43,34 @@
   font-weight: 700;
   line-height: 1.3;
   text-wrap: balance;
+}
+
+// The name is the link, and its ::after is the card: the card takes the click, the reader gets the
+// name. Unlayered, so the color and the underline win over the `a` and `a:hover` of the base layer.
+.Link {
+  color: inherit;
+  text-decoration: none;
+}
+
+// Over the border box of the card: `inset` counts from the padding box, so -1px (the width of the
+// border) reaches the border too, which then takes the click, and the ring keeps the 2px of the global
+// one from it. The radius is the card's, which `inherit` would not give: the parent of the ::after is
+// the link.
+.Link::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 2px;
+}
+
+// The ring goes around the card, as the global one goes around a control (base.scss)
+.Link:focus-visible {
+  outline: none;
+}
+
+.Link:focus-visible::after {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
 
 .Street {
@@ -77,6 +108,12 @@
     padding-block: 16px;
     padding-inline: 16px 12px;
     text-align: start;
+  }
+
+  // The row answers the tap, as in the prototype. iOS sets :active on a tap only when something
+  // listens for touchstart: for a real Safari to confirm.
+  .Card:active {
+    background: var(--surface-alt);
   }
 
   .Avatar {

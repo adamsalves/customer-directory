@@ -9,9 +9,13 @@ const EAGER_IMAGES = 4
 
 useSeoMeta({ title: 'Lista de clientes · Juntos Somos Mais' })
 
-const { query, setQuery } = useListQuery()
+const { query, pending, setQuery } = useListQuery()
 // The canonical keys only, as in the page URL: the defaults and an empty search stay out
 const apiQuery = computed(() => serializeListQuery(query.value))
+// What a customer's page carries for the way back. It is the state of the write still on its way when
+// there is one, as in the links of the pagination: a click on a card cancels that write, and the page
+// it lands on has to carry what the write was writing (ADR-0023).
+const cardQuery = computed(() => serializeListQuery(pending() ?? query.value))
 // No retry of its own on a 502: the error state has a button for that, and a retry here would read
 // the source twice and keep the error off the screen twice as long (ADR-0005)
 const { data, status, refresh } = await useFetch('/api/customers', {
@@ -94,6 +98,7 @@ function clearSearchAndFilters() {
             <li v-for="(customer, index) in data.items" :key="customer.slug" :class="S.Item">
               <CustomerCard
                 :customer="customer"
+                :to="{ path: `${LIST_PATH}/${customer.slug}`, query: cardQuery }"
                 :loading="index < EAGER_IMAGES ? 'eager' : 'lazy'"
                 :fetchpriority="index === 0 ? 'high' : undefined"
               />

@@ -71,6 +71,7 @@ const RESULTS = '[data-testid="customers__results--section"]'
 const SKELETON = '[data-testid="customers__skeleton--list"]'
 const LIST = '[data-testid="customers__list--list"]'
 const CARD = '[data-testid="customer-card__root--article"]'
+const CARD_LINK = '[data-testid="customer-card__name--link"]'
 const IMAGE = '[data-testid="customer-avatar__photo--image"]'
 const NAV = '[data-testid="pagination__root--nav"]'
 const ERROR = '[data-testid="error-state__message--alert"]'
@@ -209,6 +210,47 @@ describe('customers page', () => {
 
     expect(wrapper.findAll(CARD)).toHaveLength(items.length)
     expect(names).toEqual(items.map((item) => item.name))
+  })
+
+  // The way back is in the address of the customer, which reads the list state from there. The state
+  // is the canonical one, as the page parses it, and not the query the page was opened with: a key
+  // the list does not know is dropped, and the states come in the order of the table.
+  it('links each card to its customer with the list state of the URL', async () => {
+    const wrapper = await mountSuspended(CustomersPage, {
+      route: '/customers?sort=old&foo=1&states=minas-gerais,bahia&perPage=18&page=2',
+    })
+
+    expect(wrapper.findAll(CARD_LINK).map((link) => link.attributes('href'))).toEqual(
+      items.map(
+        ({ slug }) => `/customers/${slug}?page=2&perPage=18&states=bahia,minas-gerais&sort=old`,
+      ),
+    )
+  })
+
+  it('links the cards of the default list with no query', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers' })
+
+    expect(wrapper.findAll(CARD_LINK).map((link) => link.attributes('href'))).toEqual(
+      items.map(({ slug }) => `/customers/${slug}`),
+    )
+  })
+
+  // A click on a card cancels the write on its way, and the page it lands on has to carry what the
+  // write was writing (ADR-0023), as the links of the pagination do. The URL has not changed yet.
+  it('links the cards with the write still on its way, which the URL does not have yet', async () => {
+    const wrapper = await mountSuspended(CustomersPage, { route: '/customers?sort=old' })
+    const letGo = holdNavigations()
+
+    await wrapper.get(PER_PAGE).setValue('18')
+
+    expect(useRoute().fullPath).toBe('/customers?sort=old')
+    expect(wrapper.get(CARD_LINK).attributes('href')).toBe(
+      '/customers/customer-0?perPage=18&sort=old',
+    )
+    letGo()
+    await vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe('/customers?perPage=18&sort=old')
+    })
   })
 
   // A page change moves the focus to the element with this id. The skeleton and the list come and go
