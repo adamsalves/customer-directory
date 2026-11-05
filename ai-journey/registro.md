@@ -550,3 +550,22 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - **Review (`/review`):** aprovado sem achado obrigatório. Aplicada a sugestão da largura `max-content` (acima). Mantido o teste do `readonly`, que depende do aviso do Vue em desenvolvimento: sem cast, é o único jeito de matar o mutante.
   - **Chrome:** posição, cores, sombra, raio e fonte iguais ao protótipo em 375, 768 e 1280px nos dois temas. A única diferença bruta é o `left`, porque o protótipo tem barra de rolagem e o detalhe não.
 - **Pendente:** o CSS do toast só tem medida no Chrome; o E2E virou critério da #36. Duas mensagens iguais seguidas não se anunciam de novo, como no protótipo. O sheet modal cobre o toast, como no protótipo (60 sobre 40).
+
+### #33 · Seções de informação do cliente
+
+- **Decidido:** [#33](https://github.com/adamsalves/customer-directory/issues/33) · ADR-0013 (a linha do `tel:+55` agora vale para o celular e o telefone) · ADR-0020 ("Cliente desde", não "Membro desde"). O toast saiu antes, na #114. Pronta, a #33 deu +475 linhas, e o botão de copiar e-mail foi separado na [#116](https://github.com/adamsalves/customer-directory/issues/116) (~120 linhas, com o alvo de 44px abaixo de 960px).
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/33#issuecomment-6655974923) · estimativa ~320 linhas
+- **Como:**
+  - **`CustomerInfoSection`:** `section` nomeada pelo `h2` (`aria-labelledby`, com id de `useId`) e um `dl`. Os pares `<div><dt><dd>` vêm da página pelo slot. A página usa três: Contato, Endereço e Dados pessoais, na grade `auto-fit` do protótipo.
+  - **Datas em UTC:** `toLocaleDateString('pt-BR', { timeZone: 'UTC' })`, como o `yearsSince`. Uma data em `01:00Z` é o mesmo dia no servidor e no navegador; um build de produção com `TZ=Pacific/Honolulu` renderiza o mesmo texto.
+  - **Valores:** "Cidade · Estado (UF)", sem os parênteses quando o estado não tem UF; gênero pelo `GENDERS`, com `—`; idade contada na renderização (ADR-0005). `tabular-nums` nos telefones e no CEP; `overflow-wrap: anywhere` no e-mail, que em 320px passava da coluna.
+  - **`telHref`:** `app/utils/telHref.ts`, usado pelo hero e pelos dois telefones.
+- **Resultado:** +360 −3 sem este registro (estimativa ~320, que contava o botão de copiar; código 166, specs 193, docs 1). A estimativa errou o código, não os specs: só as seções deram ~170 linhas, contra ~125 previstas para tudo. Suíte: 851 testes unitários, 3 rodadas sem falha. Lint, typecheck e build verdes.
+  - **Mutação:** 57 mutantes no código, todos mortos no fim. Sobreviveu 1 aos testes do plano: o mesmo id em duas seções, que ganhou um teste. As 27 declarações de CSS novas foram tiradas uma a uma no Chrome, em 375, 768 e 1280px nos dois temas, e todas mudam alguma medida.
+  - **Chrome:** 1170 de 1178 valores iguais ao protótipo por largura e tema. Os 8 que diferem são a linha do e-mail (flex no protótipo por causa do botão, agora na #116) e o rótulo "Cliente desde". 7 registros reais, com datas perto da meia-noite UTC, dão o mesmo texto do protótipo. No Alto Contraste, cada seção mantém a borda de 1px.
+  - **Review (`/code-review`):** aplicados o `useId` no lugar do id passado pela página e o `computed` no lugar da chamada de função no template (diretriz da JSM). O CSS das seções, sem teste unitário no happy-dom, virou critério da #36. Recusados:
+    - tirar o 0 do DDD no `tel:`: 40 dos 400 números da fonte começam com 0, mas DDDs como 30, 80 e 90 também não existem; os números são fictícios, e sem o 0 o DDD fica com um dígito;
+    - alvo de 44px nos links de texto: são links em linha, em `dd` separados por `dt`, e passam pela exceção de espaçamento do WCAG 2.5.8; os 44px do projeto são para controles (chip, pílula, paginação);
+    - um helper de gênero e um `now` único para hero e seções: duas linhas iguais não pedem abstração, e os dois relógios divergem por milissegundos;
+    - codificar o e-mail do `mailto:`: vem de antes (hero, #32) e a fonte não traz `?` nem `&` nos e-mails.
+- **Pendente:** botão de copiar (#116, com o patch pronto). E2E do CSS das seções (#36). Safari e leitor de tela não conferidos.
