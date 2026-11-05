@@ -1,5 +1,5 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { enableAutoUnmount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ICustomer, ICustomerDetailResponse } from '#shared/types/customer'
 import CustomerPage from './[id].vue'
@@ -81,6 +81,8 @@ const SECTION = '[data-testid="customer-info-section__root--section"]'
 const HEADING = '[data-testid="customer-info-section__heading--heading"]'
 const EMAIL_VALUE = '[data-testid="customer-detail__email--value"]'
 const EMAIL = '[data-testid="customer-detail__email--link"]'
+const COPY = '[data-testid="customer-detail__copy--button"]'
+const COPY_ICON = '[data-testid="customer-detail__copy--icon"]'
 const CELL_VALUE = '[data-testid="customer-detail__cell--value"]'
 const CELL = '[data-testid="customer-detail__cell--link"]'
 const PHONE_VALUE = '[data-testid="customer-detail__phone--value"]'
@@ -246,6 +248,7 @@ describe('customer page sections', () => {
   it.each([
     { part: 'sections', selector: SECTIONS, rule: 'Sections' },
     { part: 'e-mail', selector: EMAIL_VALUE, rule: 'EmailValue' },
+    { part: 'copy button', selector: COPY, rule: 'CopyButton' },
     { part: 'cell', selector: CELL_VALUE, rule: 'Tabular' },
     { part: 'phone', selector: PHONE_VALUE, rule: 'Tabular' },
     { part: 'postcode', selector: POSTCODE_VALUE, rule: 'Tabular' },
@@ -253,5 +256,67 @@ describe('customer page sections', () => {
     const classes = (await mountPage()).get(selector).classes()
 
     expect(classes).toEqual([expect.stringMatching(new RegExp(`^_${rule}_`))])
+  })
+})
+
+describe('copy e-mail button', () => {
+  // The test that took the clipboard away puts it back, and the toast keeps its message
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'clipboard')
+    clearNuxtState('toast')
+  })
+
+  it('names the button, and hides the icon from assistive technology', async () => {
+    const copy = (await mountPage()).get(COPY)
+
+    expect(copy.attributes()).toMatchObject({
+      type: 'button',
+      title: 'Copiar e-mail',
+    })
+    expect(copy.attributes('aria-label')).toBeUndefined()
+    expect(copy.get(COPY_ICON).attributes('aria-hidden')).toBe('true')
+  })
+
+  it('copies the e-mail and says so in the toast', async () => {
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
+    const wrapper = await mountPage()
+
+    await wrapper.get(COPY).trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledExactlyOnceWith('alejandra.rodrigues@example.com')
+    expect(useToast().message.value).toBe('E-mail copiado')
+  })
+
+  // A write that has not settled yet may still fail: no toast until it does
+  it('says nothing while the write is pending', async () => {
+    vi.spyOn(navigator.clipboard, 'writeText').mockReturnValue(new Promise(() => undefined))
+    const wrapper = await mountPage()
+
+    await wrapper.get(COPY).trigger('click')
+    await flushPromises()
+
+    expect(useToast().message.value).toBe('')
+  })
+
+  // The browser may refuse the write, and outside HTTPS there is no clipboard at all
+  it.each([
+    {
+      how: 'refuses the write',
+      take: () => vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied')),
+    },
+    {
+      how: 'is not there',
+      take: () =>
+        Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true }),
+    },
+  ])('says it could not copy when the clipboard $how', async ({ take }) => {
+    const wrapper = await mountPage()
+    take()
+
+    await wrapper.get(COPY).trigger('click')
+    await flushPromises()
+
+    expect(useToast().message.value).toBe('Não foi possível copiar')
   })
 })

@@ -79,6 +79,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | foto do hero com `loading="lazy"`                   | `eager` e `fetchpriority="high"`           | acima da dobra e provável LCP, como o 1º card   |
 | toast sem contorno                                  | `outline` transparente de 1px no balão     | no Alto Contraste a sombra some e sobra a borda |
 | toast com no máximo metade da tela (`left: 50%`)    | `max-content`, até 16px de cada borda      | "Não foi possível copiar" quebrava em 360px     |
+| botão de copiar de 40px em qualquer largura         | 44px abaixo de 960px                       | alvo de toque do projeto: 44px                  |
 
 ## Consequências
 
