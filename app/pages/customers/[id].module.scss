@@ -18,8 +18,45 @@
   font-variant-numeric: tabular-nums;
 }
 
-// An e-mail has no space to break at: it breaks anywhere, and does not push the section out of its
-// column
+// The address breaks anywhere, and the button goes under it when the two do not fit in a row
 .EmailValue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
   overflow-wrap: anywhere;
+}
+
+// 40px, as in the prototype. The negative margin makes the row 32px tall instead of 40px.
+.CopyButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 40px;
+  block-size: 40px;
+  margin-block: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave the button in that state (ADR-0013)
+@media (hover: hover) {
+  .CopyButton:hover {
+    background: var(--surface-alt);
+    color: var(--text-strong);
+  }
+}
+
+// 44px below 960px, the touch target of the project (ADR-0013). The margin grows with the button,
+// so the row stays 32px tall.
+@media (width < 960px) {
+  .CopyButton {
+    inline-size: 44px;
+    block-size: 44px;
+    margin-block: -6px;
+  }
 }

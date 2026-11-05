@@ -43,6 +43,18 @@ const cellHref = telHref(customer.cell)
 const phoneHref = telHref(customer.phone)
 const gender = GENDERS.find(({ value }) => value === customer.gender)?.label ?? '—'
 
+// Outside HTTPS there is no navigator.clipboard, and a browser may refuse the write: the first throws
+// on the call, the second rejects it, and both end in the catch
+const { show } = useToast()
+async function copyEmail() {
+  try {
+    await navigator.clipboard.writeText(customer.email)
+    show('E-mail copiado')
+  } catch {
+    show('Não foi possível copiar')
+  }
+}
+
 // The template names the article by the heading of the hero (id "customer-name", in CustomerHero)
 </script>
 
@@ -61,6 +73,28 @@ const gender = GENDERS.find(({ value }) => value === customer.gender)?.label ?? 
             <a :href="`mailto:${customer.email}`" data-testid="customer-detail__email--link">{{
               customer.email
             }}</a>
+            <button
+              type="button"
+              aria-label="Copiar e-mail"
+              title="Copiar e-mail"
+              :class="S.CopyButton"
+              data-testid="customer-detail__copy--button"
+              @click="copyEmail"
+            >
+              <svg
+                aria-hidden="true"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              >
+                <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                <path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"></path>
+              </svg>
+            </button>
           </dd>
         </div>
         <div>
