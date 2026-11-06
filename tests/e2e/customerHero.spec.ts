@@ -51,6 +51,10 @@ async function openHero(page: Page, width: number) {
   await page.setViewportSize({ width, height: 800 })
   await page.goto(CUSTOMER)
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
+  // `ready` also resolves when the font never came, and a fallback could be narrower
+  expect(await page.evaluate(() => document.fonts.check('500 15px Roboto', 'Enviar e-mail'))).toBe(
+    true,
+  )
 }
 
 // The lines the label of an action takes, counted on the text itself: the fixed height of the button
