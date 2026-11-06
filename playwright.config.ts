@@ -25,7 +25,8 @@ export default defineConfig({
   ],
   // Runs against a fresh production build (node-server preset). Never reuse a running
   // server: the only one it could find is a build from another moment.
-  // customerListError.spec.ts starts one more instance of this build, with a cache of its own.
+  // customerListError.spec.ts and customerDetail.spec.ts start one more instance of this build,
+  // with a cache of their own.
   webServer: [
     // ADR-0009: the app reads the local fixture, never S3
     {
