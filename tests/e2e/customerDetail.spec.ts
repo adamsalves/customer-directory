@@ -109,7 +109,7 @@ test('a customer the BFF no longer has gives the 404 page, and its link goes bac
   await page.goto('/customers')
   await waitForHydration(page)
 
-  await links(page).first().click()
+  await links(page).filter({ hasText: 'Abraim da Costa' }).click()
 
   await expect(page.getByTestId('error-page__title--heading')).toHaveText('Cliente não encontrado')
   await expect(page).toHaveTitle('Cliente não encontrado · Juntos Somos Mais')
