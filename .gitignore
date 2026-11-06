@@ -12,6 +12,7 @@ logs
 .env.*
 !.env.example
 .code-review-graph
+.opencode
 .claude/settings.local.json
 .vercel
 test-results
