@@ -315,3 +315,57 @@ A medição usou o `queryCustomers` real para achar uma busca com estados que de
 
 **Abordagem final:**
 No desktop, o teste confere os 5 nomes em cada ordem, e não só o primeiro, para que uma escolha que perca a busca ou um estado mude a contagem. No reload, ele lê a ordem dos cards no HTML do servidor. No mobile, ele parte da página 2 e espera os 9 primeiros em Z–A a partir de Quévin Cavalcanti, o último dos 20. Se o Z–A invertesse só a página, viria Bartolomeu Martins. A pílula da barra é conferida depois da escolha e depois de um reload. Cada linha do spec tem um mutante que a derruba.
+
+## M7 · Detalhe
+
+### 🔧 Prompt: O detalhe no BFF
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O `/api/customers/[id]` pelo slug do e-mail, com 404 para o cliente que não existe e 502 para a fonte fora do ar ([#31](https://github.com/adamsalves/customer-directory/issues/31), ADR-0004, ADR-0005, ADR-0006).
+
+**O que aconteceu:**
+O measurer mostrou que o 502 nasce fora da função cacheada: o throw é o que mantém a cópia antiga no SWR. A mutação de 22 mutantes deixou 9 vivos no plano, e cada um ganhou o teste que o mata (o id vazio, o `eleuterio-almeida-2`, o `statusText` do 404…). O review moveu os testes do detalhe para um spec ao lado do handler e fez o AGENTS.md citar `fetchCustomers` e `loadCustomers`. Um achado fora dos critérios, o `TypeError: terminated` do ofetch com a fonte cortada no meio, virou issue própria ([#110](https://github.com/adamsalves/customer-directory/issues/110), M9).
+
+**Abordagem final:**
+O handler procura o slug por igualdade e responde `createError` com o status da fonte: `ICustomerDetailResponse { customer }` em `shared/types/`, com o Nitro inferindo o tipo da rota. O `loadCustomers` em `server/utils/` serve os dois handlers, e o log passa a citar quem falhou.
+
+### 🔧 Prompt: A página do cliente
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+A página `/customers/[id]` com hero, seções de informação e o botão de copiar e-mail ([#32](https://github.com/adamsalves/customer-directory/issues/32), [#33](https://github.com/adamsalves/customer-directory/issues/33), [#111](https://github.com/adamsalves/customer-directory/issues/111), [#114](https://github.com/adamsalves/customer-directory/issues/114), [#116](https://github.com/adamsalves/customer-directory/issues/116)), com o tema por cookie já servindo a página construída.
+
+**O que aconteceu:**
+A #32 passou do teto (+747 −81) e foi aceita como exceção: o hero e a página são uma unidade, e tirar a idade da função cacheada era o critério do `age`. O `encodeURIComponent` do slug, que o harness de teste decodifica antes, foi provado por HTTP. O review da #33 achou o `useId` para o `aria-labelledby`, e o botão da #116 perdeu o `aria-label` junto do `title`, que o Chrome expunha como nome _e_ descrição. Na #114, o `left: 50%` encolhia o balão à metade da tela e "Não foi possível copiar" quebrava a 320px: virou `max-content` no review. A #33 passou de ~450 linhas e virou as três issues; o patch da #116, sem linhas de índice, foi reaplicado à mão.
+
+**Abordagem final:**
+A idade conta no render, em UTC, e o cache não congela mais o "anos" no copy. O erro da página vira `createError({ status, statusText, fatal: true })`, que o SSR já responde. As seções são uma grade de `240px` por container query, o avatar tem as iniciais em `40cqi` quando a foto falha, e o toast vive no layout com `useState` e o timer no módulo.
+
+### 🔧 Prompt: Erro, SEO e o tema em plugin
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O tema nos atributos globais num plugin universal ([#119](https://github.com/adamsalves/customer-directory/issues/119), ADR-0011) e a página de erro com o layout + o SEO das três telas ([#34](https://github.com/adamsalves/customer-directory/issues/34)).
+
+**O que aconteceu:**
+O plano previa `app:mounted`, que dispara antes de o layout hidratar: 8 de 8 carregamentos deram mismatch no rótulo do toggle. O `app:suspense:resolve` deixou 0 avisos em 18. O review guardou o `MediaQueryList` no escopo do plugin (há motores que já coletaram um objeto só apontado pelo próprio listener, e o silenciam) e tirou o 5º caso de teste, que chamava o `app:mounted` global e reexecutava os assinantes do Nuxt. Na #34, a pílula "Ver lista de clientes" com `block-size` fixo vazava com o zoom só de texto: virou `min-block-size`, com E2E que sobe a fonte para 30px. Todo 404 diz "Cliente não encontrado", decisão depois separada na #122 (M9).
+
+**Abordagem final:**
+`error.vue` dentro do `<NuxtLayout>`: o header, o toggle e o toast voltam. `role="alert"` só no título e no texto, e o link leva à lista: a navegação que chega ao destino já limpa o erro, sem `clearError`. SEO dos três estados com `useSeoMeta`.
+
+### 🔧 Prompt: Do card ao E2E de cada estilo
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O card ligado ao detalhe com o estado da lista na volta ([#35](https://github.com/adamsalves/customer-directory/issues/35)), a ida e volta completa ([#36](https://github.com/adamsalves/customer-directory/issues/36)) e os E2E que fixam cada estilo do conteúdo ([#124](https://github.com/adamsalves/customer-directory/issues/124), [#125](https://github.com/adamsalves/customer-directory/issues/125), [#126](https://github.com/adamsalves/customer-directory/issues/126), [#129](https://github.com/adamsalves/customer-directory/issues/129)).
+
+**O que aconteceu:**
+A #35 saiu de ~330 linhas para +763: exceção aprovada, com o E2E do anel do card lendo pixels no meio de cada lado. A #36 achou a corrida dos 300 ms e o relógio parado que trava o `router.beforeResolve` do Nuxt 4.6, avançado em passos no `expect.poll`. Nos E2E de estilo: o `data-v-app` não prova hidratação de SSR (o Nuxt usa `createSSRApp`); `fonts.ready` sozinho resolve sem a Roboto, e o teste passava com a fonte de reserva; as colunas de 367,5px punham o trilho do lado errado do corte se arredondadas; e o `border: 1px` sem `border-style` é mutante equivalente, porque o Chromium computa `border-width` como 0px. No toast, o toggle com o relógio parado não chegava ao `<html>`: o teste de tema clica com o relógio rodando e só depois para o relógio.
+
+**Abordagem final:**
+O link do card leva a query do estado em voo (`pending() ?? query`, ADR-0023) e o "Voltar" reabre a lista nela. Cada spec de estilo é desktop com a largura própria, tema pelo cookie `jsm-theme` com guarda do `data-theme`, fontes provadas com `fonts.check` e `forcedColors` lido da página: uma asserção por declaração, com mutante morto por asserção.
