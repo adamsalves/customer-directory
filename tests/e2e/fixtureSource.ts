@@ -5,9 +5,9 @@ import { createServer } from 'node:http'
 
 const body = readFileSync(new URL('../fixtures/customers.json', import.meta.url))
 
-// /flaky/<n>.json is the same list behind a switch, for the spec that needs a source that is down
-// and comes back (customerListError.spec.ts). Each n has its own switch, so runs in parallel do not
-// flip each other's. It starts down; POST /flaky/<n>/up and /flaky/<n>/down flip it.
+// /flaky/<n>.json is the same list behind a switch, for the specs that need a source that is down
+// (customerListError.spec.ts, which also brings it back, and customerDetail.spec.ts). Each n has
+// its own switch, so runs in parallel do not flip each other's. It starts down; POST /flaky/<n>/up and /flaky/<n>/down flip it.
 const flakyUp = new Set<string>()
 
 createServer(({ method, url = '' }, response) => {

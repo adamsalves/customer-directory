@@ -2,7 +2,8 @@
 // them. 3000 is often taken locally; any free port works.
 export const APP_PORT = 3124
 export const SOURCE_PORT = 3125
-// customerListError.spec.ts starts its own app instance, one per worker, from this port up
+// customerListError.spec.ts and customerDetail.spec.ts start their own app instance, one per
+// worker, from this port up
 export const FLAKY_APP_PORT = 3126
 
 export const APP_URL = `http://localhost:${String(APP_PORT)}`
