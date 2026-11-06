@@ -55,6 +55,7 @@
 - **Recusar um achado sem rodar o mutante.** No E2E da ordenação (#30), recusei ler o HTML do servidor no reload achando que o `useFetch` reaproveita o payload do SSR. A mutação mostrou que um SSR que ignora o `sort` muda a chave, o cliente refaz a busca e corrige a lista, e nenhuma linha via.
 - **Estimar sem contar os specs, de novo.** No M5, a #23 fechou com +624 contra ~290, a #24 com +1242 contra ~560 e a #26 com +1697 contra ~520.
 - **Estimar sem contar os specs, ainda.** No M6, a #103 fechou com +425 contra ~200 e a #29 com +884 contra ~300, quase tudo E2E de estilo. O E2E da ordenação (#30) ficou perto: +115 contra ~100, depois do review.
+- **Estimar sem contar os specs, de novo.** No M7, a #32 fechou com +747 contra ~330 e a #35 com +763 contra ~330, as duas aprovadas como exceção; os E2E de estilo ficaram no alvo: #125 com +225 contra ~230 e #129 com +206 contra ~200.
 
 ## 🔄 O que eu faria diferente
 
