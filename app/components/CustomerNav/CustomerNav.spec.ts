@@ -6,8 +6,10 @@ import CustomerNav from './CustomerNav.vue'
 
 const NAV = '[data-testid="customer-nav__root--nav"]'
 const PREV_LINK = '[data-testid="customer-nav__prev--link"]'
+const PREV_GHOST = '[data-testid="customer-nav__prev--ghost"]'
 const POSITION = '[data-testid="customer-nav__position--text"]'
 const NEXT_LINK = '[data-testid="customer-nav__next--link"]'
+const NEXT_GHOST = '[data-testid="customer-nav__next--ghost"]'
 
 const PREV: ICustomerCard = {
   slug: 'ana-souza',
@@ -109,6 +111,51 @@ describe('CustomerNav', () => {
       ).toEqual(['Próximo', NEXT.name])
     }
   })
+
+  // The side without a neighbor keeps the place it holds (the slot of the pill on the desktop, the
+  // column of the card on the mobile), the way the prototype keeps it on both variants
+  it.each([
+    {
+      name: 'between the two neighbors, both links live',
+      props: FULL,
+      hasPrevGhost: false,
+      hasNextGhost: false,
+    },
+    {
+      name: 'on the last edge, the next side is open',
+      props: { position: 43, total: 43, prev: PREV, next: null },
+      hasPrevGhost: false,
+      hasNextGhost: true,
+    },
+    {
+      name: 'on the first edge, the previous side is open',
+      props: { position: 1, total: 43, prev: null, next: NEXT },
+      hasPrevGhost: true,
+      hasNextGhost: false,
+    },
+    {
+      name: 'alone in a context of one, both sides are open',
+      props: { position: 1, total: 1, prev: null, next: null },
+      hasPrevGhost: true,
+      hasNextGhost: true,
+    },
+  ])(
+    'keeps the empty slot of the side without a neighbor $name',
+    async ({ props, hasPrevGhost, hasNextGhost }) => {
+      const wrapper = await mountNav(props)
+
+      expect(wrapper.find(PREV_GHOST).exists()).toBe(hasPrevGhost)
+      expect(wrapper.find(NEXT_GHOST).exists()).toBe(hasNextGhost)
+
+      // What holds the place is a span of its own, empty and out of the accessibility tree
+      for (const ghost of [wrapper.find(PREV_GHOST), wrapper.find(NEXT_GHOST)]) {
+        if (!ghost.exists()) continue
+        expect(ghost.element.tagName).toBe('SPAN')
+        expect(ghost.text()).toBe('')
+        expect(ghost.attributes('aria-hidden')).toBe('true')
+      }
+    },
+  )
 
   it('opens the neighbors with the list state the address carries, page included', async () => {
     const wrapper = await mountNav(FULL, '/customers?search=girao&states=acre&sort=recent&page=5')
