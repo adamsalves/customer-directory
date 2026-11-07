@@ -40,6 +40,14 @@ function to(card: ICustomerCard) {
         <span :class="S.Name">{{ prev.name }}</span>
       </span>
     </NuxtLink>
+    <!-- The side without a neighbor keeps its place, as the prototype keeps: the empty span holds
+         the pill's slot on the desktop and the card's column on the mobile. -->
+    <span
+      v-else
+      :class="S.GhostPrev"
+      aria-hidden="true"
+      data-testid="customer-nav__prev--ghost"
+    ></span>
     <p :class="S.Position" data-testid="customer-nav__position--text">
       {{ position }} de {{ total }}
     </p>
@@ -57,5 +65,11 @@ function to(card: ICustomerCard) {
         <path d="M9 6l6 6-6 6"></path>
       </svg>
     </NuxtLink>
+    <span
+      v-else
+      :class="S.GhostNext"
+      aria-hidden="true"
+      data-testid="customer-nav__next--ghost"
+    ></span>
   </nav>
 </template>

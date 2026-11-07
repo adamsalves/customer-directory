@@ -79,15 +79,11 @@
   }
 }
 
-// The first tap catches: the card answers as the prototype answers on touch
-.Prev:active,
-.Next:active {
-  background: var(--surface-alt);
-}
-
 // Below 640px the first row carries the position across the two columns and the cards sit side by
-// side, each in the column of its side; a side with no card leaves its column empty, and the nav
-// never has a span to keep the place (ADR-0014: nothing in the HTML that the CSS would hide)
+// side, each in the column of its side; the side without a neighbor keeps its cell with an empty
+// span of its own, as the two variants of the prototype keep. The :active of the cards is scoped to
+// this width: no unit test can pin it, for happy-dom applies no media query, so the E2E of the
+// detail (tests/e2e) is the one that owns it.
 @media (width < 640px) {
   .Nav {
     display: grid;
@@ -125,6 +121,12 @@
     text-align: right;
   }
 
+  // The first tap catches, and the pill of the desktop has none of it
+  .Prev:active,
+  .Next:active {
+    background: var(--surface-alt);
+  }
+
   .Text {
     flex-direction: column;
     gap: 0;
@@ -145,5 +147,15 @@
   .Chevron {
     width: 20px;
     height: 20px;
+  }
+
+  // The empty side fills the cell of its own side. On the desktop the same span is a plain, zero
+  // sized child of the flex row, holding the position away from the border as the prototype does
+  .GhostPrev {
+    grid-area: prev;
+  }
+
+  .GhostNext {
+    grid-area: next;
   }
 }
