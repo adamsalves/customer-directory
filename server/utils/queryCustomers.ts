@@ -8,8 +8,9 @@ import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import type { IListQuery } from '#shared/utils/listQuery'
 import { foldText } from './foldText'
 
-// Picks the card fields one by one: the list never carries email, phone and the rest of ICustomer
-function toCard({
+// Picks the card fields one by one: the list never carries email, phone and the rest of ICustomer.
+// The detail repeats it for the neighbors and the related ones
+export function toCard({
   slug,
   name,
   street,
@@ -80,6 +81,25 @@ function countFacets(byGender: ICustomer[], byStates: ICustomer[]): ICustomerFac
   }
 }
 
+// The list in the order asked for; toSorted, not sort: with no search and no filter this is the
+// cached list itself, and a sort in place would reorder it for every request after
+export function sortCustomers(customers: ICustomer[], sort: IListQuery['sort']): ICustomer[] {
+  return customers.toSorted(COMPARATORS[sort])
+}
+
+// The pipeline of the list (search, then the states, then the gender, then the order) for the
+// callers that read the customers themselves: the detail context is one of them. The two filters
+// have no order between them; the one the facets read the other way is in queryCustomers.
+export function filterAndSort(customers: ICustomer[], query: IListQuery): ICustomer[] {
+  return sortCustomers(
+    filterByGender(
+      filterByStates(searchByName(customers, query.search), query.states),
+      query.gender,
+    ),
+    query.sort,
+  )
+}
+
 // One page of the list, after the search and the filters, in the order asked for: the total and the
 // pages count what matched. A page past the end is clamped to the last one, so a stale link still
 // shows customers; an empty list is page 1 of 1. The facets count the whole list, not the page.
@@ -88,8 +108,7 @@ export function queryCustomers(customers: ICustomer[], query: IListQuery): ICust
   const bySearch = searchByName(customers, query.search)
   const byGender = filterByGender(bySearch, query.gender)
   const byStates = filterByStates(bySearch, query.states)
-  // toSorted, not sort: with no search and no filter this is the cached list itself
-  const matches = filterByGender(byStates, query.gender).toSorted(COMPARATORS[query.sort])
+  const matches = sortCustomers(filterByGender(byStates, query.gender), query.sort)
   const total = matches.length
   const totalPages = Math.max(1, Math.ceil(total / perPage))
   const page = Math.min(query.page, totalPages)

@@ -25,7 +25,16 @@ const customer: ICustomer = {
   birthDate: '1974-05-16T14:46:15Z',
   registeredAt: '2013-03-06T16:09:16Z',
 }
-const response: ICustomerDetailResponse = { customer }
+// The shape the BFF answers with: the page only reads the customer of it, so the context fields
+// are padded with values of their type
+const response: ICustomerDetailResponse = {
+  customer,
+  position: 1,
+  total: 1,
+  prev: null,
+  next: null,
+  related: [],
+}
 
 // What the page asked the BFF for, one entry per request. The test server mounts the endpoints
 // under /_, which is no part of what the page asked.
