@@ -14,11 +14,13 @@ const slug = String(useRoute().params.id)
 // the plain list.
 const { query } = useListQuery()
 
-// The context the BFF shapes around the customer (the position, total, the neighbors) comes from the
-// list state of the address too: it counts the same search, filters and order the list used. With
-// the same list state the previous object stays, or useFetch would refetch the same answer on a
-// hash-only navigation, as the query of useListQuery does with the parsed one. Same state,
-// same serialization, because serializeListQuery writes its keys in one order.
+// The context the BFF shapes around the customer (the position, the total, the neighbors) is the
+// list state of the address too: the same search, filters and order the list used. What keeps
+// useFetch from asking this same answer twice on a hash-only navigation is not the guard of this
+// computed: the `query` of useListQuery already stays one and the same object while the list state
+// is the same, and Vue only lets a computed through when its value changed. What this computed
+// adds on top is a guard for callers without that gate: reading `route.query` straight would build
+// a new object at every navigation, and a new object on the same list state would refetch.
 const apiQuery = computed<Record<string, string>>((previous) => {
   const next = serializeListQuery(query.value)
   return previous && JSON.stringify(previous) === JSON.stringify(next) ? previous : next
