@@ -221,7 +221,7 @@ describe('detailContext in the context of the query', () => {
 describe('detailContext related', () => {
   // 7 of São Paulo, written in no order of name: the fixture has none of this state, and the cut
   // is of the name, not of the list. Ana is the third of them.
-  const paulistas = [
+  const saoPauloCustomers = [
     made('zeca-souza', 'Zeca Souza', 'sao-paulo'),
     made('ulisses-tavares', 'Ulisses Tavares', 'sao-paulo'),
     made('ana-branco', 'Ana Branco', 'sao-paulo'),
@@ -230,7 +230,7 @@ describe('detailContext related', () => {
     made('rafa-gomes', 'Rafa Gomes', 'sao-paulo'),
     made('ciro-lima', 'Ciro Lima', 'sao-paulo'),
   ]
-  const [ana] = paulistas.slice(2, 3)
+  const [ana] = saoPauloCustomers.slice(2, 3)
   if (ana === undefined) throw new Error('the list has no ana-branco')
 
   it('gathers the others of the same state by name', () => {
@@ -276,7 +276,7 @@ describe('detailContext related', () => {
   })
 
   it('cuts the related ones of a crowded state to the first 4 by name', () => {
-    expect(namesOf(detailContext(paulistas, ana, query()).related)).toStrictEqual([
+    expect(namesOf(detailContext(saoPauloCustomers, ana, query()).related)).toStrictEqual([
       'Bia Esteves',
       'Bruno Duarte',
       'Ciro Lima',
@@ -284,13 +284,15 @@ describe('detailContext related', () => {
     ])
     // Never the order of the address: a later order turns the neighbors of the detail, not this
     expect(
-      namesOf(detailContext(paulistas, ana, query({ sort: 'name-desc' })).related),
+      namesOf(detailContext(saoPauloCustomers, ana, query({ sort: 'name-desc' })).related),
     ).toStrictEqual(['Bia Esteves', 'Bruno Duarte', 'Ciro Lima', 'Rafa Gomes'])
   })
 
   it('keeps the related ones when the address leaves the customer out', () => {
     expect(
-      namesOf(detailContext(paulistas, ana, query({ search: 'quevin', sort: 'young' })).related),
+      namesOf(
+        detailContext(saoPauloCustomers, ana, query({ search: 'quevin', sort: 'young' })).related,
+      ),
     ).toStrictEqual(['Bia Esteves', 'Bruno Duarte', 'Ciro Lima', 'Rafa Gomes'])
   })
 })

@@ -5,7 +5,7 @@ import { filterAndSort, sortCustomers, toCard } from './queryCustomers'
 // The context of a detail page from the query of the list its address carries: the position
 // (1-based) of the customer in the list filtered and sorted by the query, its size, the neighbors
 // straight before and after, and up to 4 others from the same state
-export interface IDetailContext {
+type TDetailContext = {
   position: number
   // The length of the context the position was counted in, not the total of the whole list
   total: number
@@ -16,7 +16,7 @@ export interface IDetailContext {
 
 // The customer straight before and straight after the position given, and neither at either end:
 // the slices of a single element carry each neighbor when one exists
-function neighbors(context: ICustomer[], index: number): Pick<IDetailContext, 'prev' | 'next'> {
+function neighbors(context: ICustomer[], index: number): Pick<TDetailContext, 'prev' | 'next'> {
   const [before] = context.slice(index - 1, index)
   const [after] = context.slice(index + 1, index + 2)
   return {
@@ -48,7 +48,7 @@ export function detailContext(
   customers: ICustomer[],
   customer: ICustomer,
   query: IListQuery,
-): IDetailContext {
+): TDetailContext {
   const filtered = filterAndSort(customers, query)
   const foundAt = filtered.indexOf(customer)
   const context = foundAt >= 0 ? filtered : sortCustomers(customers, query.sort)
