@@ -100,4 +100,95 @@ describe('GET /api/customers/[id]', () => {
     // Without a statusMessage in createError, Nitro writes "Server Error"
     expect(response.statusText).toBe('Not Found')
   })
+
+  // Eleutério is the 11th by name: Deolindo before, Gilda after, and Marilene nearby in the same
+  // state, Tocantins. The total is the context the empty query leaves, the whole list.
+  it('answers the context of the empty query of the list', async () => {
+    const body = await $fetch('/api/customers/eleuterio-almeida')
+
+    expect(body).toMatchObject({
+      position: 11,
+      total: 20,
+      prev: { slug: 'deolindo-dacunha' },
+      next: { slug: 'gilda-pires' },
+      related: [{ slug: 'marilene-darocha' }],
+    })
+  })
+
+  // The order of the address turns the neighbors of the detail; the related side keeps its own
+  it('inverts the neighbors with the order the address asks for', async () => {
+    const body = await $fetch('/api/customers/eleuterio-almeida?sort=name-desc')
+
+    expect(body).toMatchObject({
+      position: 10,
+      prev: { slug: 'gilda-pires' },
+      next: { slug: 'deolindo-dacunha' },
+      related: [{ slug: 'marilene-darocha' }],
+    })
+  })
+
+  it('counts the position in the context the states of the address leave', async () => {
+    // The 2 of Tocantins, Eleutério first of them by name
+    const body = await $fetch('/api/customers/eleuterio-almeida?states=tocantins')
+
+    expect(body).toMatchObject({
+      position: 1,
+      total: 2,
+      prev: null,
+      next: { slug: 'marilene-darocha' },
+    })
+  })
+
+  // The search of the address finds only Quévin: Abraim is out, and the context falls back to all
+  // 20 in the order of the name. The related one is from wherever the customer is, not from the
+  // 1 the query leaves.
+  it('falls back to every customer when the address leaves the customer out', async () => {
+    const body = await $fetch('/api/customers/abraim-dacosta?search=quevin')
+
+    expect(body).toMatchObject({
+      position: 1,
+      total: 20,
+      prev: null,
+      next: { slug: 'alcindo-dasneves' },
+      related: [{ slug: 'gilda-pires' }],
+    })
+  })
+
+  it('falls back the same way when a filter of the states does', async () => {
+    // Minas Gerais has Abraim in it; Santa Catarina has nobody of the trail of this address
+    const body = await $fetch('/api/customers/abraim-dacosta?states=santa-catarina')
+
+    expect(body).toMatchObject({
+      position: 1,
+      total: 20,
+      prev: null,
+      next: { slug: 'alcindo-dasneves' },
+    })
+  })
+
+  // A repeated key comes as an array (`states=tocantins&states=tocantins`), and the parser, the
+  // one of the list, takes no array of states: no state at all, and the context is the whole list,
+  // not the 2 of Tocantins. Any other key (`extra=1`) the parser has no use for: the states stay.
+  it('reads the repeated key of the address like the list does', async () => {
+    // fetch and json: the typed routes of $fetch do not compare a key written twice, as a string
+    // they do not reach the route matcher
+    const repeatedStatesUrl: string =
+      '/api/customers/eleuterio-almeida?states=tocantins&states=tocantins'
+    const response = await fetch(repeatedStatesUrl)
+    const body: unknown = await response.json()
+    expect(body).toMatchObject({ position: 11, total: 20 })
+    const ignored = await $fetch('/api/customers/eleuterio-almeida?states=tocantins&extra=1')
+    expect(ignored).toMatchObject({
+      position: 1,
+      total: 2,
+    })
+  })
+
+  // One page of the list or another: not a part of the context the detail counts
+  it('answers the same to any page in the address of the list', async () => {
+    const plain = await $fetch('/api/customers/eleuterio-almeida')
+    const paged = await $fetch('/api/customers/eleuterio-almeida?page=99&perPage=54')
+
+    expect(paged).toStrictEqual(plain)
+  })
 })

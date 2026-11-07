@@ -63,6 +63,14 @@ export interface ICustomerListResponse {
   facets: ICustomerFacets
 }
 
+// One customer for the detail page with the context its address carries (ADR-0004): the position
+// (1-based) it has in the list the query gives, the size of that context, the neighbors at either
+// side and the others from the same state, all cards but the customer itself
 export interface ICustomerDetailResponse {
   customer: ICustomer
+  position: number
+  total: number
+  prev: ICustomerCard | null
+  next: ICustomerCard | null
+  related: ICustomerCard[]
 }
