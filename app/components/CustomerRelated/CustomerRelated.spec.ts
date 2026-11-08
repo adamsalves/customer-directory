@@ -197,13 +197,40 @@ describe('CustomerRelated', () => {
     expect(new Set(ids).size).toBe(2)
   })
 
-  // The state has no other of its own, and no list comes out of it: nothing at all, as the
-  // `hasRelated` the prototype keeps
+  // The state has no other of its own, and nothing of the section comes out of it, the `hasRelated`
+  // the prototype keeps
   it('renders nothing when the state has no other one', async () => {
     const wrapper = await mountRelated({ customers: [] })
 
     expect(wrapper.find(SECTION).exists()).toBe(false)
     expect(wrapper.findAll(ITEM)).toHaveLength(0)
+  })
+
+  // The answer carries fewer than 4: the state of the customer has few other ones, and the section
+  // exists with what it got — not only when the count reaches the cap. One card alone also keeps
+  // the section (the BFF answers one for thin states)
+  it('keeps the section when the state has one other', async () => {
+    const wrapper = await mountRelated({ customers: RELATED.slice(0, 1) })
+
+    expect(wrapper.find(SECTION).exists()).toBe(true)
+    expect(wrapper.findAll(ITEM)).toHaveLength(1)
+    expect(wrapper.get(NAME_LINK).text()).toBe('Alexa Henderson')
+    expect(wrapper.get(TITLE).text()).toBe('Outros clientes em Santa Catarina')
+    expect(wrapper.get(MORE).attributes('href')).toBe(
+      '/customers?perPage=18&states=santa-catarina&sort=recent',
+    )
+  })
+
+  // A state outside the 27 is grouped by its own slug, but the list cannot be addressed by it: the
+  // link of the list would go out promising the state and land on the whole list. The cards keep
+  // their value; only the link is out
+  it('keeps the cards of a state outside the table, without the link of the list', async () => {
+    const wrapper = await mountRelated({ state: 'Atlantis', stateSlug: 'atlantis' })
+
+    expect(wrapper.find(SECTION).exists()).toBe(true)
+    expect(wrapper.get(TITLE).text()).toBe('Outros clientes em Atlantis')
+    expect(wrapper.find(MORE).exists()).toBe(false)
+    expect(wrapper.findAll(ITEM)).toHaveLength(4)
   })
 
   // CSS Modules hash the class names and happy-dom applies no media query: the grid of the desktop,

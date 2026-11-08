@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ICustomerCard } from '#shared/types/customer'
 import { serializeListQuery } from '#shared/utils/listQuery'
+import { BRAZILIAN_STATES } from '#shared/utils/brazilianStates'
 import S from './CustomerRelated.module.scss'
 
 // The answer lists the others of the customer's state: up to 4, by name, the customer left out.
@@ -35,6 +36,11 @@ const allOfTheState = computed(() => ({
 // The heading names the section (aria-labelledby). useId is the same on the server and in the
 // browser, and no two sections get the one of another
 const headingId = useId()
+
+// A state outside the 27 is grouped by its own slug by the BFF, but its filter is not in the public
+// URL (the parser takes the slugs of the table only): the link would go to the whole list while
+// promising the state. The cards keep their value; only the link to the list is out.
+const stateIsInTable = computed(() => BRAZILIAN_STATES.some(({ slug }) => slug === props.stateSlug))
 </script>
 
 <template>
@@ -49,7 +55,12 @@ const headingId = useId()
       <h2 :id="headingId" :class="S.Title" data-testid="customer-related__title--heading">
         Outros clientes em {{ state }}
       </h2>
-      <NuxtLink :to="allOfTheState" :class="S.More" data-testid="customer-related__more--link">
+      <NuxtLink
+        v-if="stateIsInTable"
+        :to="allOfTheState"
+        :class="S.More"
+        data-testid="customer-related__more--link"
+      >
         Ver todos de {{ state }}
       </NuxtLink>
     </div>
