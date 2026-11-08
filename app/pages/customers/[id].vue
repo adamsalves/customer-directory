@@ -43,7 +43,7 @@ if (error.value || !data.value) {
     fatal: true,
   })
 }
-const { customer, position, total, prev, next } = data.value
+const { customer, position, total, prev, next, related } = data.value
 
 // The way back is the list state the address carries, which the card's link put there.
 const back = computed(() => ({ path: LIST_PATH, query: serializeListQuery(query.value) }))
@@ -206,9 +206,15 @@ async function copyEmail() {
           </CustomerInfoSection>
         </div>
         <!-- The position, the neighbors and "N de M" are the context the answer carries: where this
-             customer sat in the list the card was opened from. The others of the state (#39) come
-             after the nav. -->
+             customer sat in the list the card was opened from. -->
         <CustomerNav :position="position" :total="total" :prev="prev" :next="next" />
+        <!-- The others of the state the answer lists by name: each card opens the customer with the
+             list state the address carries, and the link goes to the list of the state alone -->
+        <CustomerRelated
+          :customers="related"
+          :state="customer.state"
+          :state-slug="customer.stateSlug"
+        />
       </article>
     </div>
   </div>

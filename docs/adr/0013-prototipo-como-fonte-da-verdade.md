@@ -91,6 +91,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | nav do membro em 2 variantes por `sc-if`            | uma marcação só, posicionada pelo CSS      | HTML igual em qualquer largura (ADR-0014)         |
 | desktop: "Anterior: {nome}" com dois-pontos         | "Anterior {nome}" nos dois tamanhos        | o nome do link é o texto que ele traz             |
 | vão do lado sem vizinho: `<span></span>` nu         | o mesmo vão, com `aria-hidden="true"`      | marca que o lugar vazio não é conteúdo            |
+| link "Ver todos de {Estado}" fora dos 27            | sem o link; os cards ficam                 | a URL só aceita os 27; o link cairia sem filtro   |
 
 ## Consequências
 

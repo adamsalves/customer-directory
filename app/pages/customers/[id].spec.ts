@@ -120,6 +120,56 @@ registerEndpoint('/api/customers/with-neighbors', (event) => {
   return neighbors
 })
 
+// The others of the state (#39): four customers of Santa Catarina, the customer itself left out, in
+// the order of the name the BFF answers with
+const RELATED_CARDS: ICustomerCard[] = [
+  {
+    slug: 'alexa-henderson',
+    name: 'Alexa Henderson',
+    street: 'Rua Fernandes, 8093',
+    city: 'Chapecó',
+    state: 'Santa Catarina',
+    uf: 'SC',
+    postcode: '20952',
+    picture: 'https://example.com/alexa.jpg',
+  },
+  {
+    slug: 'carlos-munoz',
+    name: 'Carlos Muñoz',
+    street: 'Rua Santa Catarina, 3833',
+    city: 'Joinville',
+    state: 'Santa Catarina',
+    uf: 'SC',
+    postcode: '43646',
+    picture: 'https://example.com/carlos.jpg',
+  },
+  {
+    slug: 'dalva-rios',
+    name: 'Dalva Rios',
+    street: 'Rua Borba, 1092',
+    city: 'Blumenau',
+    state: 'Santa Catarina',
+    uf: 'SC',
+    postcode: '15605',
+    picture: 'https://example.com/dalva.jpg',
+  },
+  {
+    slug: 'fernanda-santos',
+    name: 'Fernanda Santos',
+    street: 'Rua Tucano, 1029',
+    city: 'Umuarama',
+    state: 'Santa Catarina',
+    uf: 'SC',
+    postcode: '14876',
+    picture: 'https://example.com/fernanda.jpg',
+  },
+]
+const related: ICustomerDetailResponse = { ...neighbors, related: RELATED_CARDS }
+registerEndpoint('/api/customers/with-related', (event) => {
+  record(event)
+  return related
+})
+
 const TRAIL = '[data-testid="breadcrumb__trail--nav"]'
 const TRAIL_LINK = '[data-testid="breadcrumb__item--link"]'
 const TRAIL_CURRENT = '[data-testid="breadcrumb__item--current"]'
@@ -144,6 +194,10 @@ const NAV = '[data-testid="customer-nav__root--nav"]'
 const NAV_PREV = '[data-testid="customer-nav__prev--link"]'
 const NAV_POSITION = '[data-testid="customer-nav__position--text"]'
 const NAV_NEXT = '[data-testid="customer-nav__next--link"]'
+const RELATED_SECTION = '[data-testid="customer-related__root--section"]'
+const RELATED_TITLE = '[data-testid="customer-related__title--heading"]'
+const RELATED_MORE = '[data-testid="customer-related__more--link"]'
+const RELATED_NAME_LINK = '[data-testid="customer-related__name--link"]'
 
 const metaContent = (property: string) =>
   document.head.querySelector(`meta[property="${property}"]`)?.getAttribute('content')
@@ -538,5 +592,58 @@ describe('customer page nav of neighbors', () => {
     await new Promise((resolve) => setTimeout(resolve, 20))
 
     expect(requests).toEqual([ASKED])
+  })
+})
+
+// The others of the state (#39): the answer lists up to 4 by name, the section takes the place after
+// the nav, and a customer alone in its state gets none of it.
+describe('customer page others of the state', () => {
+  const ADDRESS = '/customers/with-related?page=5&perPage=18&search=girao&states=acre&sort=recent'
+
+  it('mounts the section after the nav of neighbors, inside the article', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: ADDRESS })
+    const follows = (before: Element, after: Element) =>
+      Boolean(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+    expect(wrapper.get(ARTICLE).find(RELATED_SECTION).exists()).toBe(true)
+    expect(follows(wrapper.get(NAV).element, wrapper.get(RELATED_SECTION).element)).toBe(true)
+  })
+
+  it('names the section by the state, with the link to the list of it beside it', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: ADDRESS })
+    const section = wrapper.get(RELATED_SECTION)
+    const labelledBy = section.attributes('aria-labelledby')
+
+    expect(labelledBy).toBeTruthy()
+    expect(section.get(RELATED_TITLE).attributes('id')).toBe(labelledBy)
+    expect(section.get(RELATED_TITLE).text()).toBe('Outros clientes em Santa Catarina')
+    expect(section.get(RELATED_MORE).text()).toBe('Ver todos de Santa Catarina')
+  })
+
+  // The link goes to the list of the state alone: the search and the gender come out and the page
+  // starts over, the order and the page size stay
+  it('goes to the list of the state alone, order and size kept', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: ADDRESS })
+
+    expect(wrapper.get(RELATED_MORE).attributes('href')).toBe(
+      '/customers?perPage=18&states=santa-catarina&sort=recent',
+    )
+  })
+
+  it('opens the four cards with the list state the address carries', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: ADDRESS })
+
+    expect(wrapper.findAll(RELATED_NAME_LINK).map((link) => link.attributes('href'))).toEqual(
+      RELATED_CARDS.map(
+        (card) => `/customers/${card.slug}?page=5&perPage=18&search=girao&states=acre&sort=recent`,
+      ),
+    )
+  })
+
+  // The state of the customer has no other one, and nothing of the section comes out of it
+  it('has no section of the others when the answer lists none', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: '/customers/with-neighbors' })
+
+    expect(wrapper.find(RELATED_SECTION).exists()).toBe(false)
   })
 })
