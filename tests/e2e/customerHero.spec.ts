@@ -20,18 +20,23 @@ test.beforeEach(async ({ page }) => {
   await page.route(PHOTOS, (route) => route.abort())
 })
 
-const parts = (page: Page) => ({
-  root: page.getByTestId('customer-hero__root--section'),
-  avatar: page.getByTestId('customer-avatar__root--span'),
-  text: page.getByTestId('customer-hero__text--div'),
-  name: page.getByTestId('customer-hero__name--heading'),
-  tags: page.getByTestId('customer-hero__tags--list'),
-  actions: page.getByTestId('customer-hero__actions--div'),
-  email: page.getByTestId('customer-hero__email--link'),
-  call: page.getByTestId('customer-hero__call--link'),
-  photo: page.getByTestId('customer-avatar__photo--image'),
-  initials: page.getByTestId('customer-avatar__initials--text'),
-})
+const parts = (page: Page) => {
+  // The other clients of the state (#39) carry avatars of their own: the ones measured here are
+  // the hero's, inside it
+  const root = page.getByTestId('customer-hero__root--section')
+  return {
+    root,
+    avatar: root.getByTestId('customer-avatar__root--span'),
+    text: page.getByTestId('customer-hero__text--div'),
+    name: page.getByTestId('customer-hero__name--heading'),
+    tags: page.getByTestId('customer-hero__tags--list'),
+    actions: page.getByTestId('customer-hero__actions--div'),
+    email: page.getByTestId('customer-hero__email--link'),
+    call: page.getByTestId('customer-hero__call--link'),
+    photo: root.getByTestId('customer-avatar__photo--image'),
+    initials: root.getByTestId('customer-avatar__initials--text'),
+  }
+}
 
 async function boxOf(locator: Locator) {
   const box = await locator.boundingBox()
