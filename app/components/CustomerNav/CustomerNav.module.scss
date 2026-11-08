@@ -1,0 +1,161 @@
+// The nav of neighbors of the detail, as in the prototype: below 640px, the position stands above
+// two cards side by side; from 640px, the box of the prototype holds the two pills with the
+// position between them. One marking for the two widths; the CSS places it (ADR-0014). The color
+// is set on the links, so it wins over the `a` and `a:hover` colors of the base layer.
+.Nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.Position {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+// The card of the mobile and the pill of the desktop are one mark, laid out by the media query
+// below: the card has a surface of its own, and the pill floats in the box of the nav
+.Link {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.Prev {
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px 0 10px;
+  border-radius: 22px;
+}
+
+.Next {
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px 0 16px;
+  border-radius: 22px;
+}
+
+// The label of the side and the name of the neighbor: a line down on the cards of the mobile, in a
+// row on the pills ("Anterior {name}")
+.Text {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  min-width: 0;
+}
+
+.Name {
+  font-weight: 500;
+}
+
+.Chevron {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+// Hover only where a pointer can hover, so a tap does not leave a card in that state (ADR-0013)
+@media (hover: hover) {
+  .Prev:hover,
+  .Next:hover {
+    background: var(--surface-alt);
+  }
+}
+
+// Below 640px the first row carries the position across the two columns and the cards sit side by
+// side, each in the column of its side; the side without a neighbor keeps its cell with an empty
+// span of its own, as the two variants of the prototype keep. The :active of the cards is scoped to
+// this width: no unit test can pin it, for happy-dom applies no media query, so the E2E of the
+// detail (tests/e2e) is the one that owns it.
+@media (width < 640px) {
+  .Nav {
+    display: grid;
+    grid-template-areas:
+      'position position'
+      'prev next';
+    grid-template-columns: 1fr 1fr;
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+
+  .Position {
+    grid-area: position;
+  }
+
+  .Prev,
+  .Next {
+    gap: 4px;
+    min-height: 60px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+  }
+
+  .Prev {
+    grid-area: prev;
+    padding: 8px 12px 8px 6px;
+  }
+
+  .Next {
+    grid-area: next;
+    padding: 8px 6px 8px 12px;
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  // The first tap catches, and the pill of the desktop has none of it
+  .Prev:active,
+  .Next:active {
+    background: var(--surface-alt);
+  }
+
+  .Text {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .Label {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  // The name is cut where it is: no name spreads the column it is in
+  .Name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .Chevron {
+    width: 20px;
+    height: 20px;
+  }
+
+  // The empty side fills the cell of its own side. On the desktop the same span is a plain, zero
+  // sized child of the flex row, holding the position away from the border as the prototype does
+  .GhostPrev {
+    grid-area: prev;
+  }
+
+  .GhostNext {
+    grid-area: next;
+  }
+}

@@ -1,7 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ICustomer, ICustomerDetailResponse } from '#shared/types/customer'
+import type { ICustomer, ICustomerCard, ICustomerDetailResponse } from '#shared/types/customer'
 import CustomerPage from './[id].vue'
 
 const customer: ICustomer = {
@@ -65,8 +65,10 @@ registerEndpoint('/api/customers/no-body', () => null)
 // The same customer with the fields the sections have a rule for. 01:00 UTC is still the evening
 // before in America/Sao_Paulo, the zone of the specs: dates read in it come a day early, and the
 // registration one a month early. A state outside the 27 has no UF. The type has two genders, so the
-// third is set by Reflect.
+// third is set by Reflect. The context of the response stays the default: this customer alone, as
+// one out of one.
 registerEndpoint('/api/customers/night-owl', () => ({
+  ...response,
   customer: {
     ...customer,
     birthDate: '1974-05-16T01:00:00Z',
@@ -74,12 +76,48 @@ registerEndpoint('/api/customers/night-owl', () => ({
   },
 }))
 registerEndpoint('/api/customers/atlantis', () => ({
+  ...response,
   customer: { ...customer, state: 'Atlantis', uf: '' },
 }))
 registerEndpoint('/api/customers/stranger', () => {
   const stranger = { ...customer }
   Reflect.set(stranger, 'gender', 'other')
-  return { customer: stranger }
+  return { ...response, customer: stranger }
+})
+
+// The customer between two others: position 3 of a context of 43, the neighbors as cards, no block
+// of the others of the state to fill in
+const PREV_NEIGHBOR: ICustomerCard = {
+  slug: 'ana-souza',
+  name: 'Ana Souza',
+  street: 'Rua Santa Catarina, 3833',
+  city: 'Umuarama',
+  state: 'Santa Catarina',
+  uf: 'SC',
+  postcode: '43646',
+  picture: 'https://example.com/ana.jpg',
+}
+const NEXT_NEIGHBOR: ICustomerCard = {
+  slug: 'carlos-munoz',
+  name: 'Carlos Muñoz',
+  street: 'Rua Santa Catarina, 3833',
+  city: 'Umuarama',
+  state: 'Santa Catarina',
+  uf: 'SC',
+  postcode: '43646',
+  picture: 'https://example.com/carlos.jpg',
+}
+const neighbors: ICustomerDetailResponse = {
+  customer,
+  position: 3,
+  total: 43,
+  prev: PREV_NEIGHBOR,
+  next: NEXT_NEIGHBOR,
+  related: [],
+}
+registerEndpoint('/api/customers/with-neighbors', (event) => {
+  record(event)
+  return neighbors
 })
 
 const TRAIL = '[data-testid="breadcrumb__trail--nav"]'
@@ -102,6 +140,10 @@ const CELL = '[data-testid="customer-detail__cell--link"]'
 const PHONE_VALUE = '[data-testid="customer-detail__phone--value"]'
 const PHONE = '[data-testid="customer-detail__phone--link"]'
 const POSTCODE_VALUE = '[data-testid="customer-detail__postcode--value"]'
+const NAV = '[data-testid="customer-nav__root--nav"]'
+const NAV_PREV = '[data-testid="customer-nav__prev--link"]'
+const NAV_POSITION = '[data-testid="customer-nav__position--text"]'
+const NAV_NEXT = '[data-testid="customer-nav__next--link"]'
 
 const metaContent = (property: string) =>
   document.head.querySelector(`meta[property="${property}"]`)?.getAttribute('content')
@@ -414,5 +456,87 @@ describe('copy e-mail button', () => {
     await flushPromises()
 
     expect(useToast().message.value).toBe('Não foi possível copiar')
+  })
+})
+
+// The nav of neighbors (#38): the position, the total and the two cards the answer carries, the
+// links opening each neighbor with the list state the address has.
+describe('customer page nav of neighbors', () => {
+  // The list state of the address, whose canonical form the page asks the BFF with and the neighbor
+  // links keep: page, size, search, states and order, the defaults out
+  const ADDRESS = '/customers/with-neighbors?page=5&perPage=18&search=girao&states=acre&sort=recent'
+  const ASKED =
+    '/api/customers/with-neighbors?page=5&perPage=18&search=girao&states=acre&sort=recent'
+
+  it('mounts the nav of neighbors with the context the answer gives', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: ADDRESS })
+    const nav = wrapper.get(NAV)
+
+    expect(nav.attributes('aria-label')).toBe('Navegar entre clientes')
+    expect(wrapper.get(NAV_POSITION).text()).toBe('3 de 43')
+    expect(
+      wrapper
+        .get(NAV_PREV)
+        .findAll('span > span')
+        .map((span) => span.text()),
+    ).toEqual(['Anterior', 'Ana Souza'])
+    expect(
+      wrapper
+        .get(NAV_NEXT)
+        .findAll('span > span')
+        .map((span) => span.text()),
+    ).toEqual(['Próximo', 'Carlos Muñoz'])
+  })
+
+  // After the sections and inside the article (it is no way back), first of what would follow it
+  it('puts the nav of neighbors after the sections, inside the article', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: ADDRESS })
+    const follows = (before: Element, after: Element) =>
+      Boolean(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+    expect(wrapper.get(ARTICLE).find(NAV).exists()).toBe(true)
+    expect(follows(wrapper.get(SECTIONS).element, wrapper.get(NAV).element)).toBe(true)
+  })
+
+  // The links open each neighbor with the list state of the address, page and size included
+  it('opens the neighbors with the list state the address carries', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: ADDRESS })
+
+    expect(wrapper.get(NAV_PREV).attributes('href')).toBe(
+      '/customers/ana-souza?page=5&perPage=18&search=girao&states=acre&sort=recent',
+    )
+    expect(wrapper.get(NAV_NEXT).attributes('href')).toBe(
+      '/customers/carlos-munoz?page=5&perPage=18&search=girao&states=acre&sort=recent',
+    )
+  })
+
+  // The answer of the edge: "1 de 1" stays, without a card at either side
+  it('keeps the nav without cards when the answer has no neighbors', async () => {
+    const wrapper = await mountSuspended(CustomerPage, { route: '/customers/alejandra-rodrigues' })
+
+    expect(wrapper.get(NAV_POSITION).text()).toBe('1 de 1')
+    expect(wrapper.find(NAV_PREV).exists()).toBe(false)
+    expect(wrapper.find(NAV_NEXT).exists()).toBe(false)
+  })
+
+  // The BFF shapes the context from the list state: the search, the filters, the order, the page
+  it('asks the BFF with the list state of the address', async () => {
+    await mountSuspended(CustomerPage, { route: ADDRESS })
+
+    expect(requests).toEqual([ASKED])
+  })
+
+  // A navigation that keeps the list state (the hash the layout's skip link would add, a key the
+  // list does not take) brings a query of its own with the same values: the same list state is the
+  // same serialization, so the fetch does not ask again. Here it is an unknown key: mountSuspended
+  // renders no layout, and a hash would send its scroll look for an anchor that is not there.
+  it('does not ask the BFF again when the address changes inside the same list state', async () => {
+    await mountSuspended(CustomerPage, { route: ADDRESS })
+    await navigateTo(ADDRESS + '&foo=1')
+    await flushPromises()
+    // One more beat for a fetch raised by the navigation to rule itself in
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(requests).toEqual([ASKED])
   })
 })

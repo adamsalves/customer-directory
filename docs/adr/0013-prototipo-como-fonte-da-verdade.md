@@ -88,6 +88,9 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | 404 só na página do membro                          | todo 404 diz "Cliente não encontrado"      | slug do cliente chega por link (até a #122)       |
 | o card inteiro é o `<a>`                            | `<a>` no nome, com `::after` sobre o card  | o nome acessível é só o nome do cliente           |
 | "Voltar para a lista" de 36px em qualquer largura   | 44px abaixo de 960px (raio de 22px)        | único caminho de volta no mobile (sem trilha)     |
+| nav do membro em 2 variantes por `sc-if`            | uma marcação só, posicionada pelo CSS      | HTML igual em qualquer largura (ADR-0014)         |
+| desktop: "Anterior: {nome}" com dois-pontos         | "Anterior {nome}" nos dois tamanhos        | o nome do link é o texto que ele traz             |
+| vão do lado sem vizinho: `<span></span>` nu         | o mesmo vão, com `aria-hidden="true"`      | marca que o lugar vazio não é conteúdo            |
 
 ## Consequências
 

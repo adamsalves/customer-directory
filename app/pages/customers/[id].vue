@@ -9,10 +9,28 @@ import S from './[id].module.scss'
 // of a catch-all. Read once: Nuxt keys the page by its path, so another customer is another page.
 const slug = String(useRoute().params.id)
 
+// The list state the address carries, which the card's link put there. A key the list does not know
+// is dropped and a value it does not accept falls to the default, so `?foo=1&page=abc` goes back to
+// the plain list.
+const { query } = useListQuery()
+
+// The context the BFF shapes around the customer (the position, the total, the neighbors) is the
+// list state of the address too: the same search, filters and order the list used. What keeps
+// useFetch from asking this same answer twice on a hash-only navigation is not the guard of this
+// computed: the `query` of useListQuery already stays one and the same object while the list state
+// is the same, and Vue only lets a computed through when its value changed. What this computed
+// adds on top is a guard for callers without that gate: reading `route.query` straight would build
+// a new object at every navigation, and a new object on the same list state would refetch.
+const apiQuery = computed<Record<string, string>>((previous) => {
+  const next = serializeListQuery(query.value)
+  return previous && JSON.stringify(previous) === JSON.stringify(next) ? previous : next
+})
+
 // No retry of its own on a 502: a retry here would read the source twice and keep the answer off
 // the screen twice as long (ADR-0005). The slug comes from the address, so it is encoded: a `../` in
 // it cannot walk out of /api/customers/ to a route that answers with no customer (a 500, not a 404).
 const { data, error } = await useFetch(`/api/customers/${encodeURIComponent(slug)}`, {
+  query: apiQuery,
   retry: false,
 })
 
@@ -25,12 +43,9 @@ if (error.value || !data.value) {
     fatal: true,
   })
 }
-const { customer } = data.value
+const { customer, position, total, prev, next } = data.value
 
-// The way back is the list state the address carries, which the card's link put there. A key the list
-// does not know is dropped and a value it does not accept falls to the default, so `?foo=1&page=abc`
-// goes back to the plain list.
-const { query } = useListQuery()
+// The way back is the list state the address carries, which the card's link put there.
 const back = computed(() => ({ path: LIST_PATH, query: serializeListQuery(query.value) }))
 
 // The photo is the large one and already absolute, so it needs no base URL
@@ -190,6 +205,10 @@ async function copyEmail() {
             </div>
           </CustomerInfoSection>
         </div>
+        <!-- The position, the neighbors and "N de M" are the context the answer carries: where this
+             customer sat in the list the card was opened from. The others of the state (#39) come
+             after the nav. -->
+        <CustomerNav :position="position" :total="total" :prev="prev" :next="next" />
       </article>
     </div>
   </div>
