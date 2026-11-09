@@ -58,7 +58,7 @@
 - **Estimar sem contar os specs, de novo.** No M5, a #23 fechou com +624 contra ~290, a #24 com +1242 contra ~560 e a #26 com +1697 contra ~520.
 - **Estimar sem contar os specs, ainda.** No M6, a #103 fechou com +425 contra ~200 e a #29 com +884 contra ~300, quase tudo E2E de estilo. O E2E da ordenação (#30) ficou perto: +115 contra ~100, depois do review.
 - **Estimar sem contar os specs, de novo.** No M7, a #32 fechou com +747 contra ~330 e a #35 com +763 contra ~330, as duas aprovadas como exceção; os E2E de estilo ficaram no alvo: #125 com +225 contra ~230 e #129 com +206 contra ~200.
-- **Pressupor que a fixture dá o conteúdo.** Nenhum estado tem ≥3 clientes: o related nunca passa de 1 card, a rolagem verdadeira não existe com os 20 registros e nem a coluna alargada levou ao snap — o Chromium do teste não voltou à posição de roleta depois de nenhuma rolagem.
+- **Pressupor que a fixture dá o conteúdo.** Nenhum estado tem ≥3 clientes: o related nunca passa de 1 card, a rolagem verdadeira não existe com os 20 registros e nem a coluna alargada levou ao snap — o Chromium do teste não voltou ao repouso do snap depois de nenhuma rolagem.
 
 ## 🔄 O que eu faria diferente
 

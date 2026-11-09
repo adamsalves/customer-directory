@@ -93,7 +93,7 @@ A implementação reproduz o protótipo, e os tokens têm os mesmos nomes das cu
 | vão do lado sem vizinho: `<span></span>` nu         | o mesmo vão, com `aria-hidden="true"`      | marca que o lugar vazio não é conteúdo            |
 | link "Ver todos de {Estado}" fora dos 27            | sem o link; os cards ficam                 | a URL só aceita os 27; o link cairia sem filtro   |
 | `:active` do mobile com o card todo de text-strong  | só o fundo muda; rótulo segue --text-muted | a cor forte lê como ruído de foco no toque        |
-| carrossel esconde a barra só com `scrollbar-width`  | a mesma técnica, sem fallback `-webkit-`   | no Safari < 18.2 a barra pode aparecer (#137)     |
+| carrossel esconde a barra só com `scrollbar-width`  | a barra escondida, sem fallback `-webkit-` | no Safari < 18.2 a barra pode aparecer (#137)     |
 
 ## Consequências
 
