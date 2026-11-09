@@ -36,6 +36,8 @@
 - **Refutar com prova antes de corrigir.** Um achado dizia que a escolha feita antes da hidratação ficava na tela. Um E2E que segurava os scripts mostrou que o Vue reescreve o `:selected`, e a correção não entrou (#29).
 - **Conferir no preview.** O Alto Contraste das pílulas passava nos testes com valores computados certos, e só o preview mostrou o rótulo sumindo (#96).
 - **Dividir quando a issue cresce.** A paginação (#16) passou do teto; rolagem e foco viraram a #71 e a #72, cada uma com review próprio.
+- **Decodificar o protótipo em vez de "conferir a olho".** No #137 o bundle decodificado entregou os valores 1:1 (72%, −16px, tabular-nums, grid-areas) e revelou o `:active` que pinta o rótulo — diferença invisível na tela.
+- **Provar a asserção no Chrome antes de pinar.** A volta do `scrollLeft` a zero depois de rolar até o fim, que o plano da #137 contava, não se mostrou: nenhuma receita de rolagem re-snapou neste Chromium. Medir salvou o teste de pinar o que nunca aconteceria — o snap ficou assegurado no computed, e a rolagem, pendente.
 
 ## ❌ O que não funcionou
 
@@ -56,6 +58,7 @@
 - **Estimar sem contar os specs, de novo.** No M5, a #23 fechou com +624 contra ~290, a #24 com +1242 contra ~560 e a #26 com +1697 contra ~520.
 - **Estimar sem contar os specs, ainda.** No M6, a #103 fechou com +425 contra ~200 e a #29 com +884 contra ~300, quase tudo E2E de estilo. O E2E da ordenação (#30) ficou perto: +115 contra ~100, depois do review.
 - **Estimar sem contar os specs, de novo.** No M7, a #32 fechou com +747 contra ~330 e a #35 com +763 contra ~330, as duas aprovadas como exceção; os E2E de estilo ficaram no alvo: #125 com +225 contra ~230 e #129 com +206 contra ~200.
+- **Pressupor que a fixture dá o conteúdo.** Nenhum estado tem ≥3 clientes: o related nunca passa de 1 card, a rolagem verdadeira não existe com os 20 registros e nem a coluna alargada levou ao snap — o Chromium do teste não voltou à posição de roleta depois de nenhuma rolagem.
 
 ## 🔄 O que eu faria diferente
 
@@ -71,3 +74,5 @@
 - Escolher dados de teste que separem as variantes do algoritmo (todas as palavras, qualquer uma, só a primeira), e não só os que dão o resultado esperado.
 - Pedir, para cada asserção de E2E, o mutante que derruba aquela linha, e clicar um item que não seja o primeiro da lista.
 - Medir no plano quantas linhas o E2E de estilo vai custar quando a issue fixa CSS declaração por declaração.
+- Medir os valores serializados computados no Chrome antes de pinar (`grid-template-areas`, `grid-auto-columns: 72%`), e não escrever a asserção do cálculo mental.
+- Registrar a divergência do protótipo já na conferência do measurer — o `:active` do rótulo apareceu na decodificação do #137, e virou linha da ADR-0013 no próprio PR, não numa issue depois.

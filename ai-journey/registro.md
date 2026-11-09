@@ -740,6 +740,8 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - **Review** (`/review`): sem achados. O reviewer conferiu o que o spec pina contra as fontes (o `catch` do `[id].vue`, `useToast`, os tokens, a animação que só mexe em `opacity` e `transform`) e rodou o spec: 5 pass, 5 pulados; os dois mutantes vivos já eram as limitações do plano.
 - **Pendente:** o `env(safe-area-inset-bottom)` (0 no Chromium) e o `max-inline-size` (só apareceriam numa mensagem maior que a tela, que a interface não produz), vivos como limitação do plano.
 
+## M8 · Navegação
+
 ### #37 · BFF: vizinhos e relacionados do detalhe
 
 - **Decidido:** [#37](https://github.com/adamsalves/customer-directory/issues/37) · ADR-0004 (o shape `{ customer, position, total, prev, next, related }` já estava nele desde a rota da #31, que devolvia só `{ customer }` — **sem ADR nova**), ADR-0007, ADR-0021, ADR-0023 (o card manda a query da lista no endereço do detalhe).
@@ -799,3 +801,16 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - **Achado 1 aplicado:** número do Resultado corrigido (era "+151"; o real do `--stat` é +143, 155 com este registro).
   - **Achado 2 aplicado:** estimativa do Plano corrigida (era "~90"; o plano aprovado na issue fala de ~200–230).
   - **Achado 3 aplicado:** âncora do comentário do Plano acrescentada ao link (`#issuecomment-6739649665`).
+
+### #137 · E2E da identidade da navegação
+
+- **Decidido:** [#137](https://github.com/adamsalves/customer-directory/issues/137) · ADR-0009 (o E2E das issues de teste é o dono do que o happy-dom e as media queries escondem) e ADR-0013, com duas linhas novas na tabela de desvios: o `:active` do protótipo pinta o card todo de `text-strong` (aqui o rótulo segue `--text-muted`) e a barra do carrossel escondida só por `scrollbar-width: none`, que o Safari < 18.2 pode ignorar. Fecha as pendências de estilo da #38 e da #39; é o E2E que fecha o M8.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/137#issuecomment-6740535136) · estimativa ~255–310
+- **Como:**
+  - Um spec novo, `tests/e2e/customerNavigationStyles.spec.ts`, 7 testes num arquivo que pula inteiro no projeto mobile: cada teste mede na própria largura (1280 e 375), com `colorScheme: 'dark'` para o `waitForHydration`, `reducedMotion: 'reduce'` para as caixas da entrada e as fotos abortadas.
+  - Desktop 1280: a caixa do nav (8px de padding, gap, raio 2, `--surface`), as pílulas de 44px com o hover decidido pela mídia de ponteiro e a posição em `tabular-nums`; o related com o grid pelo que a folha declara (`declared` — cópia do helper do sheet estendida para regras dentro da media query que casa, pois a `72%` vive dentro de `@media (width < 640px)`) e o card único de Santa Catarina; os fantasmas numa página "1 de 1", de tamanho zero no flex do desktop.
+  - Mobile 375: o `grid-template-areas` como o Chrome serializa (`"position position" "prev next"`, com aspas) e as colunas resolvidas em px (`167.5px 167.5px`) — medidos vivos antes de pinar, como o plano pede; os fantasmas com a largura de um fr da grade (o `1fr` como `auto` desmorona o vão); o `:active` do card por `mouse.down` e depois o ponteiro longe: com o mouse sobre o card, `:hover` e `:active` pintam o mesmo `--surface-alt`, e é o afastamento com o botão ainda embaixo (o `:hover` cai, o `:active` fica até o `mouse.up`) que prova a regra; o carrossel com sangria de −16px nos dois lados, `0 16px 4px`, gap 12, a coluna de `72%` declarada na folha e realizada na caixa (246.953125px), snap `x mandatory` e `scrollbar-width: none`.
+  - A rolagem simulada do plano ficou de fora: o Chromium do teste não volta ao ponto de roleta depois do fim de nenhuma rolagem — `scrollBy` instantâneo e suave, `scrollLeft` cru, rodas do mouse horizontal e vertical, gesto sintetizado e arrasto por toque — e o `scrollLeft` ficou crú no máximo (343 e 105px) com `scroll-snap-type: x mandatory` computado. O plano já mandava parar caso os números observados divergissem dos previstos; nenhuma asserção da volta a zero foi pinada, e a metade "rolagem" do critério do carrossel fica pendente de decisão do dono.
+- **Resultado:** +383 sem este registro (estimativa ~255–310; o spec cresceu porque cada declaração leva a asserção própria com o mutante nomeado, como o plano pede). E2E completo: 379 verdes e 75 pulados (eram 372 e 68): os 7 do spec novo, que pulam no mobile. O spec novo passou 4 vezes seguidas. Lint, typecheck e os 961 unitários verdes.
+  - **Mutação:** as seis mutantes do plano, cada uma morta no teste previsto: a `font-variant-numeric` fora (o teste do desktop da posição), as duas grid-areas trocadas (o teste do mobile do nav, na própria asserção do valor serializado), o bloco `:active` fora (o do toque, com o ponteiro longe — com o mouse em cima o hover encobre a mutação, e é o afastamento que a revela), `72%` → `auto` (o do carrossel, no valor declarado), o `scroll-snap-type` fora (o do carrossel — no plano era o teste da rolagem que o matava; com ele fora de alcance, o computed é quem mata) e o fundo do `:hover` fora (o do desktop).
+- **Review:** pendente.
