@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
+import { test } from './network'
 
 // The three sections are one markup at every width (ADR-0014): the page makes a grid of as many
 // 240px columns as it keeps and a column that holds them 16px under the hero. happy-dom applies no
@@ -12,12 +13,6 @@ test.use({ reducedMotion: 'reduce' })
 // 320px, and what the sections pin is not about the customer
 const CUSTOMER = '/customers/bartolomeu-martins'
 const EMAIL = 'bartolomeu.martins@example.com'
-const PHOTOS = 'https://randomuser.me/**'
-
-// No test reaches the network: a photo that fails is aborted
-test.beforeEach(async ({ page }) => {
-  await page.route(PHOTOS, (route) => route.abort())
-})
 
 const sections = (page: Page) => page.getByTestId('customer-info-section__root--section')
 

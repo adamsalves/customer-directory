@@ -1,5 +1,6 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // The search, the states and the gender together, from the control to the URL and back: what the
 // spec of each piece cannot see (FilterPanel, FilterChips and FilterSheet have theirs). The controls

@@ -1,5 +1,6 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // ADR-0009: the server reads the 20-record fixture, not the 200 records on S3. Page 3 is then
 // the last page, with 2 cards; on S3 it would have 9.

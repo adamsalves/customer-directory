@@ -1,5 +1,6 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // The card is a link (#35): the name is the link, and CSS stretches it over the card. happy-dom
 // applies no CSS, so the unit specs see none of it. waitForHydration needs a dark system.

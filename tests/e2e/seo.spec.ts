@@ -1,4 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './network'
+import { SOURCE_URL } from './servers'
 
 // What a crawler or a link preview reads is the HTML the server sends, before any script runs, so
 // this asks for it with no browser. The mobile project would only repeat the same request.
@@ -24,7 +26,5 @@ test('a customer comes with its title, description and photo', async ({ request 
   expect(html).toContain(
     '<meta property="og:title" content="Alejandra Rodrigues · Juntos Somos Mais">',
   )
-  expect(html).toContain(
-    '<meta property="og:image" content="https://randomuser.me/api/portraits/women/18.jpg">',
-  )
+  expect(html).toContain(`<meta property="og:image" content="${SOURCE_URL}/photos/women/18.jpg">`)
 })

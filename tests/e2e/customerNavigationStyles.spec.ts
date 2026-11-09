@@ -1,5 +1,6 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // The identity of the nav of neighbors and of the related of the detail, as the prototype draws
 // them (ADR-0013): the "N de M" in tabular-nums, the pills of the desktop and the cards of the
@@ -11,13 +12,6 @@ test.skip(({ isMobile }) => isMobile, 'the width is set by each test')
 // A press reads nothing of the buttons before the page is interactive, and waitForHydration needs a
 // dark system; reduced motion keeps every box of the entrance (jsm-in) on the pixel grid
 test.use({ colorScheme: 'dark', reducedMotion: 'reduce' })
-
-const PHOTOS = 'https://randomuser.me/**'
-
-// No test reaches the network: a photo that fails is aborted, as in the specs that show cards
-test.beforeEach(async ({ page }) => {
-  await page.route(PHOTOS, (route) => route.abort())
-})
 
 // Alejandra Rodrigues: 4th of the context of the 20 of the fixture, and her state (Santa
 // Catarina) is the one with only one other customer, Apolo Nunes, for the related

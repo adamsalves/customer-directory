@@ -1,5 +1,6 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // The toast is one region of the layout (default.vue), outside <main>, always in the HTML and
 // empty: the bubble only comes into it when the copy of the email answers, and the region takes
@@ -15,17 +16,11 @@ test.skip(({ isMobile }) => isMobile, 'the width is set by each test')
 test.use({ colorScheme: 'dark' })
 
 const CUSTOMER = '/customers/oceano-jesus'
-const PHOTOS = 'https://randomuser.me/**'
 // The clock is installed on a fixed date before the page opens, as in customerDetail.spec.ts, and
 // is stopped an hour later: nothing is scheduled behind it (the only timer is the one the click
 // starts, and the pause holds it)
 const CLOCK = new Date('2026-01-01T08:00:00')
 const PAUSED_AT = new Date(CLOCK.getTime() + 60_000)
-
-// No test reaches the network: a photo that fails is aborted
-test.beforeEach(async ({ page }) => {
-  await page.route(PHOTOS, (route) => route.abort())
-})
 
 const regionLocator = (page: Page) => page.getByTestId('toast__root--status')
 const bubbleLocator = (page: Page) => page.getByTestId('toast__message--text')

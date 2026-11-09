@@ -1,8 +1,9 @@
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { fileURLToPath } from 'node:url'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 import { FLAKY_APP_PORT, SOURCE_URL } from './servers'
 
 // The customer page from the list and back, and the page when it cannot open: what the unit specs

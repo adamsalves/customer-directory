@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './network'
 
 test('the root redirects to the customer list', async ({ page }) => {
   // The redirect comes from the server, not from client-side navigation

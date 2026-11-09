@@ -1,6 +1,7 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { waitForHydration } from './hydration'
 import { layoutWidth } from './layoutWidth'
+import { test } from './network'
 
 // The scroll lock of the sheet takes the scrollbar of the page away and keeps the room it had
 // (`scrollbar-gutter`, base.scss), so that nothing in the page moves. That shows only where a scrollbar

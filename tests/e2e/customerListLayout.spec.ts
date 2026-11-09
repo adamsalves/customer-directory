@@ -1,5 +1,6 @@
-import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test'
+import { expect, type BrowserContext, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // ADR-0014: the layout changes in CSS, at 640px and at 960px. happy-dom applies no media query,
 // so the component specs cannot see any of it and these are the tests that do.

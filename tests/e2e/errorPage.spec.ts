@@ -1,5 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // A slug no customer has: the BFF answers 404 and the page throws it (#32)
 const MISSING = '/customers/no-such-customer'

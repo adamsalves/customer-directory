@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './network'
 
 // Home points at /customers, so RouterLink sees it as exact-active there
 test('the trail marks only the last step as the current page', async ({ page }) => {

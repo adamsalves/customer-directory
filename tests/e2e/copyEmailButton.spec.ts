@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
+import { test } from './network'
 
 // The copy button and the email row that holds it are the page's CSS ([id].module.scss): happy-dom
 // applies none and no component spec lays the browser out, so these are the tests that pin them
@@ -12,12 +13,6 @@ test.use({ colorScheme: 'dark', reducedMotion: 'reduce' })
 // so the measurements are Roboto's
 const CUSTOMER = '/customers/alejandra-rodrigues'
 const EMAIL = 'alejandra.rodrigues@example.com'
-const PHOTOS = 'https://randomuser.me/**'
-
-// No test reaches the network: a photo that fails is aborted
-test.beforeEach(async ({ page }) => {
-  await page.route(PHOTOS, (route) => route.abort())
-})
 
 const copyButton = (page: Page) => page.getByTestId('customer-detail__copy--button')
 const copyIcon = (page: Page) => page.getByTestId('customer-detail__copy--icon')

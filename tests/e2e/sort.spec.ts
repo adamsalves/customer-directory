@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // The sort from the select to the URL and back. The select does nothing before the page is
 // interactive, and waitForHydration needs a dark system.
