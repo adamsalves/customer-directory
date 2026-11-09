@@ -784,3 +784,18 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - **Achado 3 aplicado:** número do corpo do PR corrigido (era "+632"; o real do `--stat` era 633, que subiu com os commits do review).
   - **Equivalentes declarados:** `:key="card.slug"` (sem reordenação nem mutação in-place de `customers` — a página é keyed pelo path) e o `computed` do link (o estado da lista não muda com a página viva, ADR-0023).
     a gestão do "Ver todos de {Estado}" mantém `sort` e `perPage` — decisão contra-marcada no plano, por ser a do protótipo e a da ADR-0023. E2E de estilo e do carrossel na #40.
+
+### #40 · E2E da navegação entre clientes
+
+- **Decidido:** [#40](https://github.com/adamsalves/customer-directory/issues/40) · ADR-0021 (a URL é a fonte: cada passo do percurso é pinado pelo endereço que o app escreve), ADR-0023 (a escrita em voo da busca) e ADR-0004 (posição, total e vizinhos vêm do contexto da resposta da #37). Fecha o E2E que #38 e #39 deixaram pendente; o percurso de ida e volta já coberto pela #128 não se repete.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/40#issuecomment-6739649665) · estimativa ~200–230 linhas
+- **Como:**
+  - **Um spec novo, `tests/e2e/customerNavigation.spec.ts`, só no desktop** (`test.skip` no arquivo: os mesmos cliques e o mesmo HTML do servidor em qualquer largura), `colorScheme: 'dark'` para o `waitForHydration` e fotos abortadas. Ordem calculada na própria fixture (collator pt-BR, fold): `search=a` mantém os 20 em 3 páginas; a página 2 abre com Deolindo da Cunha, o 10º.
+  - **Percurso completo num teste só:** contador `1–9 de 20` → busca `a` → rádio Masculino (`1–9 de 13`, chips "Busca: “a”" e "Masculino") → remover o chip (painel e total de volta, sem efeito colateral) → página 2 (`10–18 de 20`) → primeiro card (posição `10 de 20`, vizinhos Bartolomeu Martins e Eleutério Almeida) → próximo (`11 de 20`, query intacta) → "Voltar para a lista" (URL, contador e "Página 2, atual" de volta). Cada asserção crítica nomeia o mutante que mata.
+  - **Related num segundo teste:** `alejandra-rodrigues` direto, seção com 1 card (Apolo Nunes, o caso de guarda `length === 0` não pega; o do review da #39) e "Ver todos de Santa Catarina" → `/customers?states=santa-catarina` com 2 cards, contador `1–2 de 2` e o chip do estado.
+- **Resultado:** +143 sem este registro (estimativa ~200–230 do plano; o spec ficou 143 e, com este registro, 155 no total). E2E completo: 372 verdes e 68 pulados (eram 370 e 66): os 2 do spec novo, que pulam no mobile. O spec passou 6 vezes seguidas. Lint e typecheck verdes.
+  - **Mutação:** o `query` do `to()` do `CustomerNav` fora — morto na asserção do endereço do próximo (`/customers/eleuterio-almeida?page=2&search=a`).
+- **Review** (`reviewer`, approve-with-notes): o revisor recomputou a fixture (fold/collator) — todos os números da jornada batem; confirmou `detailContext.ts:47–62` (posição/total ignoram `page`/`perPage`, então "10 de 20" é o contrato); ADR-0023 respeitada (cada mutação espera o estado escrito); labels/testids/en dash conferidos; sem achado no spec.
+  - **Achado 1 aplicado:** número do Resultado corrigido (era "+151"; o real do `--stat` é +143, 155 com este registro).
+  - **Achado 2 aplicado:** estimativa do Plano corrigida (era "~90"; o plano aprovado na issue fala de ~200–230).
+  - **Achado 3 aplicado:** âncora do comentário do Plano acrescentada ao link (`#issuecomment-6739649665`).
