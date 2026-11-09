@@ -599,6 +599,50 @@ describe('SearchField writing the URL', () => {
     expect(useRoute().fullPath).toBe('/elsewhere')
   })
 
+  // A card click made inside the wait: the write would start after the link's navigation and take
+  // it out (the last navigation to start wins). The anchor is in the document, not the field, and
+  // only dispatched: a .click() would navigate in happy-dom.
+  it('drops the write it was waiting to do when the reader clicks a link off the list', async () => {
+    const wrapper = await mountField()
+    const { replace, push } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    const card = document.body.appendChild(
+      Object.assign(document.createElement('a'), { href: '/customers/abraim-dacosta' }),
+    )
+    onTestFinished(() => {
+      card.remove()
+    })
+
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+
+    expect(replace).not.toHaveBeenCalled()
+    expect(push).not.toHaveBeenCalled()
+    expect(useRoute().fullPath).toBe('/customers')
+  })
+
+  // A link that stays on the list keeps the wait: its navigation carries the choice the write
+  // builds on, so both land (ADR-0023)
+  it('keeps the write when the click is on a link that stays on the list', async () => {
+    const wrapper = await mountField()
+    const { replace, push } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    const pageTwo = document.body.appendChild(
+      Object.assign(document.createElement('a'), { href: '/customers?page=2' }),
+    )
+    onTestFinished(() => {
+      pageTwo.remove()
+    })
+
+    pageTwo.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    vi.advanceTimersByTime(300)
+
+    expect(replace).toHaveBeenCalledOnce()
+    expect(push).not.toHaveBeenCalled()
+    await urlIs('/customers?search=ana')
+  })
+
   // Off the list an empty search has nothing to say, and the reader stays where they are
   it.each([
     {
