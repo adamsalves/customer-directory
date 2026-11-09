@@ -64,6 +64,9 @@ const settle = (target: Locator) =>
 // The value a stylesheet declares for a property of the element, as it is written: the computed one
 // is a length in pixels, whatever unit it was written in (the tracks of a grid resolve when they
 // are read). The rules of a media query count too, when the width of the page answers it.
+// This read is the first MATCHING declaration in document order, not the cascade winner: last-wins
+// is not honored, so a later declaration wins the box without changing what it reads. Where the
+// order matters, the measured box of the card backstops the 72% column of the carousel.
 const declared = (target: Locator, property: string) =>
   target.evaluate((el, name) => {
     const walk = (rules: CSSRuleList): string | undefined => {
@@ -97,7 +100,11 @@ test('the nav draws the box of the prototype and the pill answers a hover, at 12
   await waitForHydration(page)
 
   // The box: the surface of the card, the 8px of every side and of the gaps and the squared corner
-  await expectLooks(nav(page), { padding: '8px', gap: '8px', 'border-radius': '2px' })
+  await expectLooks(nav(page), {
+    padding: '8px', // mutant: the 8px of the box gone
+    gap: '8px', // mutant: the pills and the position touching
+    'border-radius': '2px', // mutant: the squared corner gone
+  })
   await expect(nav(page)).toHaveCSS(
     'background-color',
     await colorOfToken(page, '--surface'), // mutant: --surface-alt took its place
@@ -110,7 +117,10 @@ test('the nav draws the box of the prototype and the pill answers a hover, at 12
     padding: '0px 16px 0px 10px',
     'font-size': '14px',
   })
-  await expect(prevLink(page)).toHaveCSS('color', await colorOfToken(page, '--text-strong'))
+  await expect(prevLink(page)).toHaveCSS(
+    'color',
+    await colorOfToken(page, '--text-strong'), // mutant: the name loses the strong color
+  )
   expect(await boxOf(prevLink(page).locator('svg'))).toMatchObject({
     width: 18, // mutant: the chevron at 20px (the size of the mobile one)
     height: 18, // mutant: the chevron reshaped
@@ -134,7 +144,10 @@ test('the nav draws the box of the prototype and the pill answers a hover, at 12
     'font-size': '13px',
     'font-variant-numeric': 'tabular-nums', // mutant: the numerals of one width removed
   })
-  await expect(position(page)).toHaveCSS('color', await colorOfToken(page, '--text-muted'))
+  await expect(position(page)).toHaveCSS(
+    'color',
+    await colorOfToken(page, '--text-muted'), // mutant: the position loses the muted text
+  )
 })
 
 // The side without a neighbor: on the desktop the span is a plain child of the flex row and does
@@ -146,9 +159,9 @@ test('with no neighbor, the ghosts are two zero-sized spacers of the row, at 128
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto(EDGE)
   // "1 de 1": the customer alone in the context, and no link rendering on either side
-  await expect(position(page)).toHaveText('1 de 1')
-  await expect(prevLink(page)).toHaveCount(0)
-  await expect(nextLink(page)).toHaveCount(0)
+  await expect(position(page)).toHaveText('1 de 1') // mutant: the context counting over all 20
+  await expect(prevLink(page)).toHaveCount(0) // mutant: the v-if of the null prev inverted
+  await expect(nextLink(page)).toHaveCount(0) // mutant: the v-if of the null next inverted
 
   expect(await boxOf(page.getByTestId('customer-nav__prev--ghost'))).toMatchObject({
     width: 0, // mutant: the ghost of the left taking room
@@ -181,13 +194,13 @@ test('the related section is a row of cards over the grid of the list, at 1280px
   const card = section.getByTestId('customer-related__card--div')
   await expect(card).toHaveCount(1)
   await expectLooks(card, {
-    padding: '32px 20px',
+    padding: '32px 20px', // mutant: the card scale of the padding lost
     'border-width': '1px', // mutant: the border of the card gone
     'border-radius': '2px', // mutant: the squared corner of the card gone
   })
   expect(await boxOf(card.getByTestId('customer-avatar__root--span'))).toMatchObject({
     width: 64, // mutant: the avatar resized
-    height: 64,
+    height: 64, // mutant: the avatar reshaped
   })
 
   // The heading and the link of the state in one row: one size each, the underline 3px down and
@@ -274,9 +287,9 @@ test('below 640px the nav is two cards with the position above, at 375px', async
 })
 
 // The :active of the mobile: held down with the pointer on it, and let go on another piece of the
-// page so no click is made, as the card of the list is proved (customerCardLink.spec.ts). With the
-// pointer away there is no :hover left (the media query of the hover no longer matches), so only
-// the :active can hold the alternate surface: no unit spec sees a media query (happy-dom)
+// page so no click is made, as the card of the list is proved (customerCardLink.spec.ts). When the
+// pointer leaves, :hover no longer matches the card, so only the :active can hold the alternate
+// surface while it is pressed: no unit spec sees a media query (happy-dom)
 test('a press on the card answers with the alternate surface, at 375px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await page.goto(CUSTOMER)
@@ -305,7 +318,7 @@ test('a press on the card answers with the alternate surface, at 375px', async (
     rest, // mutant: the alternates left pressed after the release
   )
   // The release on another piece of the page lands no click
-  await expect(page).toHaveURL(CUSTOMER)
+  await expect(page).toHaveURL(CUSTOMER) // mutant: the release lands a click anyway
 })
 
 // The side without a neighbor on the mobile: the ghost is the cell of its side of the grid, with
@@ -314,13 +327,13 @@ test('a press on the card answers with the alternate surface, at 375px', async (
 test('with no neighbor, every ghost keeps the fr of its cell, at 375px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await page.goto(EDGE)
-  await expect(position(page)).toHaveText('1 de 1')
+  await expect(position(page)).toHaveText('1 de 1') // mutant: the context counting over all 20
   const prev = page.getByTestId('customer-nav__prev--ghost')
   const next = page.getByTestId('customer-nav__next--ghost')
 
   // The side marked as an empty place
-  await expect(prev).toHaveAttribute('aria-hidden', 'true')
-  await expect(next).toHaveAttribute('aria-hidden', 'true')
+  await expect(prev).toHaveAttribute('aria-hidden', 'true') // mutant: the empty side announced as content
+  await expect(next).toHaveAttribute('aria-hidden', 'true') // mutant: the other side announced as content
 
   const cell = ((await boxOf(nav(page))).width - 8) / 2
   expect((await boxOf(prev)).width, 'the prev cell').toBeCloseTo(cell, 1)
@@ -358,8 +371,14 @@ test('below 640px the related row is a carousel on the column of the page, at 37
   await expectLooks(cards, {
     'margin-left': '-16px', // mutant: the left bleed gone
     'margin-right': '-16px', // mutant: the right bleed gone
-    padding: '0px 16px 4px',
+    padding: '0px 16px 4px', // mutant: the 4px kick-back under the cards lost
     gap: '12px', // mutant: the 16px gap of the grid left on
+  })
+  // The snap edge ignores the 16px of the bleed and keeps the snapped card level with the column
+  // (the longhands, as Chrome serializes them)
+  await expectLooks(cards, {
+    'scroll-padding-left': '16px', // mutant: the bleed ignored at the snap edge
+    'scroll-padding-right': '16px', // mutant: the bleed ignored at the snap edge
   })
   // One column of cards one after the other
   await expect(cards).toHaveCSS('grid-auto-flow', 'column') // mutant: the rows of the grid back
