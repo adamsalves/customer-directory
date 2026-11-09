@@ -369,3 +369,31 @@ A #35 saiu de ~330 linhas para +763: exceção aprovada, com o E2E do anel do ca
 
 **Abordagem final:**
 O link do card leva a query do estado em voo (`pending() ?? query`, ADR-0023) e o "Voltar" reabre a lista nela. Cada spec de estilo é desktop com a largura própria, tema pelo cookie `jsm-theme` com guarda do `data-theme`, fontes provadas com `fonts.check` e `forcedColors` lido da página: uma asserção por declaração, com mutante morto por asserção.
+
+## M8 · Navegação
+
+### 🔧 Prompt: Vizinhos, relacionados e a navegação
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+O contexto de navegação no BFF ([#37](https://github.com/adamsalves/customer-directory/issues/37)) e os componentes no detalhe: "Anterior/Próximo" ([#38](https://github.com/adamsalves/customer-directory/issues/38)) e "Outros clientes em {Estado}" com o "Ver todos" ([#39](https://github.com/adamsalves/customer-directory/issues/39)).
+
+**O que aconteceu:**
+O `detailContext` calculou a posição no contexto sem ler `page`/`perPage`, e o "N de M" só ficou certo porque a página passou a mandar a query ao BFF. No review da #39 a guarda sem prova para 1 card foi achada (mutantes `>1` e `>=4` sobreviviam à suíte inteira), e o estado fora dos 27 filtrava em silêncio: hoje o link some e os cards ficam. Os dois componentes saíram com pendência explícita: identidade visual para o E2E.
+
+**Abordagem final:**
+Uma marcação só, posicionada por `grid-areas`, com os vãos `aria-hidden` segurando o lado sem vizinho; os links guardam a query de volta com `serializeListQuery`; "Ver todos de {Estado}" só existe dentro dos 27 estados; 4 relacionados por nome, como no protótipo.
+
+### 🔧 Prompt: A jornada e a identidade no E2E
+
+**Ferramenta:** opencode + sub-agentes (main planner → implementer → reviewer)
+
+**O que pedi:**
+O E2E da jornada completa de navegação ([#40](https://github.com/adamsalves/customer-directory/issues/40)) e, em seguida, a identidade visual dos componentes no E2E ([#137](https://github.com/adamsalves/customer-directory/issues/137)), a última do M8, com o fluxo de release na sequência.
+
+**O que aconteceu:**
+Na #40 o sub-agente 1 computou as ordens da própria fixture (Deolindo da Cunha abre a página 2 de `search=a`, posição "10 de 20"), o implementer aprendeu na bobagem real o que o plano errou (chip "Masculino", `page` antes de `search` na URL, rádio) e o 2 recomputou o fold e o collator do zero. Na #137 a decodificação do protótipo confirmou declaração por declaração (1:1) e revelou o `:active` do protótipo pintando o rótulo de `text-strong`, que o impl não faz: registrado na ADR-0013 por escolha do dono. A fixture de 20 não tem estado com 3 clientes: related nunca passa de 1 card, e a "rolagem" só existe com a coluna alargada em teste — e nem assim o Chromium do teste voltou ao repouso do snap: o `scrollLeft` ficou cru no máximo depois de qualquer rolagem, e a volta a zero do plano não se mostrou.
+
+**Abordagem final:**
+Jornada num só teste encadeado, esperando o estado escrito antes de cada ato (ADR-0023); identidade num arquivo por largura, `:active` por `mouse.down` + ponteiro longe (é o afastamento, e não a chegada do ponteiro, que prova a regra), ghosts provados em "1 de 1", `72%` conferido por folha e pela caixa medida, e o snap fixado no computed `scroll-snap-type: x mandatory`, com a volta do `scrollLeft` a zero do plano e a parte "rolagem" do critério pendentes sem a prova no Chrome. O `ai-journey/` fechou o M8 no mesmo PR.

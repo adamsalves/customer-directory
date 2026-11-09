@@ -6,6 +6,7 @@ Como usei IA neste projeto. A pasta é atualizada ao fim de cada milestone.
 
 - **Claude Code** (CLI), do planejamento ao código, aos reviews e à abertura de PRs.
 - **Claude Design**, para o protótipo de UI em `docs/design/`, a partir de prompts que o Claude Code ajudou a escrever.
+- **opencode** (CLI), no fim do M8, com sub-agentes e memória própria do projeto (as seções `## M8` de `prompts.md`).
 
 ## Método
 
@@ -30,6 +31,7 @@ Como usei IA neste projeto. A pasta é atualizada ao fim de cada milestone.
 | M5 · Filtros           | filtros e contagens no BFF, painel desktop, chips removíveis, estado em voo compartilhado, sheet mobile com pílulas e E2E dos filtros                                                                   | [prompts](prompts.md#m5--filtros), [registro](registro.md#m5--filtros), [learnings](learnings.md)                     |
 | M6 · Ordenação         | ordenação no BFF com collator pt-BR, toolbar com a contagem ao vivo, select na barra e no cartão e E2E da ordenação                                                                                     | [prompts](prompts.md#m6--ordenação), [registro](registro.md#m6--ordenação), [learnings](learnings.md)                 |
 | M7 · Detalhe           | detalhe por slug no BFF (404, 502), página do cliente com hero, seções e "Copiar e-mail", 404 e SEO, card ligado ao detalhe com o estado da lista, tema num plugin, E2E da ida e volta e de cada estilo | [prompts](prompts.md#m7--detalhe), [registro](registro.md#m7--detalhe), [learnings](learnings.md)                     |
+| M8 · Navegação         | navegação por vizinhos e relacionados no BFF, componente "Anterior/Próximo", "Outros clientes em {Estado}" com "Ver todos", jornada E2E da navegação e a identidade no E2E                              | [prompts](prompts.md#m8--navegação), [registro](registro.md#m8--navegação), [learnings](learnings.md)                 |
 
 ## Arquivos
 
