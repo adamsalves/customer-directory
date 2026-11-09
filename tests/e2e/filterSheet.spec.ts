@@ -1,6 +1,7 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
 import { layoutWidth } from './layoutWidth'
+import { test } from './network'
 
 // The sheet is a native <dialog> opened with showModal(): the top layer, the page behind it made
 // inert, Esc and the focus on the way in and out are the browser's, and happy-dom has none of them

@@ -1,5 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // A dark system means every light theme below can only come from the cookie (ADR-0011)
 test.use({ colorScheme: 'dark' })

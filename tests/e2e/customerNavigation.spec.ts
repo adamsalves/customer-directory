@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // The whole way between the rows: search, filter, chip, page, detail with its position in the
 // context (#38), the related of the state (#39) and the way back, each step pinned by the URL the
@@ -9,13 +10,6 @@ test.skip(({ isMobile }) => isMobile, 'the same at any width: the desktop projec
 // The clicks of this file do nothing before the page is interactive: a link would be a plain
 // navigation and the field would not listen. waitForHydration needs a dark system.
 test.use({ colorScheme: 'dark' })
-
-const PHOTOS = 'https://randomuser.me/**'
-
-// No test reaches the network: a photo that fails is aborted, as in the specs that show cards
-test.beforeEach(async ({ page }) => {
-  await page.route(PHOTOS, (route) => route.abort())
-})
 
 const cards = (page: Page) => page.getByTestId('customer-card__root--article')
 const names = (page: Page) => cards(page).getByTestId('customer-card__name--heading')

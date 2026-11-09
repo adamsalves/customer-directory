@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 
 // The field only listens once the page is interactive. waitForHydration needs a dark system.
 test.use({ colorScheme: 'dark' })

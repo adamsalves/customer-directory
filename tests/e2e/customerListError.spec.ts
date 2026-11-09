@@ -1,8 +1,9 @@
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { fileURLToPath } from 'node:url'
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { waitForHydration } from './hydration'
+import { test } from './network'
 import { FLAKY_APP_PORT, SOURCE_URL } from './servers'
 
 // The mobile project would only repeat the same server HTML and the same click

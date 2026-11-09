@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs'
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
+import { test } from './network'
+import { SOURCE_URL } from './servers'
 
 // The hero is one markup at every width (ADR-0014): CSS makes it a column below 640px and puts its
 // actions in a grid of two columns, one below 375px. happy-dom applies no CSS, and no component spec
@@ -11,13 +13,14 @@ test.use({ reducedMotion: 'reduce' })
 
 // The longest name of the fixture, and the widest one in Roboto
 const CUSTOMER = '/customers/alejandra-rodrigues'
-const PHOTOS = 'https://randomuser.me/**'
+const LOCAL_PHOTOS = `${SOURCE_URL}/photos/**`
 const LOGO = readFileSync(new URL('../../public/logo.png', import.meta.url))
 
-// No test reaches the network: a photo that fails is aborted, and the one that has to arrive is
-// answered by its test, whose route comes later and so runs first
+// No test reaches the network, and ./network proves it when a test is over. The photo that has to
+// fail is aborted on the local server, and the one that has to arrive is answered by its test,
+// whose route comes later and so runs first
 test.beforeEach(async ({ page }) => {
-  await page.route(PHOTOS, (route) => route.abort())
+  await page.route(LOCAL_PHOTOS, (route) => route.abort())
 })
 
 const parts = (page: Page) => {
@@ -236,7 +239,7 @@ for (const { width, colorScheme, size, color, background } of COMBOS) {
 // at once would not tell the two apart, so this one is held until after the hydration.
 test('a photo still loading when the page hydrates stays a photo', async ({ page }) => {
   const arrival: PromiseWithResolvers<void> = Promise.withResolvers()
-  await page.route(PHOTOS, async (route) => {
+  await page.route(LOCAL_PHOTOS, async (route) => {
     await arrival.promise
     await route.fulfill({ body: LOGO, contentType: 'image/png' })
   })
