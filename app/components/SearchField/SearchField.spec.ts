@@ -643,6 +643,33 @@ describe('SearchField writing the URL', () => {
     await urlIs('/customers?search=ana')
   })
 
+  // A modified click opens the link in another tab and does not navigate the current tab: the
+  // reader stays on the list, and the wait still has its write to make. Leaving any of the four
+  // keys off the modifier guard cancels the wait and kills this test.
+  it.each([
+    { name: 'Ctrl', init: { ctrlKey: true } },
+    { name: 'Meta', init: { metaKey: true } },
+    { name: 'Shift', init: { shiftKey: true } },
+    { name: 'Alt', init: { altKey: true } },
+  ])('keeps the write when a $name click opens the link off the list', async ({ init }) => {
+    const wrapper = await mountField()
+    const { replace, push } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    const card = document.body.appendChild(
+      Object.assign(document.createElement('a'), { href: '/customers/abraim-dacosta' }),
+    )
+    onTestFinished(() => {
+      card.remove()
+    })
+
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true, ...init }))
+    vi.advanceTimersByTime(300)
+
+    expect(replace).toHaveBeenCalledOnce()
+    expect(push).not.toHaveBeenCalled()
+    await urlIs('/customers?search=ana')
+  })
+
   // Off the list an empty search has nothing to say, and the reader stays where they are
   it.each([
     {
