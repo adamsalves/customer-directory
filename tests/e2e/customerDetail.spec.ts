@@ -232,3 +232,38 @@ test('a search not yet written is dropped when a customer is opened', async ({ p
   await expect(page).toHaveURL('/customers/abraim-dacosta')
   await expect(heroName(page)).toHaveText('Abraim da Costa')
 })
+
+// The inverse of the race above (#140): the card is clicked inside the wait of 300 ms, when the
+// timer is nearly due. The click is the reader's order: it cancels the wait, and the push finds in
+// front of it no write that would take its navigation out.
+test('a card click made inside the search wait opens the customer', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-01-01T08:00:00') })
+  await page.goto('/customers')
+  await waitForHydration(page)
+  await page.clock.pauseAt(new Date('2026-01-01T09:00:00'))
+  await field(page).fill('girao')
+  // The wait has 10 ms left when the click comes: the push holds a frame, and the timer fires
+  // within it unless the click took it away
+  await page.clock.runFor(290)
+  await links(page).first().click()
+
+  // Nuxt holds a navigation for a frame (100 ms at most) before it resolves it, and a stopped
+  // clock never gives it. The clock runs 20 ms at a time until the page opens: the first step
+  // already crosses the deadline of the wait, and with the write still due the poll would never
+  // leave the list.
+  await expect
+    .poll(async () => {
+      await page.clock.runFor(20)
+      return new URL(page.url()).pathname
+    })
+    .toBe('/customers/abraim-dacosta')
+  await expect(heroName(page)).toHaveText('Abraim da Costa')
+
+  await page.clock.runFor(400)
+  // The clock runs again, so the frames the page waits for land before the address is read
+  await page.clock.resume()
+  await settle(page)
+
+  await expect(page).toHaveURL('/customers/abraim-dacosta')
+  await expect(heroName(page)).toHaveText('Abraim da Costa')
+})

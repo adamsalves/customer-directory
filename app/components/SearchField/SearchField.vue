@@ -121,12 +121,26 @@ function focusOnSlash(event: KeyboardEvent) {
   focusField()
 }
 
+// A click on a link that leaves the list is the reader's order: it beats the wait still running,
+// whose write would cancel the link's navigation (the last navigation to start wins). A link
+// staying on the list keeps the wait: its write builds on the link's choice. A modified click does
+// not navigate the current tab, so the wait survives (ADR-0023).
+function cancelOnLinkOffList(event: MouseEvent) {
+  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+  if (!(event.target instanceof Element)) return
+  const anchor = event.target.closest('a[href]')
+  if (!(anchor instanceof HTMLAnchorElement) || anchor.pathname === LIST_PATH) return
+  cancel()
+}
+
 onMounted(() => {
   window.addEventListener('keydown', focusOnSlash)
+  window.addEventListener('click', cancelOnLinkOffList)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', focusOnSlash)
+  window.removeEventListener('click', cancelOnLinkOffList)
   cancel()
 })
 </script>

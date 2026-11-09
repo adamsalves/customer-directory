@@ -599,6 +599,77 @@ describe('SearchField writing the URL', () => {
     expect(useRoute().fullPath).toBe('/elsewhere')
   })
 
+  // A card click made inside the wait: the write would start after the link's navigation and take
+  // it out (the last navigation to start wins). The anchor is in the document, not the field, and
+  // only dispatched: a .click() would navigate in happy-dom.
+  it('drops the write it was waiting to do when the reader clicks a link off the list', async () => {
+    const wrapper = await mountField()
+    const { replace, push } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    const card = document.body.appendChild(
+      Object.assign(document.createElement('a'), { href: '/customers/abraim-dacosta' }),
+    )
+    onTestFinished(() => {
+      card.remove()
+    })
+
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+
+    expect(replace).not.toHaveBeenCalled()
+    expect(push).not.toHaveBeenCalled()
+    expect(useRoute().fullPath).toBe('/customers')
+  })
+
+  // A link that stays on the list keeps the wait: its navigation carries the choice the write
+  // builds on, so both land (ADR-0023)
+  it('keeps the write when the click is on a link that stays on the list', async () => {
+    const wrapper = await mountField()
+    const { replace, push } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    const pageTwo = document.body.appendChild(
+      Object.assign(document.createElement('a'), { href: '/customers?page=2' }),
+    )
+    onTestFinished(() => {
+      pageTwo.remove()
+    })
+
+    pageTwo.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    vi.advanceTimersByTime(300)
+
+    expect(replace).toHaveBeenCalledOnce()
+    expect(push).not.toHaveBeenCalled()
+    await urlIs('/customers?search=ana')
+  })
+
+  // A modified click opens the link in another tab and does not navigate the current tab: the
+  // reader stays on the list, and the wait still has its write to make. Leaving any of the four
+  // keys off the modifier guard cancels the wait and kills this test.
+  it.each([
+    { name: 'Ctrl', init: { ctrlKey: true } },
+    { name: 'Meta', init: { metaKey: true } },
+    { name: 'Shift', init: { shiftKey: true } },
+    { name: 'Alt', init: { altKey: true } },
+  ])('keeps the write when a $name click opens the link off the list', async ({ init }) => {
+    const wrapper = await mountField()
+    const { replace, push } = spyOnRouter()
+    await wrapper.get(INPUT).setValue('ana')
+    const card = document.body.appendChild(
+      Object.assign(document.createElement('a'), { href: '/customers/abraim-dacosta' }),
+    )
+    onTestFinished(() => {
+      card.remove()
+    })
+
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true, ...init }))
+    vi.advanceTimersByTime(300)
+
+    expect(replace).toHaveBeenCalledOnce()
+    expect(push).not.toHaveBeenCalled()
+    await urlIs('/customers?search=ana')
+  })
+
   // Off the list an empty search has nothing to say, and the reader stays where they are
   it.each([
     {

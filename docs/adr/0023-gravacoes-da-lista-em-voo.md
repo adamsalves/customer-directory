@@ -38,3 +38,4 @@ O `FilterPanel` e o `SearchField` tinham cada um o seu `pending`, mas só enxerg
 - O histórico não perde a entrada de uma escolha: a busca que dispara por cima dela entra como push.
 - Os controles do painel voltam ao que a URL diz sempre que nada mais está em voo: depois de Voltar ou de um link que cancela a escolha, e depois de um "Limpar" feito no mesmo quadro dela.
 - O `SearchField` mantém a marca ao lado do estado em voo. É o único lugar que precisa saber quem gravou, e o composable não conhece os autores das gravações.
+- O clique num link que sai da lista também cancela a espera do campo que ainda não disparou: a gravação dela cancelaria a navegação do link, e a última navegação a começar é a que vale. Um clique com teclas modificadoras não navega na aba atual e não cancela a espera. Um link que fica na lista mantém a espera, e a gravação monta sobre a escolha dele (#140).
