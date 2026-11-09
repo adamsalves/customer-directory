@@ -751,6 +751,20 @@ Uma entrada por issue fechada: o que foi decidido, como foi feito e o que saiu, 
   - **Achado 1 aplicado:** o número do `network.ts` no Resultado (era "+27"; o real do numstat é +26) — a conta por arquivo deve bater como a do todo.
   - Notas sem ação neste PR: o host da fonte vive em três cantos (a guarda capta se destoar); a fixture `request` (API) não passa pela escuta (os dois usos de hoje pedem só o app, anotado no registro); no timeout duro o desmonte é pulado (o teste já falha por si); lint dependente do prepare é condição pré-existente.
 
+### #140 · A corrida da busca nos 300 ms
+
+- **Decidido:** [#140](https://github.com/adamsalves/customer-directory/issues/140) · ADR-0023 (a lacuna que a #36 registrou como pendência: o clique que cancela a gravação **em voo** não cobria a espera do campo que **ainda não tinha disparado** — o replace da busca cancelava o push do card pendente do quadro do `navigation-repaint`).
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/140#issuecomment-6748870680) · estimativa ~120 linhas
+- **Como:**
+  - **O clique é a ordem do leitor:** listener `window` de `click` no `SearchField` (bolha, só observacional, no padrão do `focusOnSlash`): link que sai da lista (`closest('a[href]')` com `pathname !== LIST_PATH`, estreitado por `instanceof HTMLAnchorElement`) cancela a espera pendente; link que fica na lista (paginação, marca, skip `#conteudo`) mantém a espera, e a escrita monta sobre a escolha dele, como na matriz da ADR-0023. Enter num card focado entra de graça — o navegador sintetiza o `click`.
+  - **Unit** (2 testes em "writing the URL"): (a) clique numa âncora `/customers/abraim-dacosta` dentro da janela — `replace` e `push` nunca chamados, URL intacta; (b) clique numa âncora `?page=2` — a escrita sai no fim da espera. Clique sintetizado com `MouseEvent('click', { bubbles: true })`, sem ação padrão: um `.click()` navegaria de verdade no happy-dom.
+  - **E2E determinístico** ao lado do teste irmão do relógio (`customerDetail.spec.ts`): `runFor(290)` deixa o timer a 10 ms do disparo, o clique no card cancela a espera, e um poll de `runFor(20)` (passo abaixo do prazo testado, a memória do `beforeResolve` que retém cada navegação um quadro) leva o pathname ao detalhe. Sem a correção, o timer dispara no 1º passo, cancela o push, e o poll nunca sai de `/customers`.
+  - **ADR-0023:** consequência nova nas Consequências — o clique que sai da lista vence também a espera que não disparou.
+- **Resultado:** +91 sem este registro (estimativa ~120; componente +12, unit +44, e2e +34, ADR +1). `npm test` 3× verde: 963 testes (eram 961). Lint e typecheck verdes. E2E dirigido (customerDetail + search): 14 verdes e 8 pulados, os pulados os de mobile. O spec novo passou 3 vezes seguidas.
+  - **Mutação:** os três previstos, cada um morto no teste previsto: o listener fora e o `cancel()` fora caem no (a) ("drops the write…"); a guarda `LIST_PATH` fora cai no (b) ("keeps the write…"). Com a correção revertida, o E2E novo trava em `/customers` (`Timeout 5000ms exceeded`) — a falha determinística que o critério de regressão exige. Nos mutantes 1 e 2 o teste irmão também caiu na corrida do arquivo inteiro: interferência em cascata da gravação pousada no router singleton, não um segundo assassino — atribuição confirmada em corridas isoladas.
+  - **Desvios do plano aplicados:** a guarda `anchor instanceof HTMLAnchorElement` no lugar do `pathname` direto (`closest` devolve `Element`, e o honest typing pede o estreitamento); a URL final do E2E como string exata, mais estrita que o regex do plano.
+- **Review:** pendente — preencher quando o review rodar.
+
 ## M8 · Navegação
 
 ### #37 · BFF: vizinhos e relacionados do detalhe
