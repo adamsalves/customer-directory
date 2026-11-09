@@ -248,8 +248,9 @@ test('a card click made inside the search wait opens the customer', async ({ pag
   await links(page).first().click()
 
   // Nuxt holds a navigation for a frame (100 ms at most) before it resolves it, and a stopped
-  // clock never gives it. The clock runs 20 ms at a time until the page opens, 160 ms at the most
-  // in the 5 s of the poll: with the write still due, it would never leave the list.
+  // clock never gives it. The clock runs 20 ms at a time until the page opens: the first step
+  // already crosses the deadline of the wait, and with the write still due the poll would never
+  // leave the list.
   await expect
     .poll(async () => {
       await page.clock.runFor(20)
