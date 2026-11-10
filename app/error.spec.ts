@@ -1,7 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import * as resultsScroll from '~/utils/resultsScroll'
 import ErrorPage from './error.vue'
 
@@ -108,30 +107,10 @@ describe('error page', () => {
     expect(link.attributes('href')).toBe('/customers')
   })
 
-  // A real click, cancelable as a browser makes one
-  function clickOn(anchor: Element, options?: MouseEventInit) {
-    const event = new MouseEvent('click', { bubbles: true, cancelable: true, ...options })
-    anchor.dispatchEvent(event)
-    return event
-  }
-
-  // The navigation is the link's own and the landing happens outside this mount (no view of the
-  // route is rendered here), so the contract of a plain click — the list landing and the focus on
-  // the results — is what the E2E proves on the browser. What this mount holds is what the click
-  // must not do to the clicks the browser owns (ADR-0024)
-  it.each([
-    { name: 'a click with a modifier', click: { ctrlKey: true } },
-    { name: 'a middle-button click', click: { button: 1 } },
-  ])('$name stays what the browser makes of it', async ({ click }) => {
-    const wrapper = await mountError(404)
-    clickOn(wrapper.get(LINK).element, click)
-    await nextTick()
-
-    // No attempt of ours at the results, and no navigation either: the route stays the one the
-    // mount brought
-    expect(focusResultsMock).not.toHaveBeenCalled()
-    expect(useRouter().currentRoute.value.path).toBe('/')
-  })
+  // The NuxtLink stub of the test-utils replaces the component with a plain anchor that prevents
+  // every click and navigates nowhere: the click never reaches the component's own handler, so no
+  // unit here can hold the exit contract of the link (what the wait arms, what it focuses) — that
+  // contract is what the E2E proves on the browser, modified clicks included (ADR-0024)
 
   // error.vue replaces app.vue, so the layout has to be asked for: it is what brings the header, the
   // toggle the theme goes on through, and the toast
