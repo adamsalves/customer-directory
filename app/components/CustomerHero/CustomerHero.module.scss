@@ -84,12 +84,19 @@
   gap: 8px;
   align-items: center;
   justify-content: center;
-  block-size: 44px;
+
+  // A minimum, not a fixed size: a scaled or longer label centers on its taller line instead of
+  // being clipped by the 44px box (the same target, only floor from now on)
+  min-block-size: 44px;
   padding-inline: 20px;
   border-radius: 24px;
   font-size: 15px;
   font-weight: 500;
   text-decoration: none;
+
+  // One line, ever: measured, "Enviar e-mail" is 87.1px at 15px/500 Roboto, so the label never
+  // breaks at its hyphen — at the floor widths the row below is what keeps the room (ADR-0013)
+  white-space: nowrap;
 }
 
 .Primary {
@@ -146,17 +153,27 @@
     inline-size: 100%;
   }
 
-  // 16px of padding, not the 20px of the row: beside its icon "Enviar e-mail" is 113px wide, and a
-  // column of the grid at 375px has 114px of room
+  // Measured: the label of "Enviar e-mail" plus its 18px icon and the 8px gap take 113.1px; 16px of
+  // inline padding each side, not the 20px of the row, put the one-line action at 145.1px — and the
+  // floor size follows the label here like it does at 44px
   .Action {
-    block-size: 48px;
+    min-block-size: 48px;
     padding-inline: 16px;
   }
 }
 
-// Below 375px not even the 16px fit "Enviar e-mail" and its icon in half the row: one button over
-// the other
-@media (width < 375px) {
+// The row is two equal `1fr` columns, so with nowrap it holds the widest action: its one line is
+// 145.1px, and 2 × 145.1 + 8 of gap needs 298.2px of room, right under the 375px the prototype keeps
+// a row on. Anything below is too tight for that: one action over the other. Content box and
+// viewport are the same only where the scrollbar overlays: phones, previews, headless renderers. A
+// classic Chromium scrollbar takes 15px of layout (measured: a 375px viewport is left 360px of
+// content box), so on desktops — `(pointer: fine)` — the 375px cut of content is reached at 390px of
+// viewport: 375 + 15, no rounding added; a wider classic scrollbar (17px) runs at most 2px into the
+// row, which still fits from 372.2px on. The pointer guard keeps phones and headless on the
+// prototype's exact `width < 375px`, and ADR-0013 registers the overlay-scrollbar desktops that now
+// stack earlier. Stacked, the widest action fits from 219px of content box (measured floor, 145.1px
+// + 74px of page and hero padding): at 320px the track leaves 86px over.
+@media (width < 375px), (pointer: fine) and (width < 390px) {
   .Actions {
     grid-template-columns: 1fr;
   }

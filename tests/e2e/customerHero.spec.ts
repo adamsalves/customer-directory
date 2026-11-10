@@ -4,7 +4,8 @@ import { test } from './network'
 import { SOURCE_URL } from './servers'
 
 // The hero is one markup at every width (ADR-0014): CSS makes it a column below 640px and puts its
-// actions in a grid of two columns, one below 375px. happy-dom applies no CSS, and no component spec
+// actions in a grid of two equal columns only where they fit — below 375px of content box, which on
+// a fine pointer means up to 389px of viewport (ADR-0013 has a classic scrollbar taking 15px). happy-dom applies no CSS, and no component spec
 // sees the order the browser really has: server HTML, photo fails, page hydrates (#124).
 // Each test sets its own width, so the mobile project would only repeat the desktop one.
 test.skip(({ isMobile }) => isMobile, 'the width is set by each test')
@@ -89,49 +90,75 @@ const isHydrated = (page: Page) =>
 // Below 640px the hero is a column centered on the page, the avatar over the text and the two actions
 // in a row of equal halves. One check for each declaration of that block of CustomerHero.module.scss
 // (and for the `align-items` of the hero, which centers the avatar), so deleting any of them fails.
-// The room inside the hero is its width less its border and padding: 343 - 2 - 40 = 301px.
-test('at 375px the hero is a centered column and the actions share a row', async ({ page }) => {
-  await openHero(page, 375)
-  const { root, avatar, text, name, tags, actions, email, call } = parts(page)
-  const hero = await boxOf(root)
-  const room = hero.width - 2 - 2 * 20
-  const column = (room - 8) / 2
+// The room inside the hero is its width less its border and padding. The row only exists where the
+// widest action holds its one line: 2 × 145.1px + 8px of gap need 375px of content box, so 375px of
+// viewport stacks on this project's fine pointer (here the viewport is the content box: headless
+// scrollbars overlay) and 390px is its last row — ADR-0013.
+for (const { width, stacked } of [
+  { width: 375, stacked: true },
+  { width: 390, stacked: false },
+]) {
+  test(`at ${String(width)}px the hero is a centered column and the actions ${stacked ? 'are one over the other' : 'share a row'}`, async ({
+    page,
+  }) => {
+    await openHero(page, width)
+    const { root, avatar, text, name, tags, actions, email, call } = parts(page)
+    const hero = await boxOf(root)
+    const room = hero.width - 2 - 2 * 20
 
-  await expectLooks(root, {
-    'flex-direction': 'column',
-    padding: '28px 20px 20px',
-    'text-align': 'center',
+    await expectLooks(root, {
+      'flex-direction': 'column',
+      padding: '28px 20px 20px',
+      'text-align': 'center',
+    })
+    await expectLooks(avatar, { width: '112px', height: '112px' })
+    await expectLooks(text, { flex: '0 0 auto', width: `${String(room)}px` })
+    await expectLooks(name, { 'font-size': '26px' })
+    await expectLooks(tags, { 'justify-content': 'center' })
+    await expectLooks(actions, { display: 'grid', width: `${String(room)}px` })
+    for (const action of [email, call]) {
+      await expectLooks(action, { height: '48px', padding: '0px 16px' })
+    }
+
+    // The avatar is on the axis of the hero and over the text
+    const avatarBox = await boxOf(avatar)
+    const textBox = await boxOf(text)
+    expect(avatarBox.x + avatarBox.width / 2).toBeCloseTo(hero.x + hero.width / 2, 1)
+    expect(avatarBox.y + avatarBox.height).toBeLessThanOrEqual(textBox.y)
+
+    if (stacked) {
+      // One over the other: the single track is the whole room
+      await expectLooks(actions, { 'grid-template-columns': `${String(room)}px` })
+      const emailBox = await boxOf(email)
+      const callBox = await boxOf(call)
+      expect(emailBox.width, 'one column as wide as the room').toBeCloseTo(room, 1)
+      expect(callBox.width).toBeCloseTo(room, 1)
+      expect(callBox.x, 'same axis').toBeCloseTo(emailBox.x, 1)
+      expect(callBox.y - (emailBox.y + emailBox.height)).toBeCloseTo(8, 1)
+      expect(await linesOf(email)).toBe(1)
+      expect(await linesOf(call)).toBe(1)
+    } else {
+      // Share a row: two equal columns of half the room, 8px apart
+      const column = (room - 8) / 2
+      await expectLooks(actions, {
+        'grid-template-columns': `${String(column)}px ${String(column)}px`,
+      })
+      const emailBox = await boxOf(email)
+      const callBox = await boxOf(call)
+      expect(callBox.y, 'on one line').toBeCloseTo(emailBox.y, 1)
+      expect(emailBox.width).toBeCloseTo(column, 1)
+      expect(callBox.width).toBeCloseTo(column, 1)
+      expect(callBox.x - (emailBox.x + emailBox.width)).toBeCloseTo(8, 1)
+      expect(await linesOf(email)).toBe(1)
+      expect(await linesOf(call)).toBe(1)
+    }
   })
-  await expectLooks(avatar, { width: '112px', height: '112px' })
-  await expectLooks(text, { flex: '0 0 auto', width: `${String(room)}px` })
-  await expectLooks(name, { 'font-size': '26px' })
-  await expectLooks(tags, { 'justify-content': 'center' })
-  await expectLooks(actions, {
-    display: 'grid',
-    'grid-template-columns': `${String(column)}px ${String(column)}px`,
-    width: `${String(room)}px`,
-  })
-  for (const action of [email, call]) {
-    await expectLooks(action, { height: '48px', padding: '0px 16px' })
-  }
+}
 
-  // The avatar is on the axis of the hero and over the text
-  const avatarBox = await boxOf(avatar)
-  const textBox = await boxOf(text)
-  expect(avatarBox.x + avatarBox.width / 2).toBeCloseTo(hero.x + hero.width / 2, 1)
-  expect(avatarBox.y + avatarBox.height).toBeLessThanOrEqual(textBox.y)
-  // The buttons are on one row, as wide as a column and 8px apart
-  const emailBox = await boxOf(email)
-  const callBox = await boxOf(call)
-  expect(callBox.y).toBeCloseTo(emailBox.y, 1)
-  expect(emailBox.width).toBeCloseTo(column, 1)
-  expect(callBox.width).toBeCloseTo(column, 1)
-  expect(callBox.x - (emailBox.x + emailBox.width)).toBeCloseTo(8, 1)
-  expect(await linesOf(email)).toBe(1)
-})
-
-// Below 375px the actions are one over the other, each as wide as the room. 374px is the edge and
-// 375px (above) the other side of it; at 320px the label still takes a single line.
+// The cut is by content: with a box narrower than 375px of content the actions stack, one over the
+// other, each as wide as the room. A fine pointer (desktop) reaches the same cut up to 389px of
+// viewport, the 15px classic scrollbar eaten (ADR-0013); at 320px the label still takes a single
+// line.
 for (const width of [374, 320]) {
   test(`at ${String(width)}px the actions are one over the other`, async ({ page }) => {
     await openHero(page, width)
@@ -260,4 +287,51 @@ test('a photo still loading when the page hydrates stays a photo', async ({ page
     .poll(() => photo.evaluate((el) => (el instanceof HTMLImageElement ? el.naturalWidth : 0)))
     .toBeGreaterThan(0)
   await expect(initials).toHaveCount(0)
+})
+
+// The floors are minimums: a scaled label makes the action taller instead of being clipped by it
+// (min-block-size). The tag pumps the label to 44px on line-height 1.2 — a 52.8px line, over both
+// floors — and the test measures the height it had before the tag on the same page, so no floor
+// number is copied here: the assertion is only that the box followed the label, and that the text
+// still sits whole on it (scrollHeight within clientHeight).
+for (const width of [375, 1280]) {
+  test(`at ${String(width)}px a bigger label takes the action past its floor`, async ({ page }) => {
+    await openHero(page, width)
+    const { email } = parts(page)
+    const unpumped = await boxOf(email)
+
+    await page.addStyleTag({
+      content:
+        '[data-testid="customer-hero__email--link"], [data-testid="customer-hero__call--link"] { font-size: 44px; line-height: 1.2 }',
+    })
+    const pumped = await boxOf(email)
+    expect(pumped.height, 'the floor is a minimum, the label grows the box').toBeGreaterThan(
+      unpumped.height,
+    )
+    expect(await linesOf(email)).toBe(1)
+    expect(await email.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true)
+  })
+}
+
+// The classic-scrollbar environment of the stacked cut has a file of its own: this suite's Chromium
+// runs headless with `--hide-scrollbars`, and no tag can undo it — customerHeroScrollbar.spec.ts
+// un-hides them and holds the stack and the wide-desktop guard there.
+
+// The nowrap half of it: 390px is the narrowest row (154px columns here, the last call of
+// `width < 390px` does not stack), and one line of the label at 15px fills all but 2px of it
+// (87.1px of a 96px text area). An 18px label — a 1.2× text scale — takes 104.6px, so without
+// white-space: nowrap the label breaks at its hyphen right at this edge; with it, the grid just
+// lets the tracks claim the room each line needs and nothing overflows.
+test('at the narrowest row a grown label never breaks at the hyphen', async ({ page }) => {
+  await openHero(page, 390)
+  const { actions, email, call } = parts(page)
+
+  await page.addStyleTag({
+    content:
+      '[data-testid="customer-hero__email--link"], [data-testid="customer-hero__call--link"] { font-size: 18px }',
+  })
+
+  expect(await linesOf(email)).toBe(1)
+  expect(await linesOf(call)).toBe(1)
+  expect(await actions.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0)
 })

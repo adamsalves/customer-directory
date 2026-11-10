@@ -792,7 +792,7 @@ describe('customers page', () => {
     ).toEqual(['young'])
   })
 
-  // The one live region of the page (the route announcer is app.vue's, and the error alert is not
+  // The one live region of the page (the route announcer is the layout's, and the error alert is not
   // there while the list loads), with the range of the answer and not of the URL: the BFF clamps the
   // page and the page size, and this one answers page 2 of 6 per page whatever the URL asks
   it('has one live region, with the range of the answer', async () => {

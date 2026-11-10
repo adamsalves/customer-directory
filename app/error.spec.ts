@@ -1,7 +1,20 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as resultsScroll from '~/utils/resultsScroll'
 import ErrorPage from './error.vue'
+
+// No view comes where the routes go in this mount (the component is mounted on its own), so no list
+// page is here to render the results for the wait of the exit to find: what passes here is that
+// nothing of the click escapes it — the same util the list page uses is on a record — and the focus
+// on the real results is what the E2E proves
+vi.mock('~/utils/resultsScroll', async (importOriginal) => {
+  const original = await importOriginal<typeof import('~/utils/resultsScroll')>()
+  return { ...original, focusResults: vi.fn(original.focusResults) }
+})
+
+// The mocked record of focusResults, the instance error.vue calls through
+const focusResultsMock = vi.mocked(resultsScroll.focusResults)
 
 const ALERT = '[data-testid="error-page__message--alert"]'
 const TITLE = '[data-testid="error-page__title--heading"]'
@@ -22,9 +35,32 @@ const GENERIC = {
 
 enableAutoUnmount(afterEach)
 
+// The focus of one test must not leak into the next
+afterEach(() => {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+})
+
+// The mocked record of focusResults starts empty in every test
+beforeEach(() => {
+  focusResultsMock.mockClear()
+})
+
 // Nuxt hands the page the error with its status: the one the BFF gave, or the router's 404
 function mountError(status: number) {
   return mountSuspended(ErrorPage, { props: { error: createError({ status }) } })
+}
+
+// In the document, so the title can take the focus (focus needs an element that is connected)
+function mountAttached(status: number) {
+  return mountSuspended(ErrorPage, {
+    props: { error: createError({ status }) },
+    attachTo: document.body,
+  })
+}
+
+function htmlElement(element: Element): HTMLElement {
+  if (!(element instanceof HTMLElement)) throw new Error('the element is not an HTML element')
+  return element
 }
 
 describe('error page', () => {
@@ -71,6 +107,11 @@ describe('error page', () => {
     expect(link.attributes('href')).toBe('/customers')
   })
 
+  // The NuxtLink stub of the test-utils replaces the component with a plain anchor that prevents
+  // every click and navigates nowhere: the click never reaches the component's own handler, so no
+  // unit here can hold the exit contract of the link (what the wait arms, what it focuses) — that
+  // contract is what the E2E proves on the browser, modified clicks included (ADR-0024)
+
   // error.vue replaces app.vue, so the layout has to be asked for: it is what brings the header, the
   // toggle the theme goes on through, and the toast
   it('shows the error inside the layout, with the header, the theme toggle and the toast', async () => {
@@ -79,5 +120,18 @@ describe('error page', () => {
     expect(wrapper.get(MAIN).find(ALERT).exists()).toBe(true)
     expect(wrapper.find(TOGGLE).exists()).toBe(true)
     expect(wrapper.find(TOAST).exists()).toBe(true)
+  })
+
+  // The page replaces the current view in the middle of an SPA navigation, and the focus falls to
+  // <body> (a direct URL access starts there too): on mount the title takes it, an entry point for
+  // the keyboard and the screen reader (ADR-0024). tabindex="-1" keeps it out of the tab order
+  it.each([404, 500])('a %i takes the focus to the title on mount', async (status) => {
+    const wrapper = await mountAttached(status)
+    const title = htmlElement(wrapper.get(TITLE).element)
+
+    // The attribute, not the tabIndex property: an h1 without it reads -1 from the property too
+    expect(title.getAttribute('tabindex')).toBe('-1')
+    // The focus lands a frame after the mount
+    await expect.poll(() => document.activeElement).toBe(title)
   })
 })

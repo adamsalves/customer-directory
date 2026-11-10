@@ -25,6 +25,12 @@
   font-weight: 700;
 }
 
+// The title takes the focus from code on mount only (tabindex="-1"): a programmatic target, never
+// a tab stop, as <main> and the results (ADR-0024).
+.Title:focus {
+  outline: none;
+}
+
 .Text {
   margin: 0;
   color: var(--text-muted);
