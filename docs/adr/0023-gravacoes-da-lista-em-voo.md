@@ -39,3 +39,60 @@ O `FilterPanel` e o `SearchField` tinham cada um o seu `pending`, mas só enxerg
 - Os controles do painel voltam ao que a URL diz sempre que nada mais está em voo: depois de Voltar ou de um link que cancela a escolha, e depois de um "Limpar" feito no mesmo quadro dela.
 - O `SearchField` mantém a marca ao lado do estado em voo. É o único lugar que precisa saber quem gravou, e o composable não conhece os autores das gravações.
 - O clique num link que sai da lista também cancela a espera do campo que ainda não disparou: a gravação dela cancelaria a navegação do link, e a última navegação a começar é a que vale. Um clique com teclas modificadoras não navega na aba atual e não cancela a espera. Um link que fica na lista mantém a espera, e a gravação monta sobre a escolha dele (#140).
+- As setas revelam uma gravação encadeada do próprio escritor (#107): num select fechado, cada
+  seta (`ArrowDown`/`ArrowUp` sem modificadoras) dispara um `change`, e uma travessia do teclado
+  deixava uma entrada de histórico por seta, com o Voltar parando num passo do meio. A travessia
+  que as setas armam regrava a própria entrada: o 1º `change` armado do ciclo sobe como push (ele
+  cria a entrada), e cada `change` armado depois dele a regrava com `replace` só depois de a
+  escrita anterior pousar, na cadeia da Promise que `setQuery` devolve — o passo todo custa uma
+  entrada, em qualquer ritmo de setas.
+- Quem não é a travessia sobe como sempre: o mouse e o toque, push. As setas sem modificadoras
+  armam o ciclo — com modificadoras, a seta é atalho do navegador ou da página, e não arma — e ele
+  desarma ao sair do select (`blur`), ao ser pressionado de novo (`mousedown`, que reabre o menu
+  no mesmo foco: a escolha seguinte sobe como push) e com `Escape` e `Enter`, que fecham a escolha
+  e o ciclo.
+- A regravação só sai como `replace` quando a escrita de trás pousou: escrita da cadeia cancelada
+  por outra gravação (ou abortada por um guard; a que rejeita entra na cadeia como não pousada
+  também), e o `change` seguinte do ciclo volta a push, para não tomar o lugar da entrada que a
+  escrita alheia está acrescentando. A coerção do estado em voo fica intacta: `useListQuery.ts`
+  não mudou. No select de itens por página, cada regravação leva `page: 1` de volta com o tamanho,
+  e a âncora do select ([ADR-0022](0022-rolagem-ate-os-resultados.md)) segue a regra de sempre:
+  escrita que não pousou a derruba, a não ser que outra em voo leve o mesmo `perPage`.
+- O desenho do select durante a travessia pertence ao leitor, não à escrita em voo: um render entre
+  duas escritas da cadeia liá o estado que a escrita de trás leva, que é um passo atrás do que as
+  setas já disseram, e o redesenho arrastaria o select para trás — a próxima seta daria um passo
+  desse valor arrastado, sem progresso, e a travessia poderia terminar no meio da rajada. Cada
+  `change` armado guarda uma marca privada do valor que pressionou (o `pick` do componente) e o
+  desenho parte dela enquanto houver passo em dívida: o `SortSelect` desenha
+  `pick ?? pending() ?? query.value`, e o `PaginationNav` desenha `:selected` a partir de
+  `pick ?? query.perPage`. A marca não é estado em voo: não se gravada a partir dela, quem decide a
+  gravação é sempre `pending() ?? query.value`, e o URL se mantém como está (as buscas por passo
+  permanecem). Quando o último membro da cadeia termina, a marca se apaga e o URL volta a mandar no
+  desenho, como para qualquer outro escritor. O `watch(pending)` do `SortSelect`, que devolve o
+  select ao que o URL diz, espera os dois vazios (`pending` indefinido _e_ marca gasta): é o
+  "ressincroniza quando nada mais está em voo" do `FilterPanel`, com a marca em conta — a marca só
+  tem valor enquanto a cadeia deve algo, e uma passada depois dela arrastaria o select para o
+  despacho ainda aberto.
+- O passo encadeado não vale mais do que a navegação do leitor: ele começa quando a escrita diante
+  dele resolve, e se o leitor clicou um card (ou qualquer link para fora da lista) nesse vão, o
+  passo se torna a navegação mais nova e leva o leitor de volta (a regra de "a última navegação a
+  começar é a que vale" nada cotava do começo atrasado — o leitor vence). No callback da cadeia, o
+  componente valida que o leitor ainda está na lista (`route.path !== LIST_PATH`) e DESCARTA o
+  passo: não grava, limpa a marca e repassa o descarte aos passos seguintes da cadeia. Esse guard
+  de rota não alcança o caso da navegação que ainda está esperando: o clique do card cancela a
+  escrita em voo, e o callback embutido corre antes de a navegação confirmar, com o `route.path`
+  ainda o antigo. O sinal que roda na mesma tarefa do clique é o listener do componente (depois
+  que o handler do link começa a navegação, o listener do `window` marca a saída) — o mesmo
+  raciocínio do "a última navegação a começar é a que vale" que o `SearchField` já aplica à espera
+  do debounce. Com um clique de tecla modificado, abre-se uma aba e não se navega esta; o listener
+  deixa passar.
+- Resíduos que a plataforma não dá sinal para distinguir, documentados como estão: setas num menu
+  aberto por mouse (o popup nativo come os `keydown` e nada arma) e a roda do iOS (pressuposto da
+  issue, não verificável localmente) disparam um `change` por passo e custam uma entrada por
+  passo. Um Voltar/Avançar do navegador durante a rajada, no mesmo `/customers`, muda o path não:
+  o passo encadeado reescreve o `sort` da escolha antiga por cima do Voltar — sem timer ou
+  route-diffing não há sinal mais frágil do que o próprio path para distinguir. O mecanismo é o
+  mesmo nos dois selects, com comentários-gêmeos no código
+  (`SortSelect.vue`, `PaginationNav.vue`) e a prova no E2E `tests/e2e/listHistory.spec.ts`: uma
+  entrada por travessia nos dois selects, o Voltar no estado anterior à primeira seta, o mouse
+  subindo como sempre, e o card clicado dentro da rajada vencendo a viagem.
