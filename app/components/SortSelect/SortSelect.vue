@@ -24,10 +24,25 @@ const LABELS = {
   recent: 'Cadastro mais recente',
 } as const satisfies Record<IListQuery['sort'], string>
 
+const route = useRoute()
 const { query, pending, setQuery } = useListQuery()
-// The order the select shows: the write still on its way, if there is one, as the panel and the chips
-// do, so both selects agree from the pick on and a pick that is cancelled is drawn back (ADR-0023)
-const current = computed(() => pending() ?? query.value)
+// The order the reader's last armed change pressed, kept until the chain has no step left in it
+// (ADR-0023). It is not state on its way: `pending` alone says what is on the way to the URL, and
+// the mark says what the arrows have already said. Nothing else reads it, and it never writes.
+let pick: IListQuery['sort'] | undefined
+// The reader left the list while the chain still had a step in it: the last navigation to start is
+// the only one that wins (ADR-0023), so the step that starts last drops, and the steps after it
+// inherit the drop
+let leftList = false
+// The mark has the say before both while a step of the traverse is still owed: the writes of the
+// traverse are one behind the other, and a render between two of them reads the one on its way,
+// which carries the step before what the arrows already moved the select to. Drawing from it alone
+// would put what the option was up to one behind the reader, and the next arrow would step from
+// there, so the traverse could end in the middle.
+const current = computed(() => {
+  const base = pending() ?? query.value
+  return pick === undefined ? base : { ...base, sort: pick }
+})
 const selectRef = useTemplateRef('select')
 
 // The arrows of the keyboard open a traverse of the orders (#107): the first change armed by them
@@ -53,7 +68,15 @@ let chain: Promise<boolean> = Promise.resolve(true)
 // land: the promise resolves with the failure of it (abort, cancel). One that throws rejects, the
 // same outcome: `false` is one more write that fell through.
 function armedChange(sort: IListQuery['sort']) {
+  pick = sort
   const step = chain.then((landed) => {
+    // The reader is no longer on the list (a card, a link, the history): the queued step ran last
+    // and would beat the navigation the reader made (leftList passes the drop down the chain)
+    if (leftList || route.path !== LIST_PATH) {
+      leftList = true
+      pick = undefined
+      return false
+    }
     const replace = entered && landed
     entered = true
     const write = setQuery({ sort, page: 1 }, { replace })
@@ -63,6 +86,11 @@ function armedChange(sort: IListQuery['sort']) {
     )
   })
   chain = step
+  // The mark holds while the chain still has a step owed: once this one is the tail, its outcome is
+  // the last of the traverse and the URL is all there is again, as it is for every other writer
+  void step.then(() => {
+    if (chain === step) pick = undefined
+  })
 }
 
 // Escape and Enter end a pick, so they end the traverse; a modified arrow is a shortcut of the
@@ -116,9 +144,11 @@ function syncSelect() {
 // takes back, before anything is drawn from it, leaves the select with the click. Once nothing is on
 // its way the URL is all there is: put the select back on it, as the panel does with its controls
 // (FilterPanel.vue). The select is one element that is always there, so unlike the panel's rows it does
-// not matter whether the render comes first.
+// not matter whether the render comes first. While the mark stands, the URL is behind what the
+// arrows already said, so the sync waits until the mark is spent too and nothing of the traverse is
+// owed (ADR-0023).
 watch(pending, (inFlight) => {
-  if (inFlight === undefined) syncSelect()
+  if (inFlight === undefined && pick === undefined) syncSelect()
 })
 </script>
 

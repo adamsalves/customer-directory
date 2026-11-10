@@ -1,7 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { enableAutoUnmount, flushPromises, type DOMWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import SortSelect from './SortSelect.vue'
 
 const ROOT = '[data-testid="sort-select__root--label"]'
@@ -73,6 +73,30 @@ function holdNavigations() {
   return () => {
     resolve(undefined)
   }
+}
+
+// The next write of the list waits at the guard until the test lets it: the change that follows it
+// moves the select on while the write is still on its way, which is the gap a render of a real burst
+// has between two of its writes (ADR-0023)
+function holdTheWrite() {
+  let abort = false
+  const { promise, resolve } = Promise.withResolvers<undefined>()
+  onTestFinished(
+    useRouter().beforeEach((to) => {
+      if (abort || to.path !== LIST_PATH) return
+      abort = true
+      onTestFinished(resolve)
+      return promise
+    }),
+  )
+  return () => {
+    resolve(undefined)
+  }
+}
+
+// A page that is not the list, for as long as the test runs (as in SearchField.spec.ts)
+function addPageOutsideTheList() {
+  onTestFinished(useRouter().addRoute({ path: '/elsewhere', component: { render: () => null } }))
 }
 
 describe('SortSelect', () => {
@@ -297,6 +321,68 @@ describe('SortSelect armed by the arrows', () => {
     expect(push).toHaveBeenCalledTimes(2)
     expect(push).toHaveBeenNthCalledWith(2, { path: '/customers', query: { sort: 'young' } })
     expect(replace).not.toHaveBeenCalled()
+  })
+
+  // The writes of the burst are one behind the other, and a render between two of them reads the
+  // write that is on its way, whose order is one step behind what the arrows already moved the
+  // select to (the mark of ADR-0023). Drawing that order back into the select would drag the
+  // select behind the arrows, and the next arrow would step from the dragged one
+  it('keeps the select on the last armed change when a render runs between two writes', async () => {
+    const wrapper = await mountSelect('/customers?page=3&sort=old')
+    const letGo = holdTheWrite()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('last')
+    await select.setValue('young')
+    // Whatever write of the list comes in (the filters, the search) puts the render to work
+    // between the two steps: the arrows have already said "young", so the render draws from the
+    // mark, and the select stays where the arrows put it
+    void useListQuery().setQuery({ search: 'ana' }, { replace: true })
+    await nextTick()
+
+    // What the render drew at this tick
+    expect(drawn(select)).toEqual(['young'])
+    expect(selectElement(select).value).toBe('young')
+
+    letGo()
+    // The burst's own last armed change rides on the write that was on its way (ADR-0023)
+    await urlIs('/customers?search=ana&sort=young')
+  })
+
+  // A card clicked while the burst was mid-write makes the reader leave the list, and the last
+  // navigation to start is the only one that wins (ADR-0023): the steps the chain still owed would
+  // start last and take the reader back, so they drop where they are, without a write
+  it('drops the steps the chain owed once the reader is off the list', async () => {
+    addPageOutsideTheList()
+    const wrapper = await mountSelect('/customers?page=3&sort=old')
+    const { push, replace } = spyOnRouter()
+    const letGo = holdTheWrite()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('last')
+    // The step waits behind the write that is held: it is still owed while the reader goes
+    await select.setValue('young')
+
+    // The reader follows a card (any navigation off the list): the guard of the test holds the
+    // writes of the list only, so this navigation goes
+    await useRouter().push('/elsewhere')
+    expect(useRoute().fullPath).toBe('/elsewhere')
+
+    // From here the chain only has steps behind: releasing the write lets the step start, and it
+    // finds no list to serve — nothing it would do may take the reader back
+    push.mockClear()
+    replace.mockClear()
+    letGo()
+    await vi.waitFor(() => {
+      expect(useListQuery().pending()).toBeUndefined()
+    })
+    await flushPromises()
+
+    expect(push).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+    expect(useRoute().fullPath).toBe('/elsewhere')
   })
 })
 
