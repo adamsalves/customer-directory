@@ -22,9 +22,27 @@ const GENERIC = {
 
 enableAutoUnmount(afterEach)
 
+// The focus of one test must not leak into the next
+afterEach(() => {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+})
+
 // Nuxt hands the page the error with its status: the one the BFF gave, or the router's 404
 function mountError(status: number) {
   return mountSuspended(ErrorPage, { props: { error: createError({ status }) } })
+}
+
+// In the document, so the title can take the focus (focus needs an element that is connected)
+function mountAttached(status: number) {
+  return mountSuspended(ErrorPage, {
+    props: { error: createError({ status }) },
+    attachTo: document.body,
+  })
+}
+
+function htmlElement(element: Element): HTMLElement {
+  if (!(element instanceof HTMLElement)) throw new Error('the element is not an HTML element')
+  return element
 }
 
 describe('error page', () => {
@@ -79,5 +97,18 @@ describe('error page', () => {
     expect(wrapper.get(MAIN).find(ALERT).exists()).toBe(true)
     expect(wrapper.find(TOGGLE).exists()).toBe(true)
     expect(wrapper.find(TOAST).exists()).toBe(true)
+  })
+
+  // The page replaces the current view in the middle of an SPA navigation, and the focus falls to
+  // <body> (a direct URL access starts there too): on mount the title takes it, an entry point for
+  // the keyboard and the screen reader (ADR-0024). tabindex="-1" keeps it out of the tab order
+  it.each([404, 500])('a %i takes the focus to the title on mount', async (status) => {
+    const wrapper = await mountAttached(status)
+    const title = htmlElement(wrapper.get(TITLE).element)
+
+    // The attribute, not the tabIndex property: an h1 without it reads -1 from the property too
+    expect(title.getAttribute('tabindex')).toBe('-1')
+    // The focus lands a frame after the mount
+    await expect.poll(() => document.activeElement).toBe(title)
   })
 })

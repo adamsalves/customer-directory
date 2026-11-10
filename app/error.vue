@@ -17,6 +17,15 @@ const text = computed(() =>
 // The title says which error this is: a screen reader does not announce an alert that is already in
 // the HTML of a page load, but it reads the title
 useSeoMeta({ title: () => `${heading.value} · Juntos Somos Mais` })
+
+// The h1 is slot content of <NuxtLayout>, where useTemplateRef does not resolve its type: an
+// explicitly typed ref keeps it honest
+const titleRef = ref<HTMLHeadingElement | null>(null)
+
+// A view replaced in the middle of an SPA navigation leaves the focus on <body> (a direct URL access
+// starts there too): on mount the h1 takes it, so the keyboard and the screen reader have an entry
+// point in the page (ADR-0024)
+onMounted(() => titleRef.value?.focus())
 </script>
 
 <template>
@@ -26,7 +35,9 @@ useSeoMeta({ title: () => `${heading.value} · Juntos Somos Mais` })
     <div :class="S.ErrorPage" data-testid="error-page__root--div">
       <!-- The alert is the message only: the link is no part of what is announced -->
       <div role="alert" :class="S.Message" data-testid="error-page__message--alert">
-        <h1 :class="S.Title" data-testid="error-page__title--heading">{{ heading }}</h1>
+        <h1 ref="titleRef" tabindex="-1" :class="S.Title" data-testid="error-page__title--heading">
+          {{ heading }}
+        </h1>
         <p :class="S.Text" data-testid="error-page__text--paragraph">{{ text }}</p>
       </div>
       <!-- A navigation that lands clears the error (the router plugin of Nuxt), so no clearError -->
