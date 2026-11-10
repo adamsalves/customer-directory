@@ -63,8 +63,10 @@ test('the link goes back to the list', async ({ page }) => {
 // Entering the error page the way a reader does: from the hydrated list, a card of a customer the
 // BFF no longer has (the answer is faked, as in customerDetail.spec.ts). The title takes the focus
 // a replaced view leaves on <body>, and the announcer — the layout's, which error.vue renders —
-// says which page this is (ADR-0024)
-test('entering the 404 page by client navigation focuses the title and announces it', async ({
+// says which page this is. Leaving by "Ver lista de clientes" is one more swap of the replaced
+// view: the results then take the focus the way an in-list page change does, and the announcer
+// names the list — both sides of the journey in one read (ADR-0022, ADR-0024)
+test('the client 404 focuses the title, and the way out hands the focus to the results', async ({
   page,
 }) => {
   await page.route('**/api/customers/abraim-dacosta', (route) => route.fulfill({ status: 404 }))
@@ -78,6 +80,41 @@ test('entering the 404 page by client navigation focuses the title and announces
     .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
     .toBe('error-page__title--heading')
   await expect(page.locator('.nuxt-route-announcer')).toContainText('Cliente não encontrado')
+
+  await page.getByTestId('error-page__list--link').click()
+
+  await expect(page).toHaveURL(/\/customers$/)
+  await expect(page.getByTestId('customers__title--heading')).toHaveText('Lista de clientes')
+  await expect(page.locator('.nuxt-route-announcer')).toContainText('Lista de clientes')
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const element = document.activeElement
+        return element instanceof HTMLElement
+          ? `${element.tagName.toLowerCase()}#${element.id}`
+          : ''
+      }),
+    )
+    .toBe('section#results')
+  // The rows of the answer the list gives with no query: nine cards, the defaults
+  await expect(page.getByTestId('customer-card__name--link')).toHaveCount(9)
+})
+
+// A modified click is the browser's — the link would go to another tab or window — and no
+// navigation of the current tab comes out of it: the error stays where it was, with the focus of
+// the reader still where the click left it (ADR-0024)
+test('a modified click on the way out of the error keeps the error', async ({ page }) => {
+  await page.goto(MISSING)
+  await waitForHydration(page)
+
+  await page.getByTestId('error-page__list--link').click({ modifiers: ['Control'] })
+  await page.waitForTimeout(300)
+
+  await expect(page).toHaveURL(/no-such-customer$/)
+  await expect(page.getByTestId('error-page__root--div')).toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? ''))
+    .toBe('error-page__list--link')
 })
 
 // Using the skip link with an error set must not navigate: the fragment navigation would land on
