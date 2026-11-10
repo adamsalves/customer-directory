@@ -89,6 +89,58 @@ test('a pick with the mouse pushes once, it faces no traverse', async ({ page, i
   await expect.poll(() => historyCount(page)).toBe(baseline + 1)
 })
 
+// The steps the burst still owed start one behind the other, so one of them can be the newest
+// navigation: a card clicked while the burst is writing must not be beaten by them, and the reader
+// stays where they went (#107). No step of the chain may ask the BFF once the reader's own
+// navigation has begun: every ask the runner sees after the customer's own one is a step of the
+// chain writing behind their back
+test('a card clicked while the burst is writing keeps the reader on the customer page', async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto('/customers')
+  await waitForHydration(page)
+  const select = isMobile ? barSelect(page) : cardSelect(page)
+  await select.focus()
+
+  // The BFF asks of the list, whose path has no extra segment (the customer's own ask has one)
+  const listAsks: string[] = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/customers') listAsks.push(request.url())
+  })
+
+  // Six arrows: their writes run one per frame, so the chain still has writes owed for the whole
+  // time the burst goes on, and the click below lands inside it
+  for (let arrow = 0; arrow < 6; arrow++) await page.keyboard.press('ArrowDown')
+
+  // The click of a card takes the reader off the list while the chain still has writes owed. The
+  // list is a skeleton while a write is on its way, so the card is not there every frame: the
+  // page polls for one and clicks it as soon as it is back, inside the window the writes of the
+  // burst leave between them
+  await page.evaluate(() => {
+    const poll = () => {
+      const card = document.querySelector('a[data-testid="customer-card__name--link"]')
+      if (card instanceof HTMLAnchorElement) card.click()
+      else window.setTimeout(poll, 5)
+    }
+    window.setTimeout(poll, 5)
+  })
+
+  // The customer's own ask is when the navigation the reader made has taken over: the writes the
+  // chain still owed are dropped at that point, so the list must not be asked from here on
+  await page.waitForRequest((request) =>
+    new URL(request.url()).pathname.startsWith('/api/customers/'),
+  )
+  const asked = listAsks.length
+
+  // The reader is on the customer the card opened, and stays: no step of the chain takes the
+  // reader back to the list nor asks the BFF once more behind their back
+  await page.waitForTimeout(500)
+  expect(new URL(page.url()).pathname).toMatch(/^\/customers\/[a-z-]+$/)
+  expect(listAsks.length).toBe(asked)
+  await expect(page.getByTestId('customer-detail__root--article')).toBeVisible()
+})
+
 // The page-size select is one control at every width, and the identity spec of the customer list
 // carries its anchoring; here it is the history the arrows leave
 test('the arrow traverse of the page size is one entry, and the select stays where it was', async ({
