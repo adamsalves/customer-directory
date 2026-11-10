@@ -39,3 +39,29 @@ O `FilterPanel` e o `SearchField` tinham cada um o seu `pending`, mas só enxerg
 - Os controles do painel voltam ao que a URL diz sempre que nada mais está em voo: depois de Voltar ou de um link que cancela a escolha, e depois de um "Limpar" feito no mesmo quadro dela.
 - O `SearchField` mantém a marca ao lado do estado em voo. É o único lugar que precisa saber quem gravou, e o composable não conhece os autores das gravações.
 - O clique num link que sai da lista também cancela a espera do campo que ainda não disparou: a gravação dela cancelaria a navegação do link, e a última navegação a começar é a que vale. Um clique com teclas modificadoras não navega na aba atual e não cancela a espera. Um link que fica na lista mantém a espera, e a gravação monta sobre a escolha dele (#140).
+- As setas revelam uma gravação encadeada do próprio escritor (#107): num select fechado, cada
+  seta (`ArrowDown`/`ArrowUp` sem modificadoras) dispara um `change`, e uma travessia do teclado
+  deixava uma entrada de histórico por seta, com o Voltar parando num passo do meio. A travessia
+  que as setas armam regrava a própria entrada: o 1º `change` armado do ciclo sobe como push (ele
+  cria a entrada), e cada `change` armado depois dele a regrava com `replace` só depois de a
+  escrita anterior pousar, na cadeia da Promise que `setQuery` devolve — o passo todo custa uma
+  entrada, em qualquer ritmo de setas.
+- Quem não é a travessia sobe como sempre: o mouse e o toque, push. As setas sem modificadoras
+  armam o ciclo — com modificadoras, a seta é atalho do navegador ou da página, e não arma — e ele
+  desarma ao sair do select (`blur`), ao ser pressionado de novo (`mousedown`, que reabre o menu
+  no mesmo foco: a escolha seguinte sobe como push) e com `Escape` e `Enter`, que fecham a escolha
+  e o ciclo.
+- A regravação só sai como `replace` quando a escrita de trás pousou: escrita da cadeia cancelada
+  por outra gravação (ou abortada por um guard; a que rejeita entra na cadeia como não pousada
+  também), e o `change` seguinte do ciclo volta a push, para não tomar o lugar da entrada que a
+  escrita alheia está acrescentando. A coerção do estado em voo fica intacta: `useListQuery.ts`
+  não mudou. No select de itens por página, cada regravação leva `page: 1` de volta com o tamanho,
+  e a âncora do select ([ADR-0022](0022-rolagem-ate-os-resultados.md)) segue a regra de sempre:
+  escrita que não pousou a derruba, a não ser que outra em voo leve o mesmo `perPage`.
+- Resíduos que a plataforma não dá sinal para distinguir, documentados como estão: setas num menu
+  aberto por mouse (o popup nativo come os `keydown` e nada arma) e a roda do iOS (pressuposto da
+  issue, não verificável localmente) disparam um `change` por passo e custam uma entrada por
+  passo. O mecanismo é o mesmo nos dois selects, com comentários-gêmeos no código
+  (`SortSelect.vue`, `PaginationNav.vue`) e a prova no E2E `tests/e2e/listHistory.spec.ts`: uma
+  entrada por travessia nos dois selects, o Voltar no estado anterior à primeira seta, o mouse
+  subindo como sempre.
