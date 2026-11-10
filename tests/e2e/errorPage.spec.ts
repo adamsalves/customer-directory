@@ -60,6 +60,26 @@ test('the link goes back to the list', async ({ page }) => {
   await expect(page.getByTestId('error-page__root--div')).toHaveCount(0)
 })
 
+// Entering the error page the way a reader does: from the hydrated list, a card of a customer the
+// BFF no longer has (the answer is faked, as in customerDetail.spec.ts). The title takes the focus
+// a replaced view leaves on <body>, and the announcer — the layout's, which error.vue renders —
+// says which page this is (ADR-0024)
+test('entering the 404 page by client navigation focuses the title and announces it', async ({
+  page,
+}) => {
+  await page.route('**/api/customers/abraim-dacosta', (route) => route.fulfill({ status: 404 }))
+  await page.goto('/customers')
+  await waitForHydration(page)
+
+  await page.getByTestId('customer-card__name--link').filter({ hasText: 'Abraim da Costa' }).click()
+
+  await expect(page.getByTestId('error-page__root--div')).toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('error-page__title--heading')
+  await expect(page.locator('.nuxt-route-announcer')).toContainText('Cliente não encontrado')
+})
+
 // Text-only zoom at 200% takes the 15px label to 30px, and at 375px it wraps: the pill must grow with
 // it, not let the second line spill out of its 44px
 test('the link grows with a label that wraps', async ({ page }) => {
