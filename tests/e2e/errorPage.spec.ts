@@ -2,6 +2,14 @@ import { expect } from '@playwright/test'
 import { waitForHydration } from './hydration'
 import { test } from './network'
 
+// The counter of the results reads the poll of the way out has made: a property the page sets while
+// it watches getElementById
+declare global {
+  interface Window {
+    __resultsLookups?: number
+  }
+}
+
 // A slug no customer has: the BFF answers 404 and the page throws it (#32)
 const MISSING = '/customers/no-such-customer'
 // The server answers an error with HTML only to a request that says it takes HTML, as a browser does;
@@ -102,15 +110,29 @@ test('the client 404 focuses the title, and the way out hands the focus to the r
 
 // A modified click is the browser's — the link would go to another tab or window — and no
 // navigation of the current tab comes out of it: the error stays where it was, with the focus of
-// the reader still where the click left it (ADR-0024)
+// the reader still where the click left it (ADR-0024). The wait for the results is the piece this
+// click must not arm: the poll reads the results by getElementById each frame the moment it is
+// armed, so a silenced counter on the document catches an armed wait before the first frame lands.
 test('a modified click on the way out of the error keeps the error', async ({ page }) => {
   await page.goto(MISSING)
   await waitForHydration(page)
 
+  await page.evaluate(() => {
+    const original = document.getElementById.bind(document)
+    window.__resultsLookups = 0
+    document.getElementById = (id: string) => {
+      if (id === 'results' && window.__resultsLookups !== undefined) {
+        window.__resultsLookups += 1
+      }
+      return original(id)
+    }
+  })
   await page.getByTestId('error-page__list--link').click({ modifiers: ['Control'] })
   await page.waitForTimeout(300)
 
   await expect(page).toHaveURL(/no-such-customer$/)
+  const lookups: number | undefined = await page.evaluate(() => window.__resultsLookups)
+  expect(lookups).toBe(0)
   await expect(page.getByTestId('error-page__root--div')).toBeVisible()
   await expect
     .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? ''))
