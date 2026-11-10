@@ -4,7 +4,8 @@ import { test } from './network'
 import { SOURCE_URL } from './servers'
 
 // The hero is one markup at every width (ADR-0014): CSS makes it a column below 640px and puts its
-// actions in a grid of two columns, one below 375px. happy-dom applies no CSS, and no component spec
+// actions in a grid of two equal columns only where they fit — below 375px of content box, which on
+// a fine pointer means up to 389px of viewport (ADR-0013 has a classic scrollbar taking 15px). happy-dom applies no CSS, and no component spec
 // sees the order the browser really has: server HTML, photo fails, page hydrates (#124).
 // Each test sets its own width, so the mobile project would only repeat the desktop one.
 test.skip(({ isMobile }) => isMobile, 'the width is set by each test')
@@ -89,46 +90,70 @@ const isHydrated = (page: Page) =>
 // Below 640px the hero is a column centered on the page, the avatar over the text and the two actions
 // in a row of equal halves. One check for each declaration of that block of CustomerHero.module.scss
 // (and for the `align-items` of the hero, which centers the avatar), so deleting any of them fails.
-// The room inside the hero is its width less its border and padding: 343 - 2 - 40 = 301px.
-test('at 375px the hero is a centered column and the actions share a row', async ({ page }) => {
-  await openHero(page, 375)
-  const { root, avatar, text, name, tags, actions, email, call } = parts(page)
-  const hero = await boxOf(root)
-  const room = hero.width - 2 - 2 * 20
-  const column = (room - 8) / 2
+// The room inside the hero is its width less its border and padding. The row only exists where the
+// widest action holds its one line: 2 × 145.1px + 8px of gap need 375px of content box, so 375px of
+// viewport stacks on this project's fine pointer (here the viewport is the content box: headless
+// scrollbars overlay) and 390px is its last row — ADR-0013.
+for (const { width, stacked } of [
+  { width: 375, stacked: true },
+  { width: 390, stacked: false },
+]) {
+  test(`at ${String(width)}px the hero is a centered column and the actions ${stacked ? 'are one over the other' : 'share a row'}`, async ({
+    page,
+  }) => {
+    await openHero(page, width)
+    const { root, avatar, text, name, tags, actions, email, call } = parts(page)
+    const hero = await boxOf(root)
+    const room = hero.width - 2 - 2 * 20
 
-  await expectLooks(root, {
-    'flex-direction': 'column',
-    padding: '28px 20px 20px',
-    'text-align': 'center',
-  })
-  await expectLooks(avatar, { width: '112px', height: '112px' })
-  await expectLooks(text, { flex: '0 0 auto', width: `${String(room)}px` })
-  await expectLooks(name, { 'font-size': '26px' })
-  await expectLooks(tags, { 'justify-content': 'center' })
-  await expectLooks(actions, {
-    display: 'grid',
-    'grid-template-columns': `${String(column)}px ${String(column)}px`,
-    width: `${String(room)}px`,
-  })
-  for (const action of [email, call]) {
-    await expectLooks(action, { height: '48px', padding: '0px 16px' })
-  }
+    await expectLooks(root, {
+      'flex-direction': 'column',
+      padding: '28px 20px 20px',
+      'text-align': 'center',
+    })
+    await expectLooks(avatar, { width: '112px', height: '112px' })
+    await expectLooks(text, { flex: '0 0 auto', width: `${String(room)}px` })
+    await expectLooks(name, { 'font-size': '26px' })
+    await expectLooks(tags, { 'justify-content': 'center' })
+    await expectLooks(actions, { display: 'grid', width: `${String(room)}px` })
+    for (const action of [email, call]) {
+      await expectLooks(action, { height: '48px', padding: '0px 16px' })
+    }
 
-  // The avatar is on the axis of the hero and over the text
-  const avatarBox = await boxOf(avatar)
-  const textBox = await boxOf(text)
-  expect(avatarBox.x + avatarBox.width / 2).toBeCloseTo(hero.x + hero.width / 2, 1)
-  expect(avatarBox.y + avatarBox.height).toBeLessThanOrEqual(textBox.y)
-  // The buttons are on one row, as wide as a column and 8px apart
-  const emailBox = await boxOf(email)
-  const callBox = await boxOf(call)
-  expect(callBox.y).toBeCloseTo(emailBox.y, 1)
-  expect(emailBox.width).toBeCloseTo(column, 1)
-  expect(callBox.width).toBeCloseTo(column, 1)
-  expect(callBox.x - (emailBox.x + emailBox.width)).toBeCloseTo(8, 1)
-  expect(await linesOf(email)).toBe(1)
-})
+    // The avatar is on the axis of the hero and over the text
+    const avatarBox = await boxOf(avatar)
+    const textBox = await boxOf(text)
+    expect(avatarBox.x + avatarBox.width / 2).toBeCloseTo(hero.x + hero.width / 2, 1)
+    expect(avatarBox.y + avatarBox.height).toBeLessThanOrEqual(textBox.y)
+
+    if (stacked) {
+      // One over the other: the single track is the whole room
+      await expectLooks(actions, { 'grid-template-columns': `${String(room)}px` })
+      const emailBox = await boxOf(email)
+      const callBox = await boxOf(call)
+      expect(emailBox.width, 'one column as wide as the room').toBeCloseTo(room, 1)
+      expect(callBox.width).toBeCloseTo(room, 1)
+      expect(callBox.x, 'same axis').toBeCloseTo(emailBox.x, 1)
+      expect(callBox.y - (emailBox.y + emailBox.height)).toBeCloseTo(8, 1)
+      expect(await linesOf(email)).toBe(1)
+      expect(await linesOf(call)).toBe(1)
+    } else {
+      // Share a row: two equal columns of half the room, 8px apart
+      const column = (room - 8) / 2
+      await expectLooks(actions, {
+        'grid-template-columns': `${String(column)}px ${String(column)}px`,
+      })
+      const emailBox = await boxOf(email)
+      const callBox = await boxOf(call)
+      expect(callBox.y, 'on one line').toBeCloseTo(emailBox.y, 1)
+      expect(emailBox.width).toBeCloseTo(column, 1)
+      expect(callBox.width).toBeCloseTo(column, 1)
+      expect(callBox.x - (emailBox.x + emailBox.width)).toBeCloseTo(8, 1)
+      expect(await linesOf(email)).toBe(1)
+      expect(await linesOf(call)).toBe(1)
+    }
+  })
+}
 
 // Below 375px the actions are one over the other, each as wide as the room. 374px is the edge and
 // 375px (above) the other side of it; at 320px the label still takes a single line.
