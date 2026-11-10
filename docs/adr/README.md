@@ -27,3 +27,4 @@ Formato de Michael Nygard, em pt-BR: **Status · Contexto · Decisão · Consequ
 | [0021](0021-url-publica-em-ingles.md)              | URL pública em inglês                                        | Aceita |
 | [0022](0022-rolagem-ate-os-resultados.md)          | Rolagem até os resultados por hook do router                 | Aceita |
 | [0023](0023-gravacoes-da-lista-em-voo.md)          | Gravações da lista em voo, por router, no `useListQuery`     | Aceita |
+| [0024](0024-annuncio-e-foco-na-pagina-de-erro.md)  | Anúncio e foco na página de erro                             | Aceita |
