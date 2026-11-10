@@ -85,7 +85,9 @@ function holdTheWrite() {
     useRouter().beforeEach((to) => {
       if (abort || to.path !== LIST_PATH) return
       abort = true
-      onTestFinished(resolve)
+      onTestFinished(() => {
+        resolve(undefined)
+      })
       return promise
     }),
   )
