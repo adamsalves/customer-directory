@@ -16,8 +16,18 @@ const props = defineProps<{
   loading: boolean
 }>()
 
+const route = useRoute()
 const { query, pending, setQuery } = useListQuery()
 const perPageId = useId()
+// The page size the reader's last armed change pressed, kept until the chain has no step left in it
+// (ADR-0023). It is not state on its way: `pending` alone says what is on the way to the URL, and
+// the mark says what the arrows have already said. The select is drawn from the URL the rest of the
+// time (the links carry what is on the way), so the mark holds only while the traverse owes a step.
+let pick: IListQuery['perPage'] | undefined
+// The reader left the list while the chain still had a step in it: the last navigation to start is
+// the only one that wins (ADR-0023), so the step that starts last drops, and the steps after it
+// inherit the drop
+let leftList = false
 
 // Both lists are in the HTML and CSS shows one per width (ADR-0014)
 const lists = computed(() =>
@@ -73,7 +83,15 @@ let chain: Promise<boolean> = Promise.resolve(true)
 // land: the promise resolves with the failure of it (abort, cancel). One that throws rejects, the
 // same outcome: `false` is one more write that fell through.
 function armedChange(perPage: IListQuery['perPage']) {
+  pick = perPage
   const step = chain.then((landed) => {
+    // The reader is no longer on the list (a card, a link, the history): the queued step ran last
+    // and would beat the navigation the reader made (leftList passes the drop down the chain)
+    if (leftList || route.path !== LIST_PATH) {
+      leftList = true
+      pick = undefined
+      return false
+    }
     const replace = entered && landed
     entered = true
     const write = setQuery({ page: 1, perPage }, { replace })
@@ -88,6 +106,11 @@ function armedChange(perPage: IListQuery['perPage']) {
     )
   })
   chain = step
+  // The mark holds while the chain still has a step owed: once this one is the tail, its outcome is
+  // the last of the traverse and the URL is all there is again, as it is for every other writer
+  void step.then(() => {
+    if (chain === step) pick = undefined
+  })
 }
 
 // Escape and Enter end a pick, so they end the traverse; a modified arrow is a shortcut of the
@@ -253,7 +276,7 @@ watch(
           v-for="option in PER_PAGE_OPTIONS"
           :key="option"
           :value="option"
-          :selected="option === query.perPage"
+          :selected="option === (pick ?? query.perPage)"
         >
           {{ option }}
         </option>

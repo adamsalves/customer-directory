@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, type DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
 import PaginationNav from './PaginationNav.vue'
 
 const FULL = '[data-testid="pagination__full--list"]'
@@ -14,6 +15,12 @@ const SELECT = '[data-testid="pagination__per-page--select"]'
 const ITEM = '[data-testid="pagination__page--item"]'
 const CURRENT_LABEL = '[data-testid="pagination__current--label"]'
 const CURRENT_NUMBER = '[data-testid="pagination__current--number"]'
+
+// What the select holds, as the tests of the other selects read it: the value is DOM state
+function selectElement({ element }: Pick<DOMWrapper<Element>, 'element'>) {
+  if (!(element instanceof HTMLSelectElement)) throw new Error('not a select')
+  return element
+}
 
 // The route sets the page size the links keep and the base the query-only links resolve against
 const mountNav = (page: number, totalPages: number, route = '/customers', attachTo?: HTMLElement) =>
@@ -228,6 +235,30 @@ describe('PaginationNav armed by the arrows', () => {
       expect(useRoute().fullPath).toBe(url)
     })
 
+  // The next write of the list waits at the guard until the test lets it: the change that follows
+  // it moves the select on while the write is still on its way, which is the gap a render of a real
+  // burst has between two of its writes (ADR-0023)
+  function holdTheWrite() {
+    let abort = false
+    const { promise, resolve } = Promise.withResolvers<undefined>()
+    onTestFinished(
+      useRouter().beforeEach((to) => {
+        if (abort || to.path !== LIST_PATH) return
+        abort = true
+        onTestFinished(resolve)
+        return promise
+      }),
+    )
+    return () => {
+      resolve(undefined)
+    }
+  }
+
+  // A page that is not the list, for as long as the test runs (as in SearchField.spec.ts)
+  function addPageOutsideTheList() {
+    onTestFinished(useRouter().addRoute({ path: '/elsewhere', component: { render: () => null } }))
+  }
+
   // Both calling through: the router still navigates
   function spyOnRouter() {
     const router = useRouter()
@@ -348,6 +379,70 @@ describe('PaginationNav armed by the arrows', () => {
     expect(push).toHaveBeenCalledTimes(4)
     expect(push).toHaveBeenNthCalledWith(4, { path: '/customers', query: { perPage: '18' } })
     expect(replace).not.toHaveBeenCalled()
+  })
+
+  // The writes of the burst are one behind the other, and a render between two of them reads the
+  // write that is on its way, whose page size is one step behind what the arrows already moved the
+  // select to (the mark of ADR-0023). Drawing that size back into the select would drag the select
+  // behind the arrows, and the next arrow would step from the dragged one
+  it('keeps the select on the last armed change when a render runs between two writes', async () => {
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18')
+    const letGo = holdTheWrite()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('27')
+    await select.setValue('54')
+    // Whatever write of the list comes in (the filters, the search) puts the render to work
+    // between the two steps: the arrows have already said 54, so the render draws from the mark,
+    // and the select stays where the arrows put it
+    void useListQuery().setQuery({ search: 'ana' }, { replace: true })
+    await nextTick()
+
+    // What the render drew at this tick: the happy-dom value the reader has may hide it, so the
+    // option the render says is the drawn one
+    const chosen = select.findAll('option[selected]').map((option) => option.attributes('value'))
+    expect(chosen).toEqual(['54'])
+    expect(selectElement(select).value).toBe('54')
+
+    letGo()
+    // The burst's own last armed change rides on the write that was on its way (ADR-0023)
+    await urlIs('/customers?perPage=54&search=ana')
+  })
+
+  // A card clicked while the burst was mid-write makes the reader leave the list, and the last
+  // navigation to start is the only one that wins (ADR-0023): the steps the chain still owed would
+  // start last and take the reader back, so they drop where they are, without a write
+  it('drops the steps the chain owed once the reader is off the list', async () => {
+    addPageOutsideTheList()
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+    const letGo = holdTheWrite()
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('27')
+    // The step waits behind the write that is held: it is still owed while the reader goes
+    await select.setValue('54')
+
+    // The reader follows a card (any navigation off the list): the guard of the test holds the
+    // writes of the list only, so this navigation goes
+    await useRouter().push('/elsewhere')
+    expect(useRoute().fullPath).toBe('/elsewhere')
+
+    // From here the chain only has steps behind: releasing the write lets the step start, and it
+    // finds no list to serve — nothing it would do may take the reader back
+    push.mockClear()
+    replace.mockClear()
+    letGo()
+    await vi.waitFor(() => {
+      expect(useListQuery().pending()).toBeUndefined()
+    })
+    await flushPromises()
+
+    expect(push).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+    expect(useRoute().fullPath).toBe('/elsewhere')
   })
 })
 
