@@ -178,6 +178,128 @@ describe('SortSelect writing the URL', () => {
   })
 })
 
+// The arrows of the keyboard arm a traverse of the orders: its first change pushes the entry, and
+// the armed changes after it rewrite that entry once the write before them has landed, so one
+// traverse costs one entry in the history. The mouse is not part of it, and the traverse comes
+// apart on blur, on a press on the select and on Escape and Enter. Every navigation waits for its
+// frame before landing (navigation-repaint), so the waits of these tests are real ones: vi.waitFor
+// pumps them, one flushPromises does not.
+describe('SortSelect armed by the arrows', () => {
+  it('makes the second armed change rewrite the entry the first one pushed', async () => {
+    const wrapper = await mountSelect('/customers?page=3&sort=old')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('last')
+    await select.setValue('young')
+    await urlIs('/customers?sort=young')
+
+    expect(push).toHaveBeenCalledExactlyOnceWith({ path: '/customers', query: { sort: 'last' } })
+    expect(replace).toHaveBeenCalledExactlyOnceWith({
+      path: '/customers',
+      query: { sort: 'young' },
+    })
+  })
+
+  // The burst lines its writes up without one racing the other, and it ends on the last arrow: the
+  // URL has its order and the select shows it, not one of the orders in the middle of the burst
+  it('keeps one push and lands on the last order through a burst of armed changes', async () => {
+    const wrapper = await mountSelect('/customers?page=3&sort=old')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('last')
+    await select.setValue('young')
+    await select.setValue('recent')
+    await urlIs('/customers?sort=recent')
+
+    expect(push).toHaveBeenCalledExactlyOnceWith({ path: '/customers', query: { sort: 'last' } })
+    expect(replace).toHaveBeenCalledTimes(2)
+    expect(replace).toHaveBeenNthCalledWith(1, { path: '/customers', query: { sort: 'young' } })
+    expect(replace).toHaveBeenNthCalledWith(2, { path: '/customers', query: { sort: 'recent' } })
+    expect(drawn(select)).toEqual(['recent'])
+    expect(selectElement(select).value).toBe('recent')
+  })
+
+  it.each([
+    { ends: 'blur' },
+    { ends: 'mousedown' },
+    { ends: 'Escape' },
+    { ends: 'Enter' },
+  ] as const)('pushes again once $ends ends the traverse', async ({ ends }) => {
+    const wrapper = await mountSelect('/customers?page=3&sort=old')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('last')
+    await urlIs('/customers?sort=last')
+
+    if (ends === 'Escape' || ends === 'Enter') await select.trigger('keydown', { key: ends })
+    else await select.trigger(ends)
+
+    await select.setValue('young')
+    await select.setValue('recent')
+
+    // Armed again: the first change of a new traverse pushes, it does not rewrite the last entry
+    await select.trigger('keydown', { key: 'ArrowUp' })
+    await select.setValue('old')
+    await urlIs('/customers?sort=old')
+
+    expect(push).toHaveBeenCalledTimes(4)
+    expect(push).toHaveBeenNthCalledWith(4, { path: '/customers', query: { sort: 'old' } })
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  // A modified arrow is a shortcut of the browser or of the page, not a step of the traverse: the
+  // picks it moves push, as the mouse does
+  it('does not arm the traverse on an arrow that carries a modifier', async () => {
+    const wrapper = await mountSelect('/customers?sort=old')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown', shiftKey: true })
+    await select.setValue('last')
+    await select.setValue('young')
+    await urlIs('/customers?sort=young')
+
+    expect(push).toHaveBeenCalledTimes(2)
+    expect(push).toHaveBeenNthCalledWith(2, { path: '/customers', query: { sort: 'young' } })
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  // A write another one cancelled (or a guard aborted) left no entry of the traverse behind: the
+  // armed change after it pushes, so it does not take the place of the entry the other is adding
+  it('pushes again when the write before it did not land', async () => {
+    const wrapper = await mountSelect('/customers?sort=old')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+    let aborted = true
+    onTestFinished(
+      useRouter().beforeEach(() => {
+        if (!aborted) return
+        aborted = false
+        return false
+      }),
+    )
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('last')
+    await vi.waitFor(() => {
+      expect(useListQuery().pending()).toBeUndefined()
+    })
+
+    await select.setValue('young')
+    await urlIs('/customers?sort=young')
+
+    expect(push).toHaveBeenCalledTimes(2)
+    expect(push).toHaveBeenNthCalledWith(2, { path: '/customers', query: { sort: 'young' } })
+    expect(replace).not.toHaveBeenCalled()
+  })
+})
+
 // The select is drawn from the write on its way, so every copy agrees from the pick on; a pick that
 // never reaches the URL is drawn back by it, or put back on the URL once nothing is on its way
 describe('SortSelect write on its way', () => {
