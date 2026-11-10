@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NuxtError } from '#app'
+import { RESULTS_ID, focusResults } from '~/utils/resultsScroll'
 import S from './error.module.scss'
 
 const props = defineProps<{ error: NuxtError }>()
@@ -26,6 +27,35 @@ const titleRef = ref<HTMLHeadingElement | null>(null)
 // starts there too): on mount the h1 takes it, so the keyboard and the screen reader have an entry
 // point in the page (ADR-0024)
 onMounted(() => titleRef.value?.focus())
+
+// The leaving of the error through this link is one more swap of the view in the middle of a client
+// navigation, and the focus it held would fall to <body>: the results take it, the same element a
+// page change inside the list gives it to. The navigation stays the link's own: the router of Nuxt
+// walks one at a time, and a second of it started beside the first unwinds both pages (their two
+// first asks of the BFF abort) and brings the app to a new error of its own. The announcer of the
+// layout, who renders this page and survives the swap, announces the list on the landing (ADR-0022,
+// ADR-0024)
+function goToList(event: MouseEvent) {
+  // A modified and a middle-button click are the browser's — the link goes to another tab or
+  // window — and not a navigation of this tab, so we return and the click keeps its default. It is
+  // the same cut the router's own guard makes on its link clicks (ADR-0024)
+  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return
+  void focusTheResultsWhenThePageRenders()
+}
+
+// The page the link lands carries its first ask of the BFF on its way, so the results come a beat
+// after the URL has changed: a frame at a time, and no endless wait — without them after three
+// hundred of them the landing failed outright and the reader keeps where the page left them
+async function focusTheResultsWhenThePageRenders() {
+  for (let turn = 0; turn <= 300; turn += 1) {
+    if (document.getElementById(RESULTS_ID)) {
+      focusResults()
+      return
+    }
+    // A frame per turn: the render of the list is one a Suspense away from the answer of the BFF
+    await new Promise(requestAnimationFrame)
+  }
+}
 </script>
 
 <template>
@@ -40,8 +70,14 @@ onMounted(() => titleRef.value?.focus())
         </h1>
         <p :class="S.Text" data-testid="error-page__text--paragraph">{{ text }}</p>
       </div>
-      <!-- A navigation that lands clears the error (the router plugin of Nuxt), so no clearError -->
-      <NuxtLink to="/customers" :class="S.Link" data-testid="error-page__list--link">
+      <!-- A navigation that lands clears the error (the router plugin of Nuxt), so no clearError.
+           The click stays the link's own; goToList only reads it for what the browser owns -->
+      <NuxtLink
+        to="/customers"
+        :class="S.Link"
+        data-testid="error-page__list--link"
+        @click="goToList"
+      >
         Ver lista de clientes
       </NuxtLink>
     </div>
