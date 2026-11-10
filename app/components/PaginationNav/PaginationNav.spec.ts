@@ -211,6 +211,146 @@ describe('PaginationNav', () => {
   })
 })
 
+// The arrows of the keyboard arm a traverse of the page sizes: its first change pushes the entry,
+// and the armed changes after it rewrite that entry once the write before them has landed, so one
+// traverse costs one entry in the history. The mouse is not part of it, and the traverse comes
+// apart on blur, on a press on the select and on Escape and Enter. Every navigation waits for its
+// frame before landing (navigation-repaint), so these waits are real ones — one flushPromises
+// pumps nothing.
+describe('PaginationNav armed by the arrows', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  const urlIs = (url: string) =>
+    vi.waitFor(() => {
+      expect(useRoute().fullPath).toBe(url)
+    })
+
+  // Both calling through: the router still navigates
+  function spyOnRouter() {
+    const router = useRouter()
+    return { push: vi.spyOn(router, 'push'), replace: vi.spyOn(router, 'replace') }
+  }
+
+  it('makes the second armed change rewrite the entry the first one pushed', async () => {
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('27')
+    await select.setValue('54')
+    await urlIs('/customers?perPage=54')
+
+    expect(push).toHaveBeenCalledExactlyOnceWith({ path: '/customers', query: { perPage: '27' } })
+    expect(replace).toHaveBeenCalledExactlyOnceWith({
+      path: '/customers',
+      query: { perPage: '54' },
+    })
+  })
+
+  // The burst lines its writes up without one racing the other, and it ends on the last arrow: its
+  // page size is the one landed, and page 1 stays out of the URL (it is the default again)
+  it('keeps one push and lands on the last page size through a burst of armed changes', async () => {
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('27')
+    await select.setValue('54')
+    await select.setValue('18')
+    await urlIs('/customers?perPage=18')
+
+    expect(push).toHaveBeenCalledExactlyOnceWith({ path: '/customers', query: { perPage: '27' } })
+    expect(replace).toHaveBeenCalledTimes(2)
+    expect(replace).toHaveBeenNthCalledWith(1, {
+      path: '/customers',
+      query: { perPage: '54' },
+    })
+    expect(replace).toHaveBeenNthCalledWith(2, {
+      path: '/customers',
+      query: { perPage: '18' },
+    })
+  })
+
+  // A write another one cancelled (or a guard aborted) left no entry of the traverse behind: the
+  // armed change after it pushes, so it does not take the place of the entry the other is adding.
+  // Its anchor goes with the failed write too: in the document, a loading toggle must not correct
+  it('pushes again when the write before it did not land, dropping the anchor', async () => {
+    const scrollBy = vi.fn()
+    vi.stubGlobal('scrollBy', scrollBy)
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18', document.body)
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+    let aborted = true
+    onTestFinished(
+      useRouter().beforeEach(() => {
+        if (!aborted) return
+        aborted = false
+        return false
+      }),
+    )
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('27')
+    await vi.waitFor(() => {
+      expect(useListQuery().pending()).toBeUndefined()
+    })
+    expect(useRoute().fullPath).toBe('/customers?page=3&perPage=18')
+
+    // A loading after it would correct an anchored select in this frame, one does not
+    await wrapper.setProps({ loading: true })
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(scrollBy).not.toHaveBeenCalled()
+
+    await select.setValue('54')
+    await urlIs('/customers?perPage=54')
+
+    expect(push).toHaveBeenCalledTimes(2)
+    expect(push).toHaveBeenNthCalledWith(2, { path: '/customers', query: { perPage: '54' } })
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { ends: 'blur' },
+    { ends: 'mousedown' },
+    { ends: 'Escape' },
+    { ends: 'Enter' },
+  ] as const)('pushes again once $ends ends the traverse', async ({ ends }) => {
+    const wrapper = await mountNav(3, 8, '/customers?page=3&perPage=18')
+    const { push, replace } = spyOnRouter()
+    const select = wrapper.get(SELECT)
+
+    await select.trigger('keydown', { key: 'ArrowDown' })
+    await select.setValue('54')
+    await urlIs('/customers?perPage=54')
+
+    if (ends === 'Escape' || ends === 'Enter') await select.trigger('keydown', { key: ends })
+    else await select.trigger(ends)
+
+    await select.setValue('27')
+    await select.setValue('9')
+    await urlIs('/customers')
+
+    // The changes after the disarm are not from the traverse: each one pushed
+    expect(push).toHaveBeenCalledTimes(3)
+    expect(push).toHaveBeenNthCalledWith(3, { path: '/customers', query: {} })
+    expect(replace).not.toHaveBeenCalled()
+
+    // Armed again: the first change of a new traverse pushes, it does not rewrite the last entry
+    await select.trigger('keydown', { key: 'ArrowUp' })
+    await select.setValue('18')
+    await urlIs('/customers?perPage=18')
+
+    expect(push).toHaveBeenCalledTimes(4)
+    expect(push).toHaveBeenNthCalledWith(4, { path: '/customers', query: { perPage: '18' } })
+    expect(replace).not.toHaveBeenCalled()
+  })
+})
+
 // The nav is told when the page waits for an answer (loading) and puts the select back where it was
 // each time the list above it changes height. happy-dom has no layout: the select reports the `top`
 // the test sets and scrollBy moves it as the browser would. Where the select really ends up is
