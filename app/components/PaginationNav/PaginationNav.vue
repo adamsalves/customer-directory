@@ -131,6 +131,24 @@ function keydown(event: KeyboardEvent) {
   }
 }
 
+// A click that takes the reader off the list (a card, the breadcrumb) is an order the reader made:
+// the last navigation to start is the only one that wins (ADR-0023), and the steps the chain still
+// owes would start last. The handler of the link starts that navigation, and bubbling brings this
+// listener right after it, still in the same task, so no queued step can start before it. A click
+// with modifiers opens another tab and does not navigate this one, so it stays
+function leaveOnLinkOffList(event: MouseEvent) {
+  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+  if (!(event.target instanceof Element)) return
+  const anchor = event.target.closest('a[href]')
+  if (!(anchor instanceof HTMLAnchorElement) || anchor.pathname === LIST_PATH) return
+  leftList = true
+  pick = undefined
+}
+
+onMounted(() => {
+  window.addEventListener('click', leaveOnLinkOffList)
+})
+
 // A pick with the mouse or the touch is not the keyboard's traverse: a press on the select reopens
 // the menu on the same focus, and its next pick pushes again; so does leaving the select
 function disarm() {
@@ -175,6 +193,10 @@ watch(
     })
   },
 )
+
+onBeforeUnmount(() => {
+  window.removeEventListener('click', leaveOnLinkOffList)
+})
 </script>
 
 <template>

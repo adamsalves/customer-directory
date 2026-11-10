@@ -139,6 +139,24 @@ function syncSelect() {
   if (select instanceof HTMLSelectElement) select.value = query.value.sort
 }
 
+// A click that takes the reader off the list (a card, the breadcrumb) is an order the reader made:
+// the last navigation to start is the only one that wins (ADR-0023), and the steps the chain still
+// owes would start last. The handler of the link starts that navigation, and bubbling brings this
+// listener right after it, still in the same task, so no queued step can start before it. A click
+// with modifiers opens another tab and does not navigate this one, so it stays
+function leaveOnLinkOffList(event: MouseEvent) {
+  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+  if (!(event.target instanceof Element)) return
+  const anchor = event.target.closest('a[href]')
+  if (!(anchor instanceof HTMLAnchorElement) || anchor.pathname === LIST_PATH) return
+  leftList = true
+  pick = undefined
+}
+
+onMounted(() => {
+  window.addEventListener('click', leaveOnLinkOffList)
+})
+
 // Vue writes `selected` only when the order the select is drawn from changes. A pick that is cancelled
 // after the select was drawn from it is drawn back by that. One that a write made in the same tick
 // takes back, before anything is drawn from it, leaves the select with the click. Once nothing is on
@@ -149,6 +167,10 @@ function syncSelect() {
 // owed (ADR-0023).
 watch(pending, (inFlight) => {
   if (inFlight === undefined && pick === undefined) syncSelect()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('click', leaveOnLinkOffList)
 })
 </script>
 
