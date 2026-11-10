@@ -80,6 +80,53 @@ test('entering the 404 page by client navigation focuses the title and announces
   await expect(page.locator('.nuxt-route-announcer')).toContainText('Cliente não encontrado')
 })
 
+// Using the skip link with an error set must not navigate: the fragment navigation would land on
+// the router, whose afterEach clears the error, and the customer page would refetch its customer
+// to 404 again. The click is prevented and the main takes the focus, what the navigation would do
+// (ADR-0024)
+test('the skip link on the error page keeps the error and focuses the main', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'the mobile project would only repeat the same requests')
+
+  await page.route('**/api/customers/abraim-dacosta', (route) => route.fulfill({ status: 404 }))
+  await page.goto('/customers')
+  await waitForHydration(page)
+
+  // Every ask from before the card click on: once the error is on, the skip link must add none
+  const asks: string[] = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.startsWith('/api/')) asks.push(request.url())
+  })
+
+  await page.getByTestId('customer-card__name--link').filter({ hasText: 'Abraim da Costa' }).click()
+
+  await expect(page.getByTestId('error-page__root--div')).toBeVisible()
+  const asksOnLanding = asks.length
+
+  // The title holds the focus from the mount, and letting it go does not reset the sequential
+  // focus navigation: a Tab from it would reach the error's list link, never the skip link. The
+  // skip link takes the focus the way the tabbing of a reader would leave it, and Enter follows it
+  await page.getByTestId('layout__skip--link').focus()
+  await page.keyboard.press('Enter')
+  await page.waitForTimeout(300)
+
+  // No new ask of the BFF at all: the error is still there, and the focus went to the main
+  expect(asks.length).toBe(asksOnLanding)
+  await expect(page.getByTestId('error-page__root--div')).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const element = document.activeElement
+        return element instanceof HTMLElement
+          ? `${element.tagName.toLowerCase()}#${element.id}`
+          : ''
+      }),
+    )
+    .toBe('main#conteudo')
+})
+
 // Text-only zoom at 200% takes the 15px label to 30px, and at 375px it wraps: the pill must grow with
 // it, not let the second line spill out of its 44px
 test('the link grows with a label that wraps', async ({ page }) => {
