@@ -5,6 +5,7 @@ import DefaultLayout from './default.vue'
 
 const SKIP = '[data-testid="layout__skip--link"]'
 const MAIN = '[data-testid="layout__content--main"]'
+const TOAST = '[data-testid="toast__root--status"]'
 
 enableAutoUnmount(afterEach)
 
@@ -54,5 +55,13 @@ describe('skip link', () => {
     ).toBe(false)
     await expect.poll(() => document.activeElement).toBe(main)
     expect(useError().value).toMatchObject({ status: 404 })
+  })
+
+  // The toast is a live region on its own: inside the main it would become one more region of the
+  // list's status, and the count of the list counts one live region on purpose
+  it('mounts the toast beside the main content, never inside it', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+
+    expect(wrapper.get(TOAST).element.closest('main')).toBeNull()
   })
 })
