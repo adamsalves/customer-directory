@@ -6,7 +6,9 @@
 }
 
 // Parked off-screen until it receives focus. Following it is a plain fragment navigation:
-// the browser scrolls to <main id="conteudo"> and, because of its tabindex="-1", focuses it.
+// the browser scrolls to <main id="conteudo"> and, because of its tabindex="-1", focuses it —
+// unless an error is set, when the guard in the layout prevents the navigation and focuses the
+// main itself (ADR-0024).
 .SkipLink {
   position: absolute;
   inset-block-start: 8px;
