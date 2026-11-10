@@ -155,8 +155,10 @@ for (const { width, stacked } of [
   })
 }
 
-// Below 375px the actions are one over the other, each as wide as the room. 374px is the edge and
-// 375px (above) the other side of it; at 320px the label still takes a single line.
+// The cut is by content: with a box narrower than 375px of content the actions stack, one over the
+// other, each as wide as the room. A fine pointer (desktop) reaches the same cut up to 389px of
+// viewport, the 15px classic scrollbar eaten (ADR-0013); at 320px the label still takes a single
+// line.
 for (const width of [374, 320]) {
   test(`at ${String(width)}px the actions are one over the other`, async ({ page }) => {
     await openHero(page, width)
