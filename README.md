@@ -34,6 +34,21 @@ npm run dev
 | `npm test`          | Vitest (unidade, componente e API)                                                   |
 | `npm run test:e2e`  | Playwright (gera o build antes de rodar)                                             |
 
+## Performance e bundle
+
+Lighthouse na produção, mobile, com as piores corridas de cada página:
+
+| Página  | Performance | Acessibilidade | Best Practices | SEO |
+| ------- | ----------- | -------------- | -------------- | --- |
+| Lista   | 99          | 100            | 100            | 100 |
+| Detalhe | 95          | 100            | 100            | 100 |
+
+Repetições deram 99–100 na lista e 95–98 no detalhe. Medição com o Lighthouse CLI 13.6.0, throttling mobile simulado, na produção em 2026-11-11.
+
+O LCP fica em 1,0–1,3 s na lista e 2,2–2,3 s no detalhe; o elemento LCP do detalhe é o avatar externo da randomuser.me.
+
+Bundle client, na saída do `npm run analyze`: 104 KB de JS gzip em 9 chunks (os maiores: `ssr.js` 55 KB, `entry.js` 26 KB e `customers.js` 8 KB) e 9,4 KB de CSS gzip em 5 arquivos.
+
 ## Documentação
 
 - **Decisões de arquitetura:** [`docs/adr/`](docs/adr/README.md)
