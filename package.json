@@ -9,6 +9,7 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "preview": "nuxt preview",
+    "analyze": "nuxt analyze --no-serve",
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "test:e2e": "playwright test",

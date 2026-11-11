@@ -22,16 +22,17 @@ npm run dev
 
 ## Scripts
 
-| Comando             | O que faz                                 |
-| ------------------- | ----------------------------------------- |
-| `npm run dev`       | servidor de desenvolvimento               |
-| `npm run build`     | build de produção                         |
-| `npm run preview`   | serve o build de produção                 |
-| `npm run lint`      | ESLint + Stylelint + Prettier (`--check`) |
-| `npm run format`    | Prettier (`--write`)                      |
-| `npm run typecheck` | `nuxt typecheck`                          |
-| `npm test`          | Vitest (unidade, componente e API)        |
-| `npm run test:e2e`  | Playwright (gera o build antes de rodar)  |
+| Comando             | O que faz                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| `npm run dev`       | servidor de desenvolvimento                                                          |
+| `npm run build`     | build de produção                                                                    |
+| `npm run preview`   | serve o build de produção                                                            |
+| `npm run analyze`   | relatório do tamanho do bundle, gravado em `node_modules/.cache/nuxt/.nuxt/analyze/` |
+| `npm run lint`      | ESLint + Stylelint + Prettier (`--check`)                                            |
+| `npm run format`    | Prettier (`--write`)                                                                 |
+| `npm run typecheck` | `nuxt typecheck`                                                                     |
+| `npm test`          | Vitest (unidade, componente e API)                                                   |
+| `npm run test:e2e`  | Playwright (gera o build antes de rodar)                                             |
 
 ## Documentação
 
