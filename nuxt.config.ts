@@ -29,6 +29,9 @@ export default defineNuxtConfig({
       // Preload only the latin subset (covers pt-BR); one variable file serves every weight.
       // Font preloads need crossorigin even for same-origin files, or the font is fetched twice.
       // head links don't get app.baseURL: prefix the href if the app ever moves off "/".
+      // The site icons come from the logo (#43): the SVG is the preferred one and carries the same
+      // art as the ICO, which holds the 16/32/48 rasters for readers without SVG icons. The
+      // apple-touch is flat (iOS flattens transparency to black), on the light --header-bg.
       link: [
         {
           rel: 'preload',
@@ -37,6 +40,9 @@ export default defineNuxtConfig({
           type: 'font/woff2',
           crossorigin: '',
         },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
       ],
     },
   },
