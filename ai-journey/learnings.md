@@ -38,6 +38,10 @@
 - **Dividir quando a issue cresce.** A paginação (#16) passou do teto; rolagem e foco viraram a #71 e a #72, cada uma com review próprio.
 - **Decodificar o protótipo em vez de "conferir a olho".** No #137 o bundle decodificado entregou os valores 1:1 (72%, −16px, tabular-nums, grid-areas) e revelou o `:active` que pinta o rótulo — diferença invisível na tela.
 - **Provar a asserção no Chrome antes de pinar.** A volta do `scrollLeft` a zero depois de rolar até o fim, que o plano da #137 contava, não se mostrou: nenhuma receita de rolagem re-snapou neste Chromium. Medir salvou o teste de pinar o que nunca aconteceria — o snap ficou assegurado no computed, e a rolagem, pendente.
+- **Cortar pela régua do desafio.** O corte do M9 passou cada issue pelos 7 critérios de avaliação: 12 issues viraram 6 em duas releases, e o que sobrou saiu com nota para reabrir após a entrega.
+- **Medir performance na produção.** Na #42 o Lighthouse local deu 88–92 (o Nitro local serve os assets sem gzip) e o painel do DevTools com extensões deu 72; na produção, o CLI deu 99–100 e 95–98 e o PSI confirmou 100/99. O README registra a metodologia.
+- **Round-trip no artefato re-encodado.** O protótipo editado só se provou decodificando de novo: os dois bundles voltaram byte a byte, e o asset embutido no responsivo descomprimiu no desktop novo (#43).
+- **E2E lê o que o servidor responde, byte a byte.** O favicon do Nitro é um GIF embutido que responde 200 e `image/x-icon` quando o arquivo não existe: status e content-type não bastam, o teste compara os bytes (#43).
 
 ## ❌ O que não funcionou
 
@@ -59,6 +63,9 @@
 - **Estimar sem contar os specs, ainda.** No M6, a #103 fechou com +425 contra ~200 e a #29 com +884 contra ~300, quase tudo E2E de estilo. O E2E da ordenação (#30) ficou perto: +115 contra ~100, depois do review.
 - **Estimar sem contar os specs, de novo.** No M7, a #32 fechou com +747 contra ~330 e a #35 com +763 contra ~330, as duas aprovadas como exceção; os E2E de estilo ficaram no alvo: #125 com +225 contra ~230 e #129 com +206 contra ~200.
 - **Pressupor que a fixture dá o conteúdo.** Nenhum estado tem ≥3 clientes: o related nunca passa de 1 card, a rolagem verdadeira não existe com os 20 registros e nem a coluna alargada levou ao snap — o Chromium do teste não voltou ao repouso do snap depois de nenhuma rolagem.
+- **Confiar na medição local de performance.** O Lighthouse local distorceu (assets sem gzip: 88–92 contra 95–98 da produção), e o painel do DevTools com extensões deu 72 no mesmo instante de um PSI 100/99 — instrumento e ambiente fazem a nota (#42).
+- **Prompt longo demais ao implementer no opencode.** Voltava vazio; o probe curto funcionava. A missão passou a ir em etapas.
+- **Runner fora do controle.** O DNS do CI caiu por ~2h40 e matou o `playwright install --with-deps` em 6 corridas seguidas com a `main` verde; o merge foi ordenado com a exceção documentada no review (#43).
 
 ## 🔄 O que eu faria diferente
 
@@ -76,3 +83,5 @@
 - Medir no plano quantas linhas o E2E de estilo vai custar quando a issue fixa CSS declaração por declaração.
 - Medir os valores serializados computados no Chrome antes de pinar (`grid-template-areas`, `grid-auto-columns: 72%`), e não escrever a asserção do cálculo mental.
 - Registrar a divergência do protótipo já na conferência do measurer — o `:active` do rótulo apareceu na decodificação do #137, e virou linha da ADR-0013 no próprio PR, não numa issue depois.
+- Medir performance direto na produção desde a primeira rodada; o local só serve de sanidade.
+- No opencode, dividir a missão do implementer em etapas já na primeira chamada.

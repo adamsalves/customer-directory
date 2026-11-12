@@ -1,7 +1,5 @@
 # Prompts
 
-Só os prompts que mudaram o rumo do projeto. Os trechos entre aspas são o que escrevi de fato.
-
 ## Fase 0 · Planejamento
 
 ### 🔧 Prompt: Como atacar o desafio
@@ -33,6 +31,32 @@ A primeira resposta procurou código no repositório, que ainda estava vazio, e 
 
 **Abordagem final:**
 Cache de 1h com stale-while-revalidate no BFF (ADR-0005). Quando o cache vence, o usuário recebe a cópia anterior e a atualização acontece em segundo plano.
+
+### 🔧 Prompt: A qualidade antes do primeiro código
+
+**Ferramenta:** Claude Code
+
+**O que pedi:**
+Antes da primeira linha de feature, o projeto precisa da infraestrutura de qualidade de pé: pre-commit com lint e formatação, mensagem de commit padronizada e CI como portão. Isso entra na fundação, não no fim.
+
+**O que aconteceu:**
+Virou parte do M1 em duas issues. A #3 trouxe husky, lint-staged e commitlint — hooks de uma linha, sem `npx`, e o lint-staged só nos arquivos do commit. A #5 trouxe o CI no GitHub Actions, um job `lint → typecheck → test → e2e` com cache de npm e browsers. Os reviews pegaram o que só o tempo mostra: o commitlint puxava `@types/node` 26 por peer e o typecheck aceitava APIs que não existem no Node 24 (fixado `^24.15.0`); os globs do lint-staged deixavam `.css`, `.cjs`, `.mts` e `.yaml` passarem no commit e quebrarem no CI; e o ramo de cache-hit do CI nunca tinha rodado, porque cache gravado num PR não chega na `main`.
+
+**Abordagem final:**
+ADR-0010: hooks locais e CI. Hoje o pre-commit roda o lint com `--max-warnings 0` nos arquivos tocados, e o CI é o portão de todo PR.
+
+### 🔧 Prompt: O terreno local antes de publicar
+
+**Ferramenta:** Claude Code
+
+**O que pedi:**
+As decisões da conversa de planejamento viram ADRs, e o backlog vira issues refinadas e separadas em milestones no GitHub — mas nada é publicado ainda. Prepara o terreno localmente e espera o meu comando.
+
+**O que aconteceu:**
+As decisões viraram ADRs numeradas (24 na `main`, formato Michael Nygard em pt-BR) e o backlog virou issues em 9 milestones. A publicação só veio com o ok, e a regra ficou escrita no `AGENTS.md`: nada de push, issue, release ou deploy sem comando explícito.
+
+**Abordagem final:**
+ADR-0001 e a regra de publicação no `AGENTS.md` — vale até hoje: a submissão do desafio só sai com comando.
 
 ### 🔧 Prompt: Revisar o protótipo
 
@@ -77,6 +101,19 @@ A revisão cruzou o plano com as 7 competências do README oficial e achou lacun
 **Abordagem final:**
 As lacunas viraram itens do backlog e a ADR-0007 (estado). O `AGENTS.md` concentra as regras e o `CLAUDE.md` só o importa.
 
+### 🔧 Prompt: Componentes do zero
+
+**Ferramenta:** Claude Code
+
+**O que pedi:**
+Os componentes vão ser construídos do zero ou sobre primitivos — biblioteca de UI ou headless? Decide logo, porque isso muda a marcação, o CSS e o plano inteiro.
+
+**O que aconteceu:**
+Do zero, sobre HTML nativo — e o código seguiu fiel: o sheet de filtros é um `<dialog>` nativo (ADR-0015), o painel usa checkbox e rádio nativos com o estado marcado saindo de `:has(:checked)`, a ordenação é um `<select>` nativo. Nenhuma biblioteca de UI, nenhuma headless.
+
+**Abordagem final:**
+ADR-0003: CSS Modules + SCSS em `Nome/Nome.module.scss` importado como `S`, componentes em `app/components/` construídos sobre HTML nativo.
+
 ### 🔧 Prompt: Milestones e PRs
 
 **Ferramenta:** Claude Code
@@ -89,6 +126,47 @@ Os milestones estavam cortados por camada (BFF, depois layout, depois lista), e 
 
 **Abordagem final:**
 9 milestones (M1 Fundação a M9 Auditoria e entrega), uma issue por PR com ~400 linhas no máximo, GitHub Flow com squash, e uma release ao fechar cada milestone: `v0.1.0` a `v0.8.0` de M1 a M8, e `v1.0.0` na entrega (ADR-0012).
+
+### 🔧 Prompt: Os extras só na memória
+
+**Ferramenta:** Claude Code
+
+**O que pedi:**
+Olhando a seção "Seja criativo" do desafio: o que agregaria valor? Deixa registrado como lista para entrar ao final, se sobrar tempo — só na memória, não no projeto, por conta do prazo.
+
+**O que aconteceu:**
+Três tiers ficaram de lado para não inflar o plano: `<mark>` da busca, View Transitions, atalhos ←/→ no detalhe, vCard, hora local; aniversariantes, faixa etária, CSV, Web Share; favoritos em cookie, print stylesheet, PWA. Foram oferecidos de novo após a v0.8.0 e suspensos até o fim do M9 — nenhum virou issue, e o código não tem nenhum deles.
+
+**Abordagem final:**
+Os extras se registram no README final, na seção "O que ficou de fora" — não viram issues.
+
+## M1 · Fundação
+
+### 🔧 Prompt: A fundação de uma vez, um PR por issue
+
+**Ferramenta:** Claude Code + sub-agentes
+
+**O que pedi:**
+A M1 é a fundação: scaffold com SSR e tipagem honesta, lint com tipos, hooks, testes, CI e deploy na Vercel — cada um em issue própria, com PR pequeno. Qual a primeira issue?
+
+**O que aconteceu:**
+Oito issues e oito PRs (#1, #47, #2 a #7), cada um com review de sub-agente isolado desde o primeiro. O scaffold (#1, +6698) veio com TypeScript estrito no client e no Nitro, e o review pegou o `engines.node: ">=24"`, que deixaria a Vercel subir de major sozinha — virou `^24.15.0`. O ESLint tipado (#2) barrou `as` e `!` também no `<template>`; o review provou que `$fetch.raw<T>()` passava pela regra só do `$fetch`, e a config nova dá 11 erros nos mesmos arquivos. Vitest e Playwright (#4) entraram com desktop e mobile; o review desligou o `reuseExistingServer`, que dava 2 verdes contra um build velho com o h1 quebrado. O CI (#5) segurou o install sempre rodando, porque cache de PR não chega na `main`. O deploy (#6) ficou na integração Git da Vercel, sem `vercel.json`, com o aviso no README de que o preview exige login. E a #7 botou o protótipo em `docs/design/`, os templates do GitHub, o README e o `ai-journey/` — o review achou os dois HTML do protótipo vindo de exportações diferentes, com tokens divergentes no tema claro.
+
+**Abordagem final:**
+ADR-0002, 0009, 0010, 0012 e a regra de um PR por issue que virou o fluxo do projeto inteiro.
+
+### 🔧 Prompt: pnpm para npm
+
+**Ferramenta:** Claude Code
+
+**O que pedi:**
+O scaffold veio com pnpm, mas ninguém decidiu isso — e o pnpm exige Corepack ou install global. Quem clona o repositório, inclusive quem avalia o desafio, precisa instalar e rodar sem azar: vai de npm. E tira aquele lockfile do pnpm do histórico do git.
+
+**O que aconteceu:**
+`package-lock.json` regenerado com npm 11 nas mesmas versões diretas (+9272 −6553, #47); o script de install do `esbuild` continua negado, agora por `allowScripts` (o npm 11 avisa sobre scripts não revisados e respeita os negados). Sobre o histórico: tirar o `pnpm-lock.yaml` à força exigiria force push na `main` — não valeu; o arquivo saiu num commit normal e continua acessível pelo PR do scaffold.
+
+**Abordagem final:**
+ADR-0018: npm que vem com o Node 24, `npm ci` como install reproduzível, `engines` fixado e `import/no-extraneous-dependencies` como erro, porque o npm achata o `node_modules`.
 
 ## M2 · Shell + tema
 
@@ -397,3 +475,57 @@ Na #40 o sub-agente 1 computou as ordens da própria fixture (Deolindo da Cunha 
 
 **Abordagem final:**
 Jornada num só teste encadeado, esperando o estado escrito antes de cada ato (ADR-0023); identidade num arquivo por largura, `:active` por `mouse.down` + ponteiro longe (é o afastamento, e não a chegada do ponteiro, que prova a regra), ghosts provados em "1 de 1", `72%` conferido por folha e pela caixa medida, e o snap fixado no computed `scroll-snap-type: x mandatory`, com a volta do `scrollLeft` a zero do plano e a parte "rolagem" do critério pendentes sem a prova no Chrome. O `ai-journey/` fechou o M8 no mesmo PR.
+
+## M9 · Auditoria e entrega
+
+### 🔧 Prompt: Cortar o M9 pela régua
+
+**Ferramenta:** opencode
+
+**O que pedi:**
+Doze issues não cabem no tempo que tenho. Corta o M9 usando a régua do desafio: cada issue só fica se pontuar em um dos 7 critérios de avaliação. O resto sai com nota para reabrir depois da entrega.
+
+**O que aconteceu:**
+De 12 issues para 6, em duas releases: a v0.9.0 com o último conserto e os portões de qualidade (#107, #41, #42, #43), e a v1.0.0 com a entrega (#44, #45). Saíram com nota o refactor sem comportamento (#95), o anúncio do total no sheet (#97), a animação de saída do sheet (#99), o watch da #29 (#105), o 502 de corpo cortado (#110, nunca reproduzido) e o 404 geral (#122, só o skip-link seguiu para a #41).
+
+**Abordagem final:**
+Duas releases dentro do M9 — diferente de M1–M8, a release do bloco não fecha o milestone. A v0.9.0 congela os números de performance da #42/#43, e é neles que o README final da #44 se apoia.
+
+### 🔧 Prompt: Um histórico só ao percorrer o select no teclado
+
+**Ferramenta:** opencode + sub-agentes
+
+**O que pedi:**
+Percorrer o select pelo teclado está enchendo o histórico: cada seta vira uma entrada e uma busca no BFF. Quero que a travessia inteira, do primeiro passo ao último, deixe uma entrada só — e que voltar me leve direto ao estado de antes, não passeando por "Mais novos", "Sobrenome" e "Z–A" pelo caminho. Quem escolhe com mouse ou toque continua com a entrada própria.
+
+**O que aconteceu:**
+A fila que colapsava as buscas no BFF ficou de fora por tamanho (~495). Na reescrita encadeada aprovada (~380), o review bloqueou dois defeitos: um render entre duas escritas derivava o estado do select da URL atrasada e o rebocava atrás das setas, e um passo encadeado podia puxar de volta uma navegação alheia à lista. Saíram em 6 commits — a marca de display do próprio escritor e o descarte em três camadas (clique fora da lista, idioma do `SearchField`, check de `route.path`) — e o comportamento foi provado no preview em produção: 4 setas = Δ+1 no histórico, Voltar pousa no pré-escolha e a âncora do seletor de itens por página fica com drift 0,00px. Exceção ao teto aprovada: +942 −14.
+
+**Abordagem final:**
+Ciclo armado pela seta no `SortSelect` e no `PaginationNav`: o 1º `change` armado é push, os seguintes esperam a escrita anterior pousar e saem como `replace`; escolha de mouse e toque continua push. `NavigationFailure` do vue-router é resolvido, não rejeitado. O E2E `listHistory.spec.ts` tem gate só-Chromium (o probe provou que só o headless do Chromium dispara `change` por seta) e a ADR-0023 ganhou a consequência das gravações encadeadas.
+
+### 🔧 Prompt: As três auditorias
+
+**Ferramenta:** opencode + sub-agentes
+
+**O que pedi:**
+Fecha as três auditorias. Na a11y (#41), audita teclado, nomes de controle, contraste e reduced-motion do começo ao fim — e o que já sei que está quebrado: o `error.vue` perdeu o announcer quando saiu do `app.vue`, então a troca de página no erro precisa ser anunciada e o foco não pode cair no `<body>`; e o "Pular para o conteúdo" hoje limpa o erro e refaz a busca antes do 404. Cada problema vira correção com teste de regressão. No desempenho (#42), Lighthouse ≥90 nos quatro critérios na lista e no detalhe e o tamanho do bundle no README — medido na produção, que o meu local não serve de referência. No protótipo (#43), `docs/design/` é a fonte da verdade e ficou para trás: ainda fala "membros" e a pílula do logo estica 272px. Re-sincroniza com o app de hoje, confere lado a lado em 375/768/1280 nos dois temas, registra o desvio que sobrar na ADR-0013 e cria o favicon do site a partir do logo, sem dependência nova.
+
+**O que aconteceu:**
+O measurer da #41 não achou defeito em teclado, nomes e contraste (16 stops na lista, 22 no detalhe, 14/14 e 22/22 controles nomeados, 0 falhas em 56 pares nos dois temas, `prefers-reduced-motion` cobrindo 12/12 declarações) — os erros estavam todos na página de erro: sem anúncio, foco no `<body>` e skip-link que refazia a busca antes do 404. O announcer (`NuxtRouteAnnouncer`) foi para o layout, que `app.vue` e `error.vue` rendem, e o skip-link ganhou guarda com `preventDefault` (ADR-0024). O desvio do plano foi provado nos probes: navegação manual ao lado da do NuxtLink desarmava os dois pousos — a saída virou um handler acompanhante que espera o pouso e foca os resultados. E veio a descoberta de infra: o stub de `NuxtLink` do `@nuxt/test-utils` engole o handler do componente, então contrato de link só se prova em E2E. Na #42, a produção mediu lista 99–100 e detalhe 95–98 com o PSI confirmando 100/99; o README ganhou a seção "Performance e bundle" com a metodologia e o `npm run analyze` (`--no-serve`, para não brigar com o Grafana pela porta 3000); proxy mesmo-origem das fotos e tirar o `fetchpriority` do avatar foram descartados por não provarem ganho na produção. Na #43, os bundles re-encodados com as 28 substituições de "membros" para "clientes" (39−11; as 11 eram rotas e ids mantidos de propósito), round-trip provado byte a byte, e o favicon derivado do `logo.png` por script Node descartável — `favicon.ico` 16/32/48, `apple-touch-icon.png` de 180px com fundo opaco (o iOS achata alfa em preto) e `favicon.svg` com o PNG como data URI. O E2E `favicon.spec.ts` compara os bytes servidos, porque o fallback do Nitro responde 200 com content-type plausível. E o DNS do runner derrubou o `playwright install --with-deps` em 6 corridas seguidas; ordenei o merge com a exceção documentada no review.
+
+**Abordagem final:**
+A11y do erro virou a ADR-0024 (announcer no layout, foco no título, skip-link guardado, saída focando `#results`), e o hero do detalhe ganhou `min-block-size` e o corte por conteúdo de ponteiro fino. Performance se mede na produção, com a metodologia no README. O protótipo fala a mesma copy do app, a ADR-0013 ficou com as 5 decisões do dono (todas "o app está certo") e o site tem favicon nos três formatos.
+
+### 🔧 Prompt: A release do meio do milestone
+
+**Ferramenta:** opencode
+
+**O que pedi:**
+Bloco fechado, publica a v0.9.0 — mas o M9 não fecha: continua aberto para o README final e a entrega.
+
+**O que aconteceu:**
+Primeira release sem milestone fechando junto — de M1 a M8 a tag coincidia com o fim do milestone. Notas pelo `generate-notes` saíram agrupadas por label (Correções 4, Testes 1, Manutenção 1, sem "Outros"), com `--target` de SHA completo e `--notes-start-tag v0.8.0`.
+
+**Abordagem final:**
+Tag `v0.9.0` + release publicadas em 2026-11-11; a v1.0.0 da entrega só sai com comando explícito.
