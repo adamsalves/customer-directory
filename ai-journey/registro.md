@@ -914,3 +914,11 @@ Bloco da v0.9.0: #107, #41, #42 e #43, na ordem enxuta aprovada em 2026-11-10 �
 ### Release v0.9.0
 
 Tag + release publicadas em 2026-11-11: `--target` com SHA completo, `--notes-start-tag v0.8.0`, título só a versão, notas pelo `generate-notes` (Correções 4, Testes 1, Manutenção 1, sem "Outros"). M9 segue aberto para a #44 e a #45.
+
+### #44 · README final e fechamento da jornada de IA
+
+- **Decidido:** [#44](https://github.com/adamsalves/customer-directory/issues/44) · sem ADR: nenhuma mudança de comportamento no app. O README ganha Arquitetura, "Melhorias sobre o layout original" (antes = o `layout-jsm.png` do desafio, por decisão do dono; depois = produção nos dois temas), "O que ficou de fora" e a tabela dos 7 critérios de avaliação. O `prompts.md` ganha Fase 0 (+4 entradas), M1 (+2) e M9 (+5) — reconstrução humanizada do que foi pedido, a partir do corpo das issues, do código e do registro, sem aspas (o opencode não guarda mensagens; aspas continuam significando o que foi escrito de fato). Por decisão do dono, saem a intro do `prompts.md`, o bullet de honestidade do README do `ai-journey/` e a nota da seção M9: o template do desafio só fixa o formato da entrada. O `learnings.md` recebe 4 ✅, 3 ❌ e 2 🔄; o `registro.md` ganha o cabeçalho M9, as 4 entradas do bloco em estado merged e a entrada da release v0.9.0.
+- **Plano:** [comentário na issue](https://github.com/adamsalves/customer-directory/issues/44#issuecomment-6823053262) · estimativa ~+310 docs
+- **Como:** screenshots da produção capturados no navegador (lista e detalhe do Abraim da Costa, dois temas, pelo cookie `jsm-theme`) e o `layout-jsm.png` baixado do repo do desafio; o banner de CORS do protótipo local chegou a entrar no "antes" e saiu de cena quando o dono trocou o antes pelo layout do desafio. As entradas novas do `prompts.md` foram mostradas e aprovadas na conversa antes de gravar; a Fase 0 e a M1 saíram das citações dos logs de sessão para a reconstrução por código e issues, no mesmo padrão da M9.
+- **Resultado:** +224 −18 de docs sem este registro (+168 −18 no `ai-journey/`, +56 no README; os 5 PNGs de `docs/screenshots/` ficam fora da conta). Prettier verde na árvore de cada commit; lint completo antes do push. Sem spec novo: docs-only.
+- **Pendente:** review e merge; os critérios da issue são marcados após a conferência, e o milestone só fecha na #45.
