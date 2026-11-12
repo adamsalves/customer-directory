@@ -150,7 +150,7 @@ Os extras se registram no README final, na seção "O que ficou de fora" — nã
 A M1 é a fundação: scaffold com SSR e tipagem honesta, lint com tipos, hooks, testes, CI e deploy na Vercel — cada um em issue própria, com PR pequeno. Qual a primeira issue?
 
 **O que aconteceu:**
-Oito issues e oito PRs (#1, #47, #2 a #7), cada um com review de sub-agente isolado desde o primeiro. O scaffold (#1, +6698) veio com TypeScript estrito no client e no Nitro, e o review pegou o `engines.node: ">=24"`, que deixaria a Vercel subir de major sozinha — virou `^24.15.0`. O ESLint tipado (#2) barrou `as` e `!` também no `<template>`; o review provou que `$fetch.raw<T>()` passava pela regra só do `$fetch`, e a config nova dá 11 erros nos mesmos arquivos. Vitest e Playwright (#4) entraram com desktop e mobile; o review desligou o `reuseExistingServer`, que dava 2 verdes contra um build velho com o h1 quebrado. O CI (#5) segurou o install sempre rodando, porque cache de PR não chega na `main`. O deploy (#6) ficou na integração Git da Vercel, sem `vercel.json`, com o aviso no README de que o preview exige login. E a #7 botou o protótipo em `docs/design/`, os templates do GitHub, o README e o `ai-journey/` — o review achou os dois HTML do protótipo vindo de exportações diferentes, com tokens divergentes no tema claro.
+Oito issues e oito PRs (#1, #47, #2 a #7), cada um com review de sub-agente isolado — menos o #47, sem review registrado. O scaffold (#1, +6698) veio com TypeScript estrito no client e no Nitro, e o review pegou o `engines.node: ">=24"`, que deixaria a Vercel subir de major sozinha — virou `^24.15.0`. O ESLint tipado (#2) barrou `as` e `!` também no `<template>`; o review provou que `$fetch.raw<T>()` passava pela regra só do `$fetch`, e a config nova dá 11 erros nos mesmos arquivos. Vitest e Playwright (#4) entraram com desktop e mobile; o review desligou o `reuseExistingServer`, que dava 2 verdes contra um build velho com o h1 quebrado. O CI (#5) segurou o install sempre rodando, porque cache de PR não chega na `main`. O deploy (#6) ficou na integração Git da Vercel, sem `vercel.json`, com o aviso no README de que o preview exige login. E a #7 botou o protótipo em `docs/design/`, os templates do GitHub, o README e o `ai-journey/` — o review achou os dois HTML do protótipo vindo de exportações diferentes, com tokens divergentes no tema claro.
 
 **Abordagem final:**
 ADR-0002, 0009, 0010, 0012 e a regra de um PR por issue que virou o fluxo do projeto inteiro.
@@ -489,7 +489,7 @@ Doze issues não cabem no tempo que tenho. Corta o M9 usando a régua do desafio
 De 12 issues para 6, em duas releases: a v0.9.0 com o último conserto e os portões de qualidade (#107, #41, #42, #43), e a v1.0.0 com a entrega (#44, #45). Saíram com nota o refactor sem comportamento (#95), o anúncio do total no sheet (#97), a animação de saída do sheet (#99), o watch da #29 (#105), o 502 de corpo cortado (#110, nunca reproduzido) e o 404 geral (#122, só o skip-link seguiu para a #41).
 
 **Abordagem final:**
-Duas releases dentro do M9 — diferente de M1–M8, a release do bloco não fecha o milestone. A v0.9.0 congela os números de performance da #42/#43, e é neles que o README final da #44 se apoia.
+Duas releases dentro do M9 — diferente de M1–M8, a release do bloco não fecha o milestone. A v0.9.0 congela os números de performance da #42, e é neles que o README final da #44 se apoia.
 
 ### 🔧 Prompt: Um histórico só ao percorrer o select no teclado
 
